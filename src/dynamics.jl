@@ -42,7 +42,7 @@ function time_evolution(problem::SimulationScalar;time_min = 0.0, time_max = 10,
     ############################################
     ### calls for solver
     prob = ODEProblem(Scalar!, u₀, tspan, parameters)
-    solution = solve(prob, Tsit5(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
+    solution = DifferentialEquations.solve(prob, Tsit5(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
     
     ############################################
     time_array, βₜ = extract_solution_from_Scalar_Problem(solution)
@@ -95,7 +95,7 @@ function time_evolution(problem::SimulationMeanField;time_min = 0.0, time_max = 
     ############################################
     ### calls for solver
     prob = ODEProblem(MeanField!, u₀, tspan, parameters)
-    solution = solve(prob, Tsit5(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
+    solution = DifferentialEquations.solve(prob, Tsit5(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
     # solution = solve(prob, KenCarp4(autodiff=false), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
     
     ############################################
