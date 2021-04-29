@@ -1,5 +1,7 @@
 module CoupledDipole
 
-# Write your package code here.
+export functionHello
+using LinearAlgebra, Plots
+functionHello() = println("Huge Hello World")
 
 end
