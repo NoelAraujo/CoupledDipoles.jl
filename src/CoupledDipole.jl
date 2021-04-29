@@ -8,11 +8,6 @@ using StaticArrays
 using Distances
 using Plots, LaTeXStrings
 
-try
-    using ArrayFire
-catch
-    println("no ArrayFire installed")
-end
 using DifferentialEquations
 using ProgressMeter
 using Random

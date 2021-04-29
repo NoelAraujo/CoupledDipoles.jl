@@ -1,22 +1,8 @@
-function get_steady_state(problem::SimulationScalar; useGPU=false)
+function get_steady_state(problem::SimulationScalar)
     G = get_interaction_matrix(problem)
     Ωₙ = 0.5im * laser_over_atoms(problem.laser, problem.atoms)
-    if useGPU
-        try
-            G_af = AFArray(G)
-            Ωₙ_af = AFArray(Ωₙ)
-            βₛ = Array(G_af \ Ωₙ_af)
-
-            finalize(G_af)
-            G_af = 1
-            GC.gc()
-            return βₛ
-        catch
-            return G \ Ωₙ # βₛ
-        end
-    else
-        return G \ Ωₙ # βₛ
-    end
+    βₛ = G \ Ωₙ
+    return βₛ
 end
 
 # function get_SteadyState(cloud_type, cloud_data; s=1e-6, time_max = 100, dt=1e-10)
