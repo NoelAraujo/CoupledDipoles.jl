@@ -5,11 +5,10 @@ function get_steady_state(problem::SimulationScalar)
     return βₛ
 end
 
-# function get_SteadyState(cloud_type, cloud_data; s=1e-6, time_max = 100, dt=1e-10)
-#     solution_full = nonlinear_evolution(cloud_type, cloud_data; s=s, time_max = time_max, dt=dt)
-#     solution = vcat(solution_full.βₜ, solution_full.σᶻₜ)
-#     return solution
-# end
+function get_steady_state(problem::SimulationMeanField)
+    full_evolution = time_evolution(problem, time_max=50)
+    return (β = full_evolution.βₜ[end], z=full_evolution.zₜ[end])
+end
 
 ### --------------- SCALAR ---------------
 function time_evolution(problem::SimulationScalar;time_min = 0.0, time_max = 10, dt=1e-10, abstol=1e-10, reltol=1e-10)
@@ -18,7 +17,7 @@ function time_evolution(problem::SimulationScalar;time_min = 0.0, time_max = 10,
     H = get_interaction_matrix(problem)
     Ωₙ = -0.5im*laser_over_atoms(problem.laser, problem.atoms)
 
-    parameters = H, Ωₙ
+    parameters = view(H,:,:), view(Ωₙ,:)
     
     ############################################
     ### initial conditions
@@ -42,8 +41,10 @@ function get_initial_conditions(problem::SimulationScalar)
 end
 function Scalar!(du, u, p, t)
     G, Ωₙ = p
-     
-    du[:] = G*u + Ωₙ
+
+    # du[:] = G*u + Ωₙ
+    BLAS.gemv!('N', ComplexF64(1.0), G, u, ComplexF64(0.0), du) 
+    du[:] += Ωₙ
     return nothing
 end
 function extract_solution_from_Scalar_Problem(solution)
@@ -70,8 +71,8 @@ function time_evolution(problem::SimulationMeanField;time_min = 0.0, time_max = 
     H = -H
 
     Ωₙ = laser_over_atoms(problem.laser, problem.atoms)
-
-    parameters = H, Ωₙ, problem.laser.Δ, problem.atoms.N # simulation_parameters = (H=H, Ωₙ=Ωₙ, Δ=cloud_type.Δ, Γ=cloud_type.Γ)
+    Wₙ = similar(Ωₙ)
+    parameters = view(H,:,:), view(diag(H),:), view(Ωₙ,:), Wₙ, problem.laser.Δ, problem.atoms.N # parameters = H, Ωₙ, problem.laser.Δ, problem.atoms.N  
 
     ############################################
     ### initial conditions
@@ -98,17 +99,15 @@ function get_initial_conditions(problem::SimulationMeanField)
 end
 function MeanField!(du, u, p, t)
     # parameters
-    G, Ωₙ, Δ, N = p
+    G, diagG, Ωₙ, Wₙ, Δ, N = p
     
     βₙ = @view u[1:N]
     zₙ = @view u[N+1:end]
     
-    Wₙ = Ωₙ/2 .- im*(G*βₙ - diag(G).*βₙ)
-    du_temp1 = (im*Δ - Γ/2).*βₙ .+ im*Wₙ.*zₙ
-    du_temp2 = -Γ.*(1 .+ zₙ) .- 4*imag(βₙ.*conj(Wₙ))
+    Wₙ[:] .= Ωₙ/2 - im*(G*βₙ - diagG.*βₙ)
+    @. du[1:N] = (im*Δ - Γ/2)*βₙ + im*Wₙ*zₙ
+    @. du[N+1:end] = -Γ*(1 + zₙ) - 4*imag(βₙ*conj(Wₙ))
     
-    du_temp = vcat(du_temp1, du_temp2)
-    du[:] .= du_temp
     return nothing
 end
 function extract_solution_from_MeanField_Problem(solution)
