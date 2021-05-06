@@ -45,6 +45,9 @@ end
 Main function to obtain the `Localization Length`, ξ, and its `Coefficient of Determination`, R1 (R¹).
 """
 function get_all_ξ_and_R1(problem; probability_threshold=0.999)
+    if !isnothing(problem.ξ) && !isnothing(problem.R1)
+        return problem.ξ, problem.R1
+    end
     N = problem.atoms.N
     ξ = zeros(N)
     R1 = zeros(N)
@@ -56,6 +59,8 @@ function get_all_ξ_and_R1(problem; probability_threshold=0.999)
         DCM, ψ² = get_spatial_profile_single_mode(problem, n)
         ξ[n], R1[n] = get_single_ξ_and_R1(DCM, ψ²)
     end
+    problem.ξ = ξ
+    problem.R1 = R1
     return ξ, R1
 end
 
@@ -86,9 +91,12 @@ function sort_spatial_profile!(DCM, ψ²ₙ)
 end
 
 ### --------------- Classification r---------------
-function classify_modes(R¹, Γₙ; Γ=1, threshold=0.5)
-    localized_modes = findall((Γₙ .< Γ) .* (R¹ .≥ threshold))
-    sub_radiant_modes = findall((Γₙ .< Γ) .* (R¹ .< threshold))
+function classify_modes(problem::T) where {T<:Scalar}
+    ωₙ, Γₙ = get_energy_shift_and_linewith(problem)
+    ξ, R1 = get_all_ξ_and_R1(problem)
+
+    localized_modes = findall((Γₙ .< Γ) .* (R1 .≥ R1_threshold))
+    sub_radiant_modes = findall((Γₙ .< Γ) .* (R1 .< R1_threshold))
     super_radiant_modes = findall(Γₙ .> Γ)
     return (loc=localized_modes, sub=sub_radiant_modes, super=super_radiant_modes)
 end

@@ -11,7 +11,7 @@ function get_spatial_profile_data_to_save(problem, mode_index)
 end
 
 function plot_atoms_and_mode(problem, mode_index)
-    pyplot()
+    # pyplot()
     # compute eigenvalues if not available
     prepare_spectrum(problem)
     DCM, ψ² = get_spatial_profile_single_mode(problem, mode_index)

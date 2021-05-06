@@ -1,6 +1,6 @@
 using CoupledDipole, Revise, Plots, DelimitedFiles
 
-### --- INITIAL CONDITIONS IS CHANGED TO AGREE WITH QUTIP SAVED DATA ---
+### --- INITIAL CONDITIONS ARE CHANGED TO AGREE WITH QUTIP SAVED DATA ---
 function CoupledDipole.get_initial_conditions(problem::SimulationScalar)
     return zeros(ComplexF64, problem.atoms.N)
 end
@@ -20,9 +20,6 @@ r = [ -1.01015   -0.455099     0.543082;
       -1.20512    0.376068    -1.85059;
       -1.89765    0.84797      0.248158;
       0.664911   0.00503915  -0.177228]
-
-
-rs =  convert_matrix_to_StaticArray(r)
 
 atoms = Cube(r, 10);
 

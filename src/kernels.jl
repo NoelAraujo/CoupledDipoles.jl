@@ -27,6 +27,10 @@ end
 function get_energy_shift_and_linewith(problem::SimulationScalar)
     spectrum = get_spectrum(problem)
     ωₙ, Γₙ = imag.(spectrum.λ), -real.(spectrum.λ)
+    if any(Γₙ .< 0 )
+        @warn "some Γₙ were negatives and were ignored"
+        Γₙ = abs.(Γₙ)
+    end
     return ωₙ, Γₙ
 end
 

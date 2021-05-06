@@ -36,24 +36,17 @@ function get_E_scatterd(atoms::T, sensor_versor, sensor_position, β, n) where {
 end
 
 
-function get_scattered_intensity(problem::SimulationScalar, atoms_states, θ::Number)
-    intensity = 0.0
-    N = problem.atoms.N
-    r = problem.atoms.r
-    for n=1:N
-        for m=1:N
-            rx = r[n][1] - r[m][1]
-            ry = r[n][2] - r[m][2]
-            rz = r[n][3] - r[m][3]
-            
-            excitationTerm = atoms_states[n]'*atoms_states[m]
-            expTerm = cis(k₀*rz*cos(θ))
-            besselTerm = besseli(0, sqrt( Complex(-k₀^2*sin(θ)^2*(rx^2 +ry^2)) ) )
-
-            intensity += real( excitationTerm * expTerm * besselTerm )
-        end
+function get_scattered_intensity(problem::SimulationScalar, atoms_states, θ::Number; Gₙₘ=nothing)
+    if isnothing(Gₙₘ)
+        Gₙₘ = get_geometric_factor(problem.atoms, θ)
     end
-    return intensity
+
+    β = atoms_states
+    
+    βₙₘ = transpose(β*β')
+    βₙₘ[diagind(βₙₘ)] .= abs2.(β)
+
+    intensity = real(sum(βₙₘ.*Gₙₘ))
 end
 
 
@@ -99,7 +92,7 @@ function get_geometric_factor(atoms, Θ)
 
     Gₙₘ = zeros(ComplexF64, N,N)
     for n=1:N
-        for m=1:N 
+        for m=n:N 
             rx = r[n][1] - r[m][1]
             ry = r[n][2] - r[m][2]
             rz = r[n][3] - r[m][3]
@@ -108,5 +101,5 @@ function get_geometric_factor(atoms, Θ)
             Gₙₘ[n,m] = cis(k₀*rz*cos(Θ))*besseli(0, argument_bessel )
         end
     end
-    return Gₙₘ
+    return Hermitian(Gₙₘ)
 end

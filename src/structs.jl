@@ -39,6 +39,8 @@ mutable struct SimulationScalar <: Scalar
     KernelFunction!::Function
     λ::Any
     ψ::Any
+    ξ
+    R1
 end
 
 mutable struct SimulationMeanField <: MeanFieldProblem
@@ -178,7 +180,7 @@ b₀_of(atoms::Sphere) = (ρ_of(atoms) .^ 2 * atoms.N / ((4π / 3) * (3 / (16π)
 function ScalarProblem(atoms, laser)
     KernelFunction = get_ScalarKernelFunction(atoms)
 
-    return SimulationScalar(atoms, laser, KernelFunction, nothing, nothing)
+    return SimulationScalar(atoms, laser, KernelFunction, nothing, nothing, nothing, nothing)
 end
 function get_ScalarKernelFunction(atoms::T) where {T<:ThreeD}
     return green_scalar!

@@ -23,7 +23,7 @@ export greet
 
 const k₀ = 1
 const Γ = 1
-const probability_threshold = 0.999
+const probability_threshold = 0.9999
 const R1_threshold = 0.5
 
 include("structs.jl")
@@ -51,7 +51,7 @@ export get_energy_shift_and_linewith
 export get_IPRs, get_PRs
 export get_all_ξ_and_R1
 export get_spatial_profile_single_mode
-
+export classify_modes
 
 include("exponential_fit.jl")
 
@@ -63,6 +63,7 @@ export get_X_axes, get_Y_axes, get_Z_axes
 
 include("scattering.jl")
 export get_scattered_intensity
+export get_geometric_factor
 
 include("sensors.jl")
 export ring_on_space, ring_on_plane
