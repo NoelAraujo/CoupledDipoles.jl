@@ -53,35 +53,58 @@ end
 
 
 ### --------------- MEAN FIELD ---------------
-## TO DO
 function get_scattered_intensity(problem::T, atoms_states, sensors::AbstractArray) where {T<:MeanFieldProblem}   
     n_sensors = get_number_sensors(sensors)
-    intensities = zeros(n_sensors)
+        
+    N = problem.atoms.N
+    β = view(atoms_states, 1:N)
+   
+    βₘₙ = zeros(ComplexF64, ((N^2)÷2 - N÷2 +1))
+    cont = 1
+    for m=1:N
+        for n = (m+1):N
+            βₘₙ[cont] = conj(β[n])*β[m]
+            cont += 1
+        end
+    end
+    vβₘₙ = view(βₘₙ, :)
 
-    Threads.@threads for n in 1:n_sensors #
-        sensor_position = get_one_sensor(sensors, n)
-        intensities[n] = get_intensity_over_point_in_space_MF(
-            problem.atoms.r, atoms_states, sensor_position
+    r_nm = zeros(3, ((N^2)÷2 - N÷2 +1) )
+    cont = 1
+    for m=1:N
+        r_m = problem.atoms.r[m]
+        for n = (m+1):N
+            r_nm[:, cont] = r_m - problem.atoms.r[n]
+            cont += 1
+        end
+    end
+    vr_nm = view(r_nm, :, :)
+    
+    intensities = []
+    for n in 1:n_sensors
+        sensor_position = view( get_one_sensor(sensors, n), :)
+
+        push!(intensities, Threads.@spawn get_intensity_over_point_in_space_MF(
+            problem.atoms.r, atoms_states, sensor_position, vβₘₙ, vr_nm)
         )
     end
-
+    intensities = fetch.(intensities)
     return intensities
 end
 
-function get_intensity_over_point_in_space_MF(atoms_positions, atoms_states, sensor_position)
+function get_intensity_over_point_in_space_MF(atoms_positions, atoms_states, sensor_position,vβₙₘ, vr_nm)
     N = length(atoms_states)÷2
-    β = view(atoms_states, 1:N)
+    
     z = view(atoms_states, (N+1):2N)
+    cont = 1
+    intensity = zero(ComplexF64)
 
-    intensity = zero(eltype(β))
-    for m=1:N
-        r_m = atoms_positions[m]
-        for n = (m+1):N
-            r_nm = r_m - atoms_positions[n]
-            dot_n_r = cis(dot(sensor_position, r_nm))
-            intensity += conj(β[n])*β[m]*dot_n_r
-        end
-    end   
+    for cont=1:length(vβₙₘ)
+        dot_n_r = cis(sensor_position[1]*vr_nm[1,cont] 
+                    + sensor_position[2]*vr_nm[2,cont] 
+                    + sensor_position[3]*vr_nm[3,cont])
+        intensity +=  dot_n_r*vβₙₘ[cont]
+    end       
     for n=1:N
         intensity += (1 + z[n])/4
     end
