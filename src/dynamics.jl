@@ -7,7 +7,8 @@ end
 
 function get_steady_state(problem::SimulationMeanField)
     full_evolution = time_evolution(problem, time_max=50)
-    return (β = full_evolution.βₜ[end], z=full_evolution.zₜ[end])
+    # return (β = full_evolution.βₜ[end], z=full_evolution.zₜ[end])
+    return vcat(full_evolution.βₜ[end], full_evolution.zₜ[end])
 end
 
 ### --------------- SCALAR ---------------

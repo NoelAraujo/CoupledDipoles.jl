@@ -58,16 +58,34 @@ function get_scattered_intensity(problem::T, atoms_states, sensors::AbstractArra
     n_sensors = get_number_sensors(sensors)
     intensities = zeros(n_sensors)
 
-    println(" TO DO ")
-
-    # Threads.@threads for n in 1:n_sensors #
-    #     sensor_position = get_one_sensor(sensors, n)
-    #     intensities[n] = get_scattered_light_scalar(
-    #         problem, atoms_states, sensor_position, E_L[n]
-    #     )
-    # end
+    Threads.@threads for n in 1:n_sensors #
+        sensor_position = get_one_sensor(sensors, n)
+        intensities[n] = get_intensity_over_point_in_space_MF(
+            problem.atoms.r, atoms_states, sensor_position
+        )
+    end
 
     return intensities
+end
+
+function get_intensity_over_point_in_space_MF(atoms_positions, atoms_states, sensor_position)
+    N = length(atoms_states)÷2
+    β = view(atoms_states, 1:N)
+    z = view(atoms_states, (N+1):2N)
+
+    intensity = zero(eltype(β))
+    for m=1:N
+        r_m = atoms_positions[m]
+        for n = (m+1):N
+            r_nm = r_m - atoms_positions[n]
+            dot_n_r = cis(dot(sensor_position, r_nm))
+            intensity += conj(β[n])*β[m]*dot_n_r
+        end
+    end   
+    for n=1:N
+        intensity += (1 + z[n])/4
+    end
+    return 2real(intensity)
 end
 
 function get_scattered_intensity(problem::T, atoms_states, θ::Number; Gₙₘ=nothing) where {T<:MeanFieldProblem} 
