@@ -7,7 +7,6 @@ end
 
 function get_steady_state(problem::SimulationMeanField)
     full_evolution = time_evolution(problem, time_max=50)
-    # return (β = full_evolution.βₜ[end], z=full_evolution.zₜ[end])
     return vcat(full_evolution.βₜ[end], full_evolution.zₜ[end])
 end
 
@@ -28,7 +27,7 @@ function time_evolution(problem::SimulationScalar;time_min = 0.0, time_max = 10,
     ############################################
     ### calls for solver
     prob = ODEProblem(Scalar!, u₀, tspan, parameters)
-    solution = DifferentialEquations.solve(prob, Tsit5(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
+    solution = DifferentialEquations.solve(prob, VCABM(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
     
     ############################################
     time_array, βₜ = extract_solution_from_Scalar_Problem(solution)
@@ -73,7 +72,8 @@ function time_evolution(problem::SimulationMeanField;time_min = 0.0, time_max = 
 
     Ωₙ = laser_over_atoms(problem.laser, problem.atoms)
     Wₙ = similar(Ωₙ)
-    parameters = view(H,:,:), view(diag(H),:), view(Ωₙ,:), Wₙ, problem.laser.Δ, problem.atoms.N # parameters = H, Ωₙ, problem.laser.Δ, problem.atoms.N  
+    G_βₙ = similar(Ωₙ)
+    parameters = view(H,:,:), view(diag(H),:), view(Ωₙ,:), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ
 
     ############################################
     ### initial conditions
@@ -83,8 +83,7 @@ function time_evolution(problem::SimulationMeanField;time_min = 0.0, time_max = 
     ############################################
     ### calls for solver
     prob = ODEProblem(MeanField!, u₀, tspan, parameters)
-    solution = DifferentialEquations.solve(prob, Tsit5(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
-    # solution = solve(prob, KenCarp4(autodiff=false), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
+    solution = DifferentialEquations.solve(prob, VCABM(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
     
     ############################################
     time_array, βₜ, zₜ = extract_solution_from_MeanField_Problem(solution)
@@ -100,15 +99,27 @@ function get_initial_conditions(problem::SimulationMeanField)
 end
 function MeanField!(du, u, p, t)
     # parameters
-    G, diagG, Ωₙ, Wₙ, Δ, N = p
+    G, diagG, Ωₙ, Wₙ, Δ, N, G_βₙ = p
     
     βₙ = @view u[1:N]
     zₙ = @view u[N+1:end]
     
-    Wₙ[:] .= Ωₙ/2 - im*(G*βₙ - diagG.*βₙ)
-    @. du[1:N] = (im*Δ - Γ/2)*βₙ + im*Wₙ*zₙ
-    @. du[N+1:end] = -Γ*(1 + zₙ) - 4*imag(βₙ*conj(Wₙ))
+    ### Code below is equivalento to
+    # Wₙ[:] .= Ωₙ/2 - im*(G*βₙ - diagG.*βₙ) # don't forget the element wise multiplication of "diagG.*βₙ"
+    # @. du[1:N] = (im*Δ - Γ/2)*βₙ + im*Wₙ*zₙ
+    # @. du[N+1:end] = -Γ*(1 + zₙ) - 4*imag(βₙ*conj(Wₙ))
     
+    BLAS.gemv!('N', ComplexF64(1.0), G, βₙ, ComplexF64(0.0), G_βₙ) # == G_βₙ = G*βₙ
+    @simd for i = 1:N
+        @inbounds Wₙ[i] = Ωₙ[i]/2 - im*(G_βₙ[i] - diagG[i]*βₙ[i])
+    end
+    @simd for i = 1:N
+        @inbounds du[i] = (im*Δ - Γ/2)*βₙ[i] + im*Wₙ[i]*zₙ[i]
+    end
+    @simd for i = 1:N
+        @inbounds du[i+N] = -Γ*(1 + zₙ[i]) - 4*imag(βₙ[i]*conj(Wₙ[i]))
+    end
+
     return nothing
 end
 function extract_solution_from_MeanField_Problem(solution)
