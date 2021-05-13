@@ -1,12 +1,13 @@
 name = "CoupledDipole"
 uuid = "1aa92a3a-72ac-4ef3-9973-aaf9b373e3c1"
 authors = ["Noel Araujo"]
-version = "0.1.4"
+version = "0.1.5"
 
 [deps]
 Crayons = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+Folds = "41a02a25-b8f0-4f67-bc48-60067656b558"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LsqFit = "2fda8390-95c7-5789-9bda-21331edee243"

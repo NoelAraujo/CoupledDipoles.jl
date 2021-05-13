@@ -18,6 +18,7 @@ using Printf
 using LsqFit
 using Optim: minimizer, optimize
 using SpecialFunctions: besseli
+using Folds
 
 export greet
 

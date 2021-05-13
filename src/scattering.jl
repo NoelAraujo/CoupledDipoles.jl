@@ -53,75 +53,79 @@ end
 
 
 ### --------------- MEAN FIELD ---------------
-function get_scattered_intensity(problem::T, atoms_states, sensors::AbstractArray) where {T<:MeanFieldProblem}   
-    n_sensors = get_number_sensors(sensors)
-        
+"""
+    get_scattered_intensity(problem::T, atoms_states, sensors::AbstractArray) where {T<:MeanFieldProblem}
+
+atoms_states: vcat(β, z)
+sensor: [ [sensor1], [sensor2], ... ,[sensorN]  ]
+
+**important**: this function does not handles single sensor.
+If needed, create a dummy position or duplicate the sensor - then, ignore the one that you don't need.
+sensor = [ [sensor1], [sensor_dummy]  ] or [ [sensor1], [sensor1]  ]
+
+"""
+function get_scattered_intensity(problem::T, atoms_states, sensors::AbstractArray) where {T<:MeanFieldProblem}
     N = problem.atoms.N
     β = view(atoms_states, 1:N)
-   
-    βₘₙ = zeros(ComplexF64, ((N^2)÷2 - N÷2 +1))
+    z = view(atoms_states, (N+1):2N)    
+    r = problem.atoms.r
+    number_configurations = ((N^2)÷2 - N÷2)
+
+    βₙₘ = Array{ComplexF64}(undef, number_configurations)
     cont = 1
-    for m=1:N
-        for n = (m+1):N
-            βₘₙ[cont] = conj(β[n])*β[m]
-            cont += 1
-        end
-    end
-    vβₘₙ = view(βₘₙ, :)
-
-    r_nm = zeros(3, ((N^2)÷2 - N÷2 +1) )
-    cont = 1
-    for m=1:N
-        r_m = problem.atoms.r[m]
-        for n = (m+1):N
-            r_nm[:, cont] = r_m - problem.atoms.r[n]
-            cont += 1
-        end
-    end
-    vr_nm = view(r_nm, :, :)
-    
-    intensities = []
-    for n in 1:n_sensors
-        sensor_position = view( get_one_sensor(sensors, n), :)
-
-        push!(intensities, Threads.@spawn get_intensity_over_point_in_space_MF(
-            problem.atoms.r, atoms_states, sensor_position, vβₘₙ, vr_nm)
-        )
-    end
-    intensities = fetch.(intensities)
-    return intensities
-end
-
-function get_intensity_over_point_in_space_MF(atoms_positions, atoms_states, sensor_position,vβₙₘ, vr_nm)
-    N = length(atoms_states)÷2
-    
-    z = view(atoms_states, (N+1):2N)
-    cont = 1
-    intensity = zero(ComplexF64)
-
-    for cont=1:length(vβₙₘ)
-        dot_n_r = cis(sensor_position[1]*vr_nm[1,cont] 
-                    + sensor_position[2]*vr_nm[2,cont] 
-                    + sensor_position[3]*vr_nm[3,cont])
-        intensity +=  dot_n_r*vβₙₘ[cont]
-    end       
     for n=1:N
-        intensity += (1 + z[n])/4
+        for m=(n+1):N            
+            βₙₘ[cont] = conj(β[n])*β[m]
+            cont += 1
+        end
     end
-    return 2real(intensity)
+    vβₙₘ = view(βₙₘ, :)
+    
+    rₙₘ = Array{ComplexF64}(undef, 3, number_configurations)
+    cont = 1
+    for n=1:N
+        r_n = r[n]
+        for m=(n+1):N
+            rₙₘ[:,cont] = r_n - r[m]
+            cont += 1
+        end
+    end
+    vrₙₘ = view(rₙₘ,:, :)
+    
+    #=
+        We don't need to compute each sensor in parallel, because the Folds.mapreduce
+        is already doing an excelent job with multi-threading.
+    =#
+    n_sensors = CoupledDipole.get_number_sensors(sensors)
+    intensities = Float64[]
+    for i=1:n_sensors
+        intensity = ComplexF64(0)
+        n_hat = sensors[i]./norm(sensors[i])
+        intensity = Folds.mapreduce(+, 1:number_configurations) do k
+            (
+                begin 
+                dot_n_r = n_hat[1]*vrₙₘ[1, k] + n_hat[2]*vrₙₘ[2, k] + n_hat[3]*vrₙₘ[3, k];
+                vβₙₘ[k]*cis( k₀*dot_n_r) 
+                end 
+            )
+        end
+        intensity +=  sum( (1 .+ z)./4 )
+        push!(intensities, 2real(intensity)   )
+    end
+
+    return intensities
 end
 
 function get_scattered_intensity(problem::T, atoms_states, θ::Number; Gₙₘ=nothing) where {T<:MeanFieldProblem} 
     if isnothing(Gₙₘ)
-        Gₙₘ = get_geometric_factor(problem.atoms, θ)
+        Gₙₘ = view(get_geometric_factor(problem.atoms, θ),:,:)
     end
 
-    β = atoms_states.β
-    z = atoms_states.z
+    β = view(atoms_states.β,:)
+    z = view(atoms_states.z,:)
 
     βₙₘ = transpose(β*β')
     βₙₘ[diagind(βₙₘ)] .= (1 .+ z)./2
-
 
     intensity = real(sum(βₙₘ.*Gₙₘ))
     return intensity

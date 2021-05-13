@@ -32,7 +32,13 @@ function ring_on_plane(; num_pts=180, φ_inicial=0, φ_final=2π, kR=1)
     return sensors
 end
 
-get_number_sensors(sensors) = length(sensors)
+function get_number_sensors(sensors)
+    if typeof(sensors)==Vector{StaticArrays.SArray}
+        return length(sensors)
+    elseif typeof(sensors)==StaticArrays.SVector{2, Float64} || typeof(sensors)==StaticArrays.SVector{3, Float64}
+        return 1 # single sensor case
+    end
+end
 get_one_sensor(sensors, i) = sensors[i]
 
 select_sensor_axes(sensors, direction) = select_matrix_axes(sensors, direction)
