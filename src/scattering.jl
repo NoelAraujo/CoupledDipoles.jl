@@ -3,13 +3,30 @@ function get_scattered_intensity(problem::T, atoms_states, sensors) where {T<:Sc
     ## Pump Field
     E_L = im * laser_over_sensors(problem.laser, sensors)
     n_sensors = get_number_sensors(sensors)
-    intensities = zeros(n_sensors)
+    intensities = Float64[]
+    
+    ## Probably the code below will change in the future
+    ## It is only in its simplest form to later tests
+    for i in 1:n_sensors #
+        sensor_position = sensors[i]
+        r =  norm(sensor_position)
+        n_hat = sensor_position / r
+        
 
-    Threads.@threads for n in 1:n_sensors #
-        sensor_position = get_one_sensor(sensors, n)
-        intensities[n] = get_scattered_light_scalar(
-            problem, atoms_states, sensor_position, E_L[n]
-        )
+        E_scatt = Folds.mapreduce(+, 1:problem.atoms.N) do j
+            (
+                begin 
+                    r_atom = problem.atoms.r[j]
+                    cis(-dot(n_hat, r_atom))*atoms_states[j]
+                end 
+            )
+        end
+
+    
+        ikr = im * k₀ * r
+        
+        intensity = abs2(E_L[i] + (exp(ikr)/ikr)*E_scatt)
+        push!(intensities, intensity)
     end
 
     return intensities
@@ -68,30 +85,38 @@ function get_scattered_intensity(problem::T, atoms_states, sensors::AbstractArra
     N = problem.atoms.N
     β = view(atoms_states, 1:N)
     z = view(atoms_states, (N+1):2N)    
-    r = problem.atoms.r
+    r = get_atoms_matrix(problem.atoms)
     number_configurations = ((N^2)÷2 - N÷2)
-
+    
     βₙₘ = Array{ComplexF64}(undef, number_configurations)
-    cont = 1
-    for n=1:N
-        for m=(n+1):N            
-            βₙₘ[cont] = conj(β[n])*β[m]
-            cont += 1
-        end
+    cont_i = 0
+    cont_f = 0
+    for n=1:N-1
+        mm = (n+1):N
+
+        cont_i = cont_i + 1
+        cont_f = cont_f + length(mm)
+
+        βₙₘ[cont_i:cont_f] = conj(β[n])*β[mm]
+    
+        cont_i = cont_f
     end
     vβₙₘ = view(βₙₘ, :)
     
-    rₙₘ = Array{ComplexF64}(undef, 3, number_configurations)
-    cont = 1
-    for n=1:N
-        r_n = r[n]
-        for m=(n+1):N
-            rₙₘ[:,cont] = r_n - r[m]
-            cont += 1
-        end
+    cont_i = 0
+    cont_f = 0
+    rₙₘ = Array{ComplexF64}(undef, number_configurations, 3)
+    for n=1:N-1
+        m = (n+1):N
+
+        cont_i = cont_i + 1
+        cont_f = cont_f + length(m)
+
+        rₙₘ[cont_i:cont_f,:] = repeat( r[n,:]', length(m), 1) - @view r[m,:] # 
+
+        cont_i = cont_f
     end
     vrₙₘ = view(rₙₘ,:, :)
-    
     #=
         We don't need to compute each sensor in parallel, because the Folds.mapreduce
         is already doing an excelent job with multi-threading.
@@ -121,8 +146,9 @@ function get_scattered_intensity(problem::T, atoms_states, θ::Number; Gₙₘ=n
         Gₙₘ = view(get_geometric_factor(problem.atoms, θ),:,:)
     end
 
-    β = view(atoms_states.β,:)
-    z = view(atoms_states.z,:)
+    N = problem.atoms.N
+    β = view(atoms_states, 1:N)
+    z = view(atoms_states, (N+1):2N)
 
     βₙₘ = transpose(β*β')
     βₙₘ[diagind(βₙₘ)] .= (1 .+ z)./2

@@ -1,17 +1,19 @@
-function get_steady_state(problem::SimulationScalar)
+function get_steady_state(problem::SimulationScalar; time_max=100)
     G = get_interaction_matrix(problem)
     Ωₙ = 0.5im * laser_over_atoms(problem.laser, problem.atoms)
     βₛ = G \ Ωₙ
     return βₛ
 end
 
-function get_steady_state(problem::SimulationMeanField)
-    full_evolution = time_evolution(problem, time_max=50)
-    return vcat(full_evolution.βₜ[end], full_evolution.zₜ[end])
+function get_steady_state(problem::SimulationMeanField; time_max=100)
+    full_evolution = time_evolution(problem, time_max=time_max, save_on=true)
+    steady_state = vcat(  deepcopy(full_evolution.βₜ[end]), deepcopy(full_evolution.zₜ[end]) )
+    full_evolution = 1; GC.gc()
+    return steady_state
 end
 
 ### --------------- SCALAR ---------------
-function time_evolution(problem::SimulationScalar;time_min = 0.0, time_max = 10, dt=1e-10, abstol=1e-10, reltol=1e-10)
+function time_evolution(problem::SimulationScalar; time_min = 0.0, time_max = 10, dt=1e-10, abstol=1e-10, reltol=1e-10, save_on=true)
     ############################################
     ### parameters == constant vector and matrices
     H = get_interaction_matrix(problem)
@@ -27,7 +29,7 @@ function time_evolution(problem::SimulationScalar;time_min = 0.0, time_max = 10,
     ############################################
     ### calls for solver
     prob = ODEProblem(Scalar!, u₀, tspan, parameters)
-    solution = DifferentialEquations.solve(prob, VCABM(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
+    solution = DifferentialEquations.solve(prob, VCABM(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol, save_on=save_on)
     
     ############################################
     time_array, βₜ = extract_solution_from_Scalar_Problem(solution)
@@ -35,9 +37,10 @@ function time_evolution(problem::SimulationScalar;time_min = 0.0, time_max = 10,
     return (time_array=time_array, βₜ=βₜ)
 end
 function get_initial_conditions(problem::SimulationScalar)
-    λ, ψ = get_spectrum(problem)
-    β₀ = ψ[:, end] # the last mode is the most subradiant == more loccalized
-    return β₀
+    # λ, ψ = get_spectrum(problem)
+    # β₀ = ψ[:, end] # the last mode is the most subradiant == more loccalized
+    # return β₀
+    return zeros(ComplexF64, problem.atoms.N)
 end
 function Scalar!(du, u, p, t)
     G, Ωₙ = p
@@ -56,7 +59,7 @@ end
 
 
 ### --------------- MEAN FIELD ---------------
-function time_evolution(problem::SimulationMeanField;time_min = 0.0, time_max = 10, dt=1e-10, abstol=1e-10, reltol=1e-10)
+function time_evolution(problem::SimulationMeanField;time_min = 0.0, time_max = 10, dt=1e-10, abstol=1e-10, reltol=1e-10, save_on=true)
     ############################################
     ### parameters
     H = get_interaction_matrix(problem)
@@ -83,7 +86,7 @@ function time_evolution(problem::SimulationMeanField;time_min = 0.0, time_max = 
     ############################################
     ### calls for solver
     prob = ODEProblem(MeanField!, u₀, tspan, parameters)
-    solution = DifferentialEquations.solve(prob, VCABM(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol)
+    solution = DifferentialEquations.solve(prob, VCABM(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol, save_on=save_on)
     
     ############################################
     time_array, βₜ, zₜ = extract_solution_from_MeanField_Problem(solution)
@@ -91,8 +94,9 @@ function time_evolution(problem::SimulationMeanField;time_min = 0.0, time_max = 
     return (time_array=time_array, βₜ=βₜ, zₜ=zₜ)
 end
 function get_initial_conditions(problem::SimulationMeanField)
-    λ, ψ = get_spectrum(problem)
-    β₀ = ψ[:, end] # the last mode is the most subradiant == more loccalized
+    # λ, ψ = get_spectrum(problem)
+    # β₀ = ψ[:, end] # the last mode is the most subradiant == more loccalized
+    β₀ = zeros(ComplexF64, problem.atoms.N)
     z₀ = 2β₀.*conj.(β₀) .- 1
     u₀ = vcat(β₀, z₀)
     return u₀
