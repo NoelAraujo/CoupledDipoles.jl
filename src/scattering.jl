@@ -116,7 +116,7 @@ function get_scattered_intensity(problem::T, atoms_states, sensors::AbstractArra
 
         cont_i = cont_f
     end
-    vrₙₘ = view(rₙₘ,:, :)
+    vrₙₘ = view(transpose(rₙₘ),:, :) # transpose necessary only on CPU mode, but I remove it with CUDA
     #=
         We don't need to compute each sensor in parallel, because the Folds.mapreduce
         is already doing an excelent job with multi-threading.
