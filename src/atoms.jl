@@ -1,3 +1,10 @@
+"""
+    get_atoms(dimensions, N, rₘᵢₙ; kwargs...)
+
+`dimensions` : 1D/2D/3D == `1`/`2`/`3`
+`N` : number of atoms
+`rₘᵢₙ` : radius of exclusion
+"""
 function get_atoms(dimensions, N, rₘᵢₙ; kwargs...)
     new_atom = zeros(dimensions)
     r = SArray[]
@@ -46,12 +53,21 @@ function get_Distance_A_to_b(A, b)
     end
     return distanceAb
 end
-
+"""
+    get_rₘᵢₙ(ρ) = (ρ^(-2 / 3)) / π^2
+"""
 get_rₘᵢₙ(ρ) = (ρ^(-2 / 3)) / π^2  # AD HOC
+"""
+    get_pairwise_matrix(r)
+r = matrix with `N` atoms positions
 
+returns a `NxN` Float64 matrix, with zeros at diagonal
+"""
 function get_pairwise_matrix(r)
     r_matrix = convert_StaticArray_to_matrix(r)
-    return Distances.pairwise(Euclidean(), r_matrix, r_matrix; dims=1)
+    R_jk = Distances.pairwise(Euclidean(), r_matrix, r_matrix; dims=1)
+    R_jk[diagind(R_jk)] .= 0
+    return R_jk
 end
 
 function convert_StaticArray_to_matrix(r::Vector{StaticArrays.SArray})
@@ -61,6 +77,9 @@ function convert_StaticArray_to_matrix(r::Vector{StaticArrays.SArray})
         r_matrix[n, :] = [r[n][1] r[n][2] r[n][3]]
     end
     return r_matrix
+end
+function convert_StaticArray_to_matrix(r::Matrix)
+    return r
 end
 
 function convert_matrix_to_StaticArray(r::Matrix)
@@ -73,7 +92,9 @@ function convert_matrix_to_StaticArray(r::Matrix)
     end
     return rs
 end
-
+"""
+    get_coordinates_of_center_of_mass(r, Ψ²_mode)
+"""
 function get_coordinates_of_center_of_mass(r, Ψ²_mode)
     ## Equivalent code, but slower
     # N = length(Ψ²_mode)
@@ -133,11 +154,16 @@ function sph2cart(spherical_coordinate)
 end
 
 ### --------------- CONVERSIONS ---------------
+"""
+    cube_inputs(N::Integer, ρ::Real)
+"""
 function cube_inputs(N::Integer, ρ::Real)
     kL = (N / ρ)^(1 / 3)
     return (N, kL)
 end
-
+"""
+    sphere_inputs(N::Integer, ρ::Real)
+"""
 function sphere_inputs(N::Integer, ρ::Real)
     kR = (N / ((4π / 3) * ρ))^(1 / 3)
     return (N, kR)

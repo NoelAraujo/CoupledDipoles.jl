@@ -17,13 +17,24 @@ function green_scalar!(atoms, laser, G)
 
     return nothing
 end
-
+"""
+    get_interaction_matrix(problem)
+"""
 function get_interaction_matrix(problem::SimulationScalar)
     H = zeros(ComplexF64, problem.atoms.N, problem.atoms.N)
     problem.KernelFunction!(problem.atoms, problem.laser, H)
     return H
 end
-
+"""
+    get_interaction_matrix(problem, H)
+"""
+function get_interaction_matrix(problem::SimulationScalar, H)    
+    problem.KernelFunction!(problem.atoms, problem.laser, H)
+    return H
+end
+"""
+    get_energy_shift_and_linewith(problem::SimulationScalar)
+"""
 function get_energy_shift_and_linewith(problem::SimulationScalar)
     spectrum = get_spectrum(problem)
     ωₙ, Γₙ = imag.(spectrum.λ), -real.(spectrum.λ)
@@ -33,13 +44,19 @@ function get_energy_shift_and_linewith(problem::SimulationScalar)
     end
     return ωₙ, Γₙ
 end
-
+"""
+    get_ψ²(problem::SimulationScalar, n::Integer)
+"""
 function get_ψ²(problem::SimulationScalar, n::Integer)
     return abs2.(problem.ψ[:, n])
 end
 
 
 ### --------------- Mean Field---------------
+"""
+    get_interaction_matrix(problem::SimulationMeanField)
+returns the Scalar Problem matrix
+"""
 function get_interaction_matrix(problem::SimulationMeanField)
     H = zeros(ComplexF64, problem.atoms.N, problem.atoms.N)
     green_scalar!(problem.atoms, problem.laser, H)

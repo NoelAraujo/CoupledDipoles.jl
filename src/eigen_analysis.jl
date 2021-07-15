@@ -19,7 +19,10 @@ end
 function get_number_modes(problem::T) where {T<:Scalar}
     return problem.atoms.N
 end
-
+"""
+    get_spectrum(problem; forceComputation=false)
+returns tuple (λ, ψ)
+"""
 function get_spectrum(problem; forceComputation=false)
     if is_spectrum_NOT_available(problem) || forceComputation
         H = get_interaction_matrix(problem)
@@ -91,6 +94,10 @@ function sort_spatial_profile!(DCM, ψ²ₙ)
 end
 
 ### --------------- Classification r---------------
+"""
+    classify_modes(problem::T) where {T<:Scalar}
+returns a tuple `(loc, sub, super)` with indices
+"""
 function classify_modes(problem::T) where {T<:Scalar}
     ωₙ, Γₙ = get_energy_shift_and_linewith(problem)
     ξ, R1 = get_all_ξ_and_R1(problem)
