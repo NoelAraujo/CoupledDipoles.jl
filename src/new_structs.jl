@@ -11,14 +11,17 @@ struct Shape{T <: Dimension}
     dimension::T
     r::Any
     N::Integer
-    kL::Real
+    sizes::Any
 end
 struct Shapes{T <: Dimension}
     dimension::Vector{T}
     r::Vector{<:Any}
     N::Vector{<:Integer}
-    kL::Vector{<:Real}
+    sizes::Vector{Any}
 end
+
+
+
 
 abstract type Pump end
 abstract type PlaneWave <: Pump end
@@ -48,6 +51,9 @@ struct Lasers{T <: Pump}
     s::Vector{<:Real}
     Δ::Vector{<:Real}
 end
+
+
+
 
 
 abstract type Physics end
@@ -95,8 +101,8 @@ end
 
 
 
-Base.size(x::Shape{T}) where T = x.kL
-# Base.size(x::Shape{Cube}) = 10*x.kL
+get_dimension(shape::Shape{T}) where T <: TwoD = 2
+get_dimension(shape::Shape{T}) where T <: ThreeD = 3
 
 get_kernelFunction(physics::Scalar,    dimension::Shape{<:TwoD}) = sin
 get_kernelFunction(physics::Vectorial, dimension::Shape{<:TwoD}) = cos
