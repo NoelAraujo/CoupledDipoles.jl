@@ -10,48 +10,25 @@ Examples:
 
 The cube goes from [-kL/2, kL/2] (with homogeneous distribution)
 """
-function Shape(geometry::Cube, N::Integer, kL::Union{Real, Integer})#; createFunction=ftn_AtomsOnCube!::Function)
+function Shape(geometry::Cube, N::Int64, kL::Union{Real, Integer}; createFunction=ftn_AtomsOnCube::Function)
     @debug "creating Cube with N and kL"
     dimensions = 3
     ρ = N / kL^3
-    rₘᵢₙ = 0.1#get_rₘᵢₙ(ρ)
+    rₘᵢₙ = get_rₘᵢₙ(ρ)
     if rₘᵢₙ ≥ kL / 10
         rₘᵢₙ = kL / 100
     end
     
-    r = 0.5#get_atoms(dimensions, N, rₘᵢₙ; createFunction, kL)
-    return Shape(Cube(), r, N, kL)
-end
-"""
-    Cube(r::Matrix{T}, kL::T)
-
-I expect that: size(r) = (N atoms, 3) - 3 == N dimensions
-"""
-function Shape(geometry::Type{Cube}, r::Matrix{T}, kL::T) where T <: Number
-    @debug "creating Cube given atoms positions and cube side"
-    N = size(r, 1)
-    dimensions = 3
-
-    r_Static = SArray[]
-    for n in 1:N
-        push!(r_Static, SVector{dimensions}(r[n, :]))
-    end
-    return Shape(Cube(), r_Static, N, kL)
-end
-"""
-    Cube(r::Vector{StaticArrays.SArray})
-
-I expect that: length(r) = N atoms; length(r[1]) =  N dimensions
-"""
-function Cube(r::Vector{StaticArrays.SArray}, kL)
-    N = length(r)
-    return Shape(Cube(), r, N, kL)
+    r = get_atoms(dimensions, N, rₘᵢₙ; createFunction, kL)
+    return Shape(Cube(), r, N, Float64(kL))
 end
 
-function highlight(s, colour)
-    io = IOBuffer()
-    printstyled(IOContext(io, :color => true), s, color = colour)
-    return io |> take! |> String
-end
 
-highlight("noel", :yellow) |> printstyled
+function ftn_AtomsOnCube(;kwargs...)
+    kL = kwargs[:kL]
+
+    x = -kL * rand() + (kL / 2)
+    y = -kL * rand() + (kL / 2)
+    z = -kL * rand() + (kL / 2)
+    return [x, y, z]
+end

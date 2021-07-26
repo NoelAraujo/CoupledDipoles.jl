@@ -7,22 +7,20 @@
 """
 function get_atoms(dimensions, N, rₘᵢₙ; kwargs...)
     new_atom = zeros(dimensions)
-    r = SArray[]
-
-    ftn_sampling! = kwargs[:createFunction]
-
-    ftn_sampling!(new_atom; kwargs...)
-    push!(r, SVector{dimensions}(new_atom))
+    
+    get_single_atom = kwargs[:createFunction]
+    r = get_single_atom(;kwargs...)
     if N == 1
         return r
     end
+    temp_atom = zeros(eltype(r), dimensions)
     nValid = 1
     for iLoop in 1:1_000_000
-        ftn_sampling!(new_atom; kwargs...)
-
-        if is_atom_valid(new_atom, r, rₘᵢₙ)
+        temp_atom = get_single_atom(;kwargs...)
+    
+        if is_atom_valid(temp_atom, r, rₘᵢₙ)
             nValid = nValid + 1
-            push!(r, SVector{dimensions}(new_atom))
+            r = hcat(r, temp_atom)
         end
         if nValid == N
             break
@@ -46,10 +44,12 @@ function is_atom_valid(new_atom, r, rₘᵢₙ)
 end
 
 function get_Distance_A_to_b(A, b)
-    N = length(A)
+    N = size(A,2)
     distanceAb = zeros(N)
-    Threads.@threads for i in 1:N
-        distanceAb[i] = Distances.evaluate(Euclidean(), A[i], b)
+    i = 1
+    for c = eachcol(A)
+        distanceAb[i] = Distances.evaluate(Euclidean(), c, b)
+        i += 1
     end
     return distanceAb
 end
@@ -64,34 +64,34 @@ r = matrix with `N` atoms positions
 returns a `NxN` Float64 matrix, with zeros at diagonal
 """
 function get_pairwise_matrix(r)
-    r_matrix = convert_StaticArray_to_matrix(r)
+    r_matrix = transpose(r)
     R_jk = Distances.pairwise(Euclidean(), r_matrix, r_matrix; dims=1)
     R_jk[diagind(R_jk)] .= 0
     return R_jk
 end
 
-function convert_StaticArray_to_matrix(r::Vector{StaticArrays.SArray})
-    N = length(r)
-    r_matrix = zeros(N, 3)
-    for n in 1:N
-        r_matrix[n, :] = [r[n][1] r[n][2] r[n][3]]
-    end
-    return r_matrix
-end
-function convert_StaticArray_to_matrix(r::Matrix)
-    return r
-end
+# function convert_StaticArray_to_matrix(r::Vector{StaticArrays.SArray})
+#     N = length(r)
+#     r_matrix = zeros(N, 3)
+#     for n in 1:N
+#         r_matrix[n, :] = [r[n][1] r[n][2] r[n][3]]
+#     end
+#     return r_matrix
+# end
+# function convert_StaticArray_to_matrix(r::Matrix)
+#     return r
+# end
 
-function convert_matrix_to_StaticArray(r::Matrix)
-    N = size(r, 1)
-    dimensions = size(r, 2)
+# function convert_matrix_to_StaticArray(r::Matrix)
+#     N = size(r, 1)
+#     dimensions = size(r, 2)
 
-    rs = SArray[]
-    for i=1:N
-        push!(rs, SVector{dimensions}(r[i,:]))
-    end
-    return rs
-end
+#     rs = SArray[]
+#     for i=1:N
+#         push!(rs, SVector{dimensions}(r[i,:]))
+#     end
+#     return rs
+# end
 """
     get_coordinates_of_center_of_mass(r, Ψ²_mode)
 """
@@ -118,40 +118,40 @@ By default, I compute the Canonical Euclidian Distance
 get_Distances_from_r_to_CM(r, r_CM) = get_Distance_A_to_b(r, r_CM)
 
 ### --------------- SHAPES ---------------
-function ftn_AtomsOnCube!(new_atom; kwargs...)
-    kL = kwargs[:kL]
-    new_atom[1] = -kL * rand() + (kL / 2)
-    new_atom[2] = -kL * rand() + (kL / 2)
-    new_atom[3] = -kL * rand() + (kL / 2)
-    return nothing
-end
+# function ftn_AtomsOnCube!(new_atom; kwargs...)
+#     kL = kwargs[:kL]
+#     new_atom[1] = -kL * rand() + (kL / 2)
+#     new_atom[2] = -kL * rand() + (kL / 2)
+#     new_atom[3] = -kL * rand() + (kL / 2)
+#     return nothing
+# end
 
-function ftn_AtomsOnSphere!(new_atom; kwargs...)
-    kR = kwargs[:kR]
-    new_atom[1] = 2π * rand() # azimuth
-    new_atom[2] = asin(2 * rand() - 1) # elevation
-    new_atom[3] = kR * (rand()^(1 ./ 3.0)) # radii
-    new_atom[:] = sph2cart(new_atom)
-    return nothing
-end
-"""
-    spherical_coordinate=[azimuth, elevation, r]
+# function ftn_AtomsOnSphere!(new_atom; kwargs...)
+#     kR = kwargs[:kR]
+#     new_atom[1] = 2π * rand() # azimuth
+#     new_atom[2] = asin(2 * rand() - 1) # elevation
+#     new_atom[3] = kR * (rand()^(1 ./ 3.0)) # radii
+#     new_atom[:] = sph2cart(new_atom)
+#     return nothing
+# end
+# """
+#     spherical_coordinate=[azimuth, elevation, r]
 
-    azimuth = projection on XY-plane (in radians)
-    "elevation" or "Polar" = projection on Z-axis (in radians)
-    r = radius
+#     azimuth = projection on XY-plane (in radians)
+#     "elevation" or "Polar" = projection on Z-axis (in radians)
+#     r = radius
 
-	ref: https://www.mathworks.com/help/matlab/ref/sph2cart.html
-"""
-function sph2cart(spherical_coordinate)
-    azimuth = spherical_coordinate[1]
-    elevation = spherical_coordinate[2]
-    radius = spherical_coordinate[3]
-    x = radius * cos(elevation) * cos(azimuth)
-    y = radius * cos(elevation) * sin(azimuth)
-    z = radius * sin(elevation)
-    return [x, y, z]
-end
+# 	ref: https://www.mathworks.com/help/matlab/ref/sph2cart.html
+# """
+# function sph2cart(spherical_coordinate)
+#     azimuth = spherical_coordinate[1]
+#     elevation = spherical_coordinate[2]
+#     radius = spherical_coordinate[3]
+#     x = radius * cos(elevation) * cos(azimuth)
+#     y = radius * cos(elevation) * sin(azimuth)
+#     z = radius * sin(elevation)
+#     return [x, y, z]
+# end
 
 ### --------------- CONVERSIONS ---------------
 """
@@ -179,11 +179,11 @@ function select_atoms_axes(atoms, direction)
     return select_matrix_axes(atoms.r, direction)
 end
 
-"""
-If atomic position is `atomic.r` of `size(N, dimensions)`.
+# """
+# If atomic position is `atomic.r` of `size(N, dimensions)`.
 
-Select one row, effectively as : `atoms.r[n, :]`
-"""
-function get_one_atom(atoms::T where {T<:ThreeD}, n)
-    atoms.r[n]
-end
+# Select one row, effectively as : `atoms.r[n, :]`
+# """
+# function get_one_atom(atoms::T where {T<:ThreeD}, n)
+#     atoms.r[n]
+# end

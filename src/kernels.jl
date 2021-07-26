@@ -9,10 +9,10 @@ Computes:
 function green_scalar!(atoms, laser, G)
     G[:] = get_pairwise_matrix(atoms.r)
 
-    Threads.@threads for j in eachindex(G)
-        @inbounds G[j] = -(Γ / 2) * cis(k₀ * G[j]) / (1im * k₀ * G[j])
-        
-    end
+    # Threads.@threads for j in eachindex(G)
+    #     @inbounds G[j] = -(Γ / 2) * cis(k₀ * G[j]) / (1im * k₀ * G[j])
+    # end
+    LazyArrays.@~ G .= -(Γ / 2) * cis.(k₀ * G) ./ (1im * k₀ * G);
     G[diagind(G)] .= 1im * laser.Δ - Γ / 2
 
     return nothing

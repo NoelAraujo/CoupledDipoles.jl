@@ -2,7 +2,7 @@
     ρ_of(atoms::Shape{T})
 Computes Volumetric Density
 """
-ρ_of(atoms::Shape{T}) = atoms.N / Volume_of(atoms)
+ρ_of(atoms::Shape{T}) where T = atoms.N / Volume_of(atoms)
 
 
 """

@@ -34,10 +34,10 @@ struct PlaneWave3D <: PlaneWave
     direction::Any
 end
 struct Gaussian2D  <: Gaussian 
-    ω₀::Number
+    w₀::Number
 end
 struct Gaussian3D  <: Gaussian 
-    ω₀::Number
+    w₀::Number
 end
 
 
@@ -73,7 +73,6 @@ mutable struct LinearProblem{T <: Linear}
     spectrum::Tuple
     extra::Any
 end
-
 mutable struct LinearProblems{T <: Linear}
     physic::Vector{T}
     atoms::Shapes
@@ -99,7 +98,7 @@ mutable struct NonLinearProblems{T <: NonLinear}
     extra::Vector{<:Any}
 end
 
-
+const u_input = Union{Real, Integer}
 
 get_dimension(shape::Shape{T}) where T <: TwoD = 2
 get_dimension(shape::Shape{T}) where T <: ThreeD = 3
