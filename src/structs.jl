@@ -11,21 +11,21 @@ struct Circle <: TwoD end
 struct Cube   <: ThreeD end
 struct Sphere <: ThreeD end
 
-struct Shape{T <: Dimension}
+struct Atom{T <: Dimension}
     dimension::T
     r::Matrix
     N::Int64
     sizes::Any
 end
-struct Shapes{T <: Dimension}
+struct Atoms{T <: Dimension}
     dimension::Vector{T}
     r::Vector{Matrix}
     N::Vector{Int64}
     sizes::Vector{Any}
 end
 
-get_dimension(shape::Shape{T}) where T <: TwoD = 2
-get_dimension(shape::Shape{T}) where T <: ThreeD = 3
+get_dimension(atom::Atom{T}) where T <: TwoD = 2
+get_dimension(atom::Atom{T}) where T <: ThreeD = 3
 
 
 abstract type Pump end
@@ -72,7 +72,7 @@ struct BBGKY     <: NonLinear end
 
 struct LinearProblem{T <: Linear}
     physic::T
-    atoms::Shape
+    atoms::Atom
     laser::Laser
     kernelFunction::Function
     spectrum::Dict
@@ -80,7 +80,7 @@ struct LinearProblem{T <: Linear}
 end
 struct LinearProblems{T <: Linear}
     physic::Vector{T}
-    atoms::Shapes
+    atoms::Atoms
     laser::Lasers
     kernelFunction::Vector{Function}
     spectrum::Vector{Dict}
@@ -90,14 +90,14 @@ end
 
 struct NonLinearProblem{T <: NonLinear}
     physic::T
-    atoms::Shape
+    atoms::Atom
     laser::Laser
     excitations::Dict
     data::Dict
 end
 struct NonLinearProblems{T <: NonLinear}
     physic::Vector{T}
-    atoms::Shapes
+    atoms::Atoms
     laser::Lasers
     excitations::Vector{Dict}
     data::Vector{Dict}
@@ -280,8 +280,3 @@ end
 #     return Gaussian3D(ω₀, s, Δ)
 # end
 
-# #######################################################
-# ### -------------------- IO RELATED -------------------
-# #######################################################
-# Base.size(atoms::Cube) = atoms.kL
-# Base.size(atoms::Sphere) = atoms.kR

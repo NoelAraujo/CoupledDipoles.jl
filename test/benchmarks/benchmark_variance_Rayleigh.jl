@@ -19,10 +19,10 @@ s = 1e-6
 ### -------- PRODUCE INTENSITIES -----------------
 sensors = get_sensors_ring(; num_pts=360, kR=1.5kL, θ=5π / 12)
 many_intensities = Float64[]
-maxRep = 10
+maxRep = 40
 
 @showprogress for rep in 1:maxRep
-    atoms = CoupledDipole.Shape(Cube(), N, kL)
+    atoms = Atom(Cube(), N, kL)
     laser = Laser(Gaussian3D(kL/8), s, Δ)
     simulation = LinearProblem(Scalar(), atoms, laser)
     

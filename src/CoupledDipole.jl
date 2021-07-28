@@ -10,7 +10,6 @@ using Distances
 # using Random
 # using Statistics
 
-# using Crayons
 using Printf
 # using LsqFit
 # using Optim: minimizer, optimize
@@ -26,10 +25,10 @@ const probability_threshold = 0.9999
 const R1_threshold = 0.5
 
 include("structs.jl")
-include("shape_cube.jl")
+include("atom_cube.jl")
 include("formulas.jl")
 include("IO.jl")
-export Shape 
+export Atom
 export Square, Circle
 export Cube, Sphere
 

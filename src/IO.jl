@@ -1,11 +1,11 @@
-Base.size(x::Shape{T}) where T = x.sizes
+Base.size(x::Atom{T}) where T = x.sizes
 
 import Base.eltype
 eltype(laser::Laser{Gaussian3D}) = "Gaussian3D"
 eltype(problem::LinearProblem{Scalar}) = "Scalar"
 eltype(problem::LinearProblem{Vectorial}) = "Vectorial"
 
-function Base.show(io::IO, atoms::Shape{Cube})
+function Base.show(io::IO, atoms::Atom{Cube})
     geometry_text = "Atoms on a $( highlight("Cube", :yellow) )"
     N_text = " with N=$(highlight(atoms.N, :yellow)) and "
     size_text = "side kL=$(highlight(make_short(atoms.sizes), :yellow))"

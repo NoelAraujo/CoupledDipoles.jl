@@ -11,10 +11,10 @@ function get_interaction_matrix(problem)
     return G
 end
 
-function get_empty_matrix(physic::Scalar, atoms::Shape{<:ThreeD})
+function get_empty_matrix(physic::Scalar, atoms::Atom{<:ThreeD})
     Array{ComplexF64}(undef, atoms.N, atoms.N)
 end
-function get_empty_matrix(physic::Vectorial, atoms::Shape{<:ThreeD})
+function get_empty_matrix(physic::Vectorial, atoms::Atom{<:ThreeD})
     Array{ComplexF64}(undef, 3atoms.N, 3atoms.N)
 end
 

@@ -9,8 +9,8 @@ function LinearProblem(physic::Union{Scalar, Vectorial}, atoms, laser)
     return LinearProblem(physic, atoms, laser, kernelFunction, spectrum, data)
 end
 
-# get_kernelFunction(physics::Scalar,    dimension::Shape{<:TwoD}) = sin
-# get_kernelFunction(physics::Vectorial, dimension::Shape{<:TwoD}) = cos
+# get_kernelFunction(physics::Scalar,    dimension::Atom{<:TwoD}) = sin
+# get_kernelFunction(physics::Vectorial, dimension::Atom{<:TwoD}) = cos
 
-get_kernelFunction(physics::Scalar,    dimension::Shape{<:ThreeD}) = green_scalar!
-get_kernelFunction(physics::Vectorial, dimension::Shape{<:ThreeD}) = green_vectorial!
+get_kernelFunction(physics::Scalar,    dimension::Atom{<:ThreeD}) = green_scalar!
+get_kernelFunction(physics::Vectorial, dimension::Atom{<:ThreeD}) = green_vectorial!
