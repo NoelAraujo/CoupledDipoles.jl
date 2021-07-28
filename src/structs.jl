@@ -12,13 +12,13 @@ struct Cube   <: ThreeD end
 struct Sphere <: ThreeD end
 
 struct Atom{T <: Dimension}
-    dimension::T
+    shape::T
     r::Matrix
     N::Int64
     sizes::Any
 end
 struct Atoms{T <: Dimension}
-    dimension::Vector{T}
+    shape::Vector{T}
     r::Vector{Matrix}
     N::Vector{Int64}
     sizes::Vector{Any}
@@ -33,10 +33,10 @@ abstract type PlaneWave <: Pump end
 abstract type Gaussian  <: Pump end
 
 struct PlaneWave2D <: PlaneWave 
-    direction::Any
+    direction::Vector
 end
 struct PlaneWave3D <: PlaneWave 
-    direction::Any
+    direction::Vector
 end
 struct Gaussian2D  <: Gaussian 
     w₀::Float64

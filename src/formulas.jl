@@ -14,3 +14,8 @@ Volume_of(atoms::Atom{Cube}) = atoms.sizes^3 # sizes == length of Cube's Sides
     b₀_of(atoms::Shape{Cube})
 """
 b₀_of(atoms::Atom{Cube}) = (ρ_of(atoms) .^ 2 * atoms.N / ((4π / 3) * (3 / (16π))^3))^(1 / 3)
+
+"""
+    estimate_E₀(laser)
+"""
+estimate_E₀(laser) = √(laser.s * (1 + 4(laser.Δ / Γ)^2) / 2)

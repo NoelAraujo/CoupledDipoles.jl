@@ -1,6 +1,7 @@
 Base.size(x::Atom{T}) where T = x.sizes
 
 import Base.eltype
+eltype(laser::Laser{PlaneWave3D}) = "PlaneWave3D"
 eltype(laser::Laser{Gaussian3D}) = "Gaussian3D"
 eltype(problem::LinearProblem{Scalar}) = "Scalar"
 eltype(problem::LinearProblem{Vectorial}) = "Vectorial"
@@ -12,6 +13,13 @@ function Base.show(io::IO, atoms::Atom{Cube})
     return printstyled(io, geometry_text*N_text*size_text )
 end
 
+function Base.show(io::IO, laser::Laser{PlaneWave3D})
+    l_t = "$( highlight("PlaneWave 3D", :yellow) ) "
+    dr_t = " laser at direction=$(highlight(laser.pump.direction, :yellow)), "
+    s_t = " s=$(highlight(make_short(laser.s), :yellow)) and "
+    d_t = "Δ=$(highlight(make_short(laser.Δ), :yellow))"
+    return printstyled(io, l_t*dr_t*s_t*d_t )
+end
 
 function Base.show(io::IO, laser::Laser{Gaussian3D})
     l_t = "$( highlight("Gaussian 3D", :yellow) )"

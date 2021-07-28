@@ -56,6 +56,7 @@ export green_scalar!
 # include("lasers.jl")
 # export laser_over_atoms, estimate_waist
 include("pump_gaussians.jl")
+include("pump_planewaves.jl")
 export apply_laser_over_atoms, apply_laser_over_oneAtom
 
 # include("eigen_analysis.jl")

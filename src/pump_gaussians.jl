@@ -17,16 +17,13 @@ function apply_laser_over_atoms(laser::Laser{Gaussian3D}, atoms)
 end
 
 function apply_laser_over_oneAtom(laser::Laser{Gaussian3D}, position::AbstractArray)
-    w₀, s, Δ = laser.pump.w₀, laser.s, laser.Δ
+    w₀ = laser.pump.w₀
 
     E₀ = estimate_E₀(laser)
     E = _core_Gaussian3D(position, E₀, w₀)
     
     return E
 end
-
-
-estimate_E₀(laser) = √(laser.s * (1 + 4(laser.Δ / Γ)^2) / 2)
 
 function _core_Gaussian3D(oneAtom, E₀, w₀)
     x, y, z = oneAtom[1], oneAtom[2], oneAtom[3]

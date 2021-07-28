@@ -1,19 +1,21 @@
 function get_intensities_over_sensors(problem, β::AbstractArray, all_sensors::AbstractMatrix)
 	@debug "start : get_intensities_over_sensors"
 
-    n_sensors = size(all_sensors,1)
+    n_sensors = size(all_sensors,2)
     intensities = zeros(n_sensors)
 	
 	v_r = view(problem.atoms.r, :, :)
+	
 	Threads.@threads for i = 1:n_sensors
-		one_sensors = view(all_sensors, i, :)
-		intensities[i] = _get_scattered_field(problem.laser, v_r, one_sensors, β)
+		one_sensors = view(all_sensors, :, i)
+		intensities[i] = _get_intensity_over_sensor(problem.atoms.shape, problem.laser, v_r, one_sensors, β)
     end
 
 	@debug "end  : get_intensities_over_sensors"
     return intensities
 end
-function _get_scattered_field(laser::Laser{Gaussian3D}, atoms::AbstractMatrix, sensor::AbstractArray,  β::AbstractArray)
+#= WORKS ONLY FOR 3D CLOUD DISTRIBUTIONS =#
+function _get_intensity_over_sensor(shape::T, laser::Laser, atoms::AbstractMatrix, sensor::AbstractArray,  β::AbstractArray) where T <: ThreeD
 	## Laser Pump
 	E_L = (im/Γ)*apply_laser_over_oneAtom(laser, sensor)
     
