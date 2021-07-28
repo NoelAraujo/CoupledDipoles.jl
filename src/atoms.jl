@@ -53,10 +53,12 @@ function get_Distance_A_to_b(A, b)
     end
     return distanceAb
 end
+
 """
     get_rₘᵢₙ(ρ) = (ρ^(-2 / 3)) / π^2
 """
 get_rₘᵢₙ(ρ) = (ρ^(-2 / 3)) / π^2  # AD HOC
+
 """
     get_pairwise_matrix(r)
 r = matrix with `N` atoms positions
@@ -70,61 +72,7 @@ function get_pairwise_matrix(r)
     return R_jk
 end
 
-# function convert_StaticArray_to_matrix(r::Vector{StaticArrays.SArray})
-#     N = length(r)
-#     r_matrix = zeros(N, 3)
-#     for n in 1:N
-#         r_matrix[n, :] = [r[n][1] r[n][2] r[n][3]]
-#     end
-#     return r_matrix
-# end
-# function convert_StaticArray_to_matrix(r::Matrix)
-#     return r
-# end
-
-# function convert_matrix_to_StaticArray(r::Matrix)
-#     N = size(r, 1)
-#     dimensions = size(r, 2)
-
-#     rs = SArray[]
-#     for i=1:N
-#         push!(rs, SVector{dimensions}(r[i,:]))
-#     end
-#     return rs
-# end
-"""
-    get_coordinates_of_center_of_mass(r, Ψ²_mode)
-"""
-function get_coordinates_of_center_of_mass(r, Ψ²_mode)
-    ## Equivalent code, but slower
-    # N = length(Ψ²_mode)
-    # dimensions = size(r[1], 1) # index 1, because at least one element exist
-    # r_cm = zeros(dimensions)
-    # for n = 1:N
-    #     r_cm .+= r[n].*Ψ²_mode[n]
-    # end
-    # return r_cm./ sum(Ψ²_mode)
-
-    r_cm = sum(r .* Ψ²_mode)
-    return r_cm ./ sum(Ψ²_mode)
-end
-
-"""
-    get_Distances_from_r_to_CM(r, r_CM)
-
-YOU need to specify for how to get the distance from points.
-By default, I compute the Canonical Euclidian Distance
-"""
-get_Distances_from_r_to_CM(r, r_CM) = get_Distance_A_to_b(r, r_CM)
-
 ### --------------- SHAPES ---------------
-# function ftn_AtomsOnCube!(new_atom; kwargs...)
-#     kL = kwargs[:kL]
-#     new_atom[1] = -kL * rand() + (kL / 2)
-#     new_atom[2] = -kL * rand() + (kL / 2)
-#     new_atom[3] = -kL * rand() + (kL / 2)
-#     return nothing
-# end
 
 # function ftn_AtomsOnSphere!(new_atom; kwargs...)
 #     kR = kwargs[:kR]
@@ -178,12 +126,3 @@ Select one column, effectively as : `atoms.r[:, direction]`
 function select_atoms_axes(atoms, direction)
     return select_matrix_axes(atoms.r, direction)
 end
-
-# """
-# If atomic position is `atomic.r` of `size(N, dimensions)`.
-
-# Select one row, effectively as : `atoms.r[n, :]`
-# """
-# function get_one_atom(atoms::T where {T<:ThreeD}, n)
-#     atoms.r[n]
-# end

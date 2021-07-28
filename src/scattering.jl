@@ -1,21 +1,23 @@
-function get_intensities_over_sensors(laser, atoms, β::AbstractArray, all_sensors::AbstractMatrix)
+function get_intensities_over_sensors(problem, β::AbstractArray, all_sensors::AbstractMatrix)
+	@debug "start : get_intensities_over_sensors"
+
     n_sensors = size(all_sensors,1)
     intensities = zeros(n_sensors)
 	
-	v_r = view(atoms.r, :, :)
-     for i = 1:n_sensors  #  ThreadPools.@qthreads
-		one_sensors = all_sensors[i,:]
-		intensities[i] = _get_scattered_field(laser, v_r, one_sensors, β)
+	v_r = view(problem.atoms.r, :, :)
+	Threads.@threads for i = 1:n_sensors
+		one_sensors = view(all_sensors, i, :)
+		intensities[i] = _get_scattered_field(problem.laser, v_r, one_sensors, β)
     end
+
+	@debug "end  : get_intensities_over_sensors"
     return intensities
 end
 function _get_scattered_field(laser::Laser{Gaussian3D}, atoms::AbstractMatrix, sensor::AbstractArray,  β::AbstractArray)
 	## Laser Pump
-	@debug "computing Gaussian 3D over measurement point"
-	E_L = (im/Γ)*get_laser_over_oneAtom(laser, sensor)
+	E_L = (im/Γ)*apply_laser_over_oneAtom(laser, sensor)
     
     # ## Scattered
-	@debug "summing scattered field"
 	E_scatt = zero(ComplexF64)
 	n̂ = sensor/norm(sensor)
 	
@@ -23,7 +25,7 @@ function _get_scattered_field(laser::Laser{Gaussian3D}, atoms::AbstractMatrix, s
     j = 1
 	for atom in eachcol(atoms)
         dot_n_r = n̂[1]*atom[1] + n̂[2]*atom[2] + n̂[3]*atom[3]
-        dot_n_r = exp(-k₀*im*dot_n_r)
+        dot_n_r = cis(-k₀*dot_n_r)
 		E_scatt += dot_n_r*β[j]
         j += 1
 	end

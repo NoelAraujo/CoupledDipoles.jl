@@ -18,31 +18,46 @@ using Printf
 using Folds
 using ThreadPools
 using LazyArrays
+using Memoize
 
 const k₀ = 1
 const Γ = 1
 const probability_threshold = 0.9999
 const R1_threshold = 0.5
 
-include("src/structs.jl"); include("src/shape_cube.jl")
-include("src/formulas.jl")
-include("src/IO.jl")
-# export TwoD, ThreeD, Scalar
-# export Cube, Sphere
-# export SimulationScalar, SimulationMeanField
-# export PlaneWave_3D, Gaussian_3D
-# export ScalarProblem, MeanFieldProblem
+include("structs.jl")
+include("shape_cube.jl")
+include("formulas.jl")
+include("IO.jl")
+export Shape 
+export Square, Circle
+export Cube, Sphere
 
-include("src/atoms.jl")
+export get_dimension
+export Laser
+export PlaneWave2D, PlaneWave3D
+export Gaussian2D, Gaussian3D
+
+export Physics, Linear
+export LinearProblem, Scalar, Vectorial
+export NonLinearProblem, MeanField, BBGKY
+
+include("linear_problems.jl")
+export myLinearProblem
+
+include("atoms.jl")
 # export cube_inputs, sphere_inputs
-# export get_pairwise_matrix
-# export convert_matrix_to_StaticArray
+export get_rₘᵢₙ
+export get_pairwise_matrix
 
-# include("kernels.jl")
-# export green_scalar!
+include("kernels.jl")
+export get_interaction_matrix
+export green_scalar!
 
 # include("lasers.jl")
 # export laser_over_atoms, estimate_waist
+include("pump_gaussians.jl")
+export apply_laser_over_atoms, apply_laser_over_oneAtom
 
 # include("eigen_analysis.jl")
 # export get_interaction_matrix
@@ -61,15 +76,15 @@ include("src/atoms.jl")
 # export get_atoms_matrix
 # export get_X_axes, get_Y_axes, get_Z_axes
 
-include("src/scattering.jl")
-# export get_scattered_intensity
+include("scattering.jl")
+export get_intensities_over_sensors
 # export get_geometric_factor
 
-# include("sensors.jl")
-# export ring_on_space, ring_on_plane
+include("sensors.jl")
+export get_sensors_ring
 
-# include("dynamics.jl")
-# export get_steady_state
+include("dynamics.jl")
+export get_steady_state
 # export time_evolution
 
 

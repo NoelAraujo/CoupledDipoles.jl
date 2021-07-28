@@ -85,6 +85,30 @@ function get_spatial_profile_single_mode(problem, mode_index::Integer)
         )
     end
 end
+"""
+    get_coordinates_of_center_of_mass(r, Ψ²_mode)
+"""
+function get_coordinates_of_center_of_mass(r, Ψ²_mode)
+    ## Equivalent code, but slower
+    # N = length(Ψ²_mode)
+    # dimensions = size(r[1], 1) # index 1, because at least one element exist
+    # r_cm = zeros(dimensions)
+    # for n = 1:N
+    #     r_cm .+= r[n].*Ψ²_mode[n]
+    # end
+    # return r_cm./ sum(Ψ²_mode)
+
+    r_cm = sum(r .* Ψ²_mode)
+    return r_cm ./ sum(Ψ²_mode)
+end
+
+"""
+    get_Distances_from_r_to_CM(r, r_CM)
+
+YOU need to specify for how to get the distance from points.
+By default, I compute the Canonical Euclidian Distance
+"""
+get_Distances_from_r_to_CM(r, r_CM) = get_Distance_A_to_b(r, r_CM)
 
 function sort_spatial_profile!(DCM, ψ²ₙ)
     idx = sortperm(DCM)

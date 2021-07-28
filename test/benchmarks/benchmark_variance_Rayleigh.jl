@@ -13,21 +13,21 @@ kL = 32.4;
 N = floor(Int, ρ_over_k₀³ * kL^3)
 
 ### ------------ LASER SPECS ---------------------
-Δ = 1
+Δ = 1.0
 s = 1e-6
 
 ### -------- PRODUCE INTENSITIES -----------------
-sensors = ring_on_space(; num_pts=360, kR=1.5kL, θ=5π / 12)
+sensors = get_sensors_ring(; num_pts=360, kR=1.5kL, θ=5π / 12)
 many_intensities = Float64[]
 maxRep = 10
 
 @showprogress for rep in 1:maxRep
-    atoms = Cube(N, kL)
-    laser = Gaussian_3D(estimate_waist(atoms), s, Δ)
-    simulation = ScalarProblem(atoms, laser)
-
+    atoms = CoupledDipole.Shape(Cube(), N, kL)
+    laser = Laser(Gaussian3D(kL/8), s, Δ)
+    simulation = LinearProblem(Scalar(), atoms, laser)
+    
     βₙ = get_steady_state(simulation)
-    intensities = get_scattered_intensity(simulation, βₙ, sensors)
+    intensities = get_intensities_over_sensors(simulation, βₙ, sensors)
 
     for i in intensities
         push!(many_intensities, copy(i))

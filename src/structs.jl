@@ -70,110 +70,40 @@ struct Vectorial <: Linear end
 struct MeanField <: NonLinear end
 struct BBGKY     <: NonLinear end
 
-mutable struct LinearProblem{T <: Linear}
+struct LinearProblem{T <: Linear}
     physic::T
     atoms::Shape
     laser::Laser
-    kernelFunction!::Function
-    spectrum::Tuple
-    extra::Any
+    kernelFunction::Function
+    spectrum::Dict
+    data::Dict
 end
-mutable struct LinearProblems{T <: Linear}
+struct LinearProblems{T <: Linear}
     physic::Vector{T}
     atoms::Shapes
     laser::Lasers
-    kernelFunction!::Vector{Function}
-    spectrum::Vector{Tuple}
-    extra::Vector{<:Any}
+    kernelFunction::Vector{Function}
+    spectrum::Vector{Dict}
+    data::Vector{Dict}
 end
 
 
-mutable struct NonLinearProblem{T <: NonLinear}
+struct NonLinearProblem{T <: NonLinear}
     physic::T
     atoms::Shape
     laser::Laser
-    excitations::Any
-    extra::Any
+    excitations::Dict
+    data::Dict
 end
-mutable struct NonLinearProblems{T <: NonLinear}
+struct NonLinearProblems{T <: NonLinear}
     physic::Vector{T}
     atoms::Shapes
     laser::Lasers
-    excitations::Vector{<:Any}
-    extra::Vector{<:Any}
+    excitations::Vector{Dict}
+    data::Vector{Dict}
 end
 
-### --------------- SHAPES ---------------
-# abstract type TwoD end
-# abstract type ThreeD end
 
-# struct Square <: TwoD
-#     r::Any
-#     N::Integer
-#     kL::Number
-# end
-# struct Circle <: TwoD
-#     r::Any
-#     N::Integer
-#     kR::Number
-# end
-
-# struct Cube <: ThreeD
-#     r::Any
-#     N::Integer
-#     kL::Number
-# end
-# struct Sphere <: ThreeD
-#     r::Any
-#     N::Integer
-#     kR::Number
-# end
-
-# ### --------------- PHYSICS ---------------
-# abstract type Scalar end
-# # abstract type VectorialProblem end
-# abstract type MeanFieldProblem end
-
-# mutable struct SimulationScalar <: Scalar
-#     atoms::Any
-#     laser::Any
-#     KernelFunction!::Function
-#     λ::Any
-#     ψ::Any
-#     ξ
-#     R1
-# end
-
-# mutable struct SimulationMeanField <: MeanFieldProblem
-#     atoms
-#     laser
-#     λ
-#     ψ
-#     β
-#     σᶻ
-# end
-
-
-
-# ### --------------- LASER ---------------
-# abstract type Laser end
-# abstract type PlaneWaveL <: Laser end
-# abstract type GaussianL <: Laser end
-
-# mutable struct PlaneWave <: PlaneWaveL
-#     direction::Any
-#     s::Real
-#     Δ::Real
-# end
-# mutable struct Gaussian3D <: GaussianL
-#     # implement the direction when gaussian beam points along x/y direction
-#     # also, i had to change `apply_gaussian3D_field` for this case
-#     # direction
-
-#     ω₀::Real
-#     s::Real
-#     Δ::Real
-# end
 
 #######################################################
 ### ------------------ CONSTRUCTORS -------------------
@@ -355,110 +285,3 @@ end
 # #######################################################
 # Base.size(atoms::Cube) = atoms.kL
 # Base.size(atoms::Sphere) = atoms.kR
-
-# function make_short(x)
-#     if (abs(x) ≈ 0)
-#         return x
-#     elseif (abs(x) ≥ 1e3) || (abs(x) ≤ 1e-3)
-#         return @sprintf("%.2E", x)
-#     else
-#         return round(x; digits=2)
-#     end
-# end
-
-# function Base.show(io::IO, atoms::Cube)
-#     return print(
-#         io,
-#         Crayon(; foreground=:blue),
-#         "Cube with ",
-#         Crayon(; foreground=:red),
-#         "N=$(atoms.N) ",
-#         Crayon(; foreground=:blue),
-#         "atoms and size ",
-#         Crayon(; foreground=:red),
-#         "kL=$(make_short(size(atoms)))",
-#     )
-# end
-
-# function Base.show(io::IO, atoms::Sphere)
-#     return print(
-#         io,
-#         Crayon(; foreground=:blue),
-#         "Sphere with ",
-#         Crayon(; foreground=:red),
-#         "N=$(atoms.N) ",
-#         Crayon(; foreground=:blue),
-#         "atoms and radius ",
-#         Crayon(; foreground=:red),
-#         "kR=$(make_short(size(atoms)))",
-#     )
-# end
-
-# function Base.show(io::IO, laser::PlaneWaveL)
-#     return print(
-#         io,
-#         Crayon(; foreground=:blue),
-#         "Plane Wave with ",
-#         Crayon(; foreground=:red),
-#         "s=$(make_short(laser.s)) ",
-#         Crayon(; foreground=:blue),
-#         "and ",
-#         Crayon(; foreground=:red),
-#         "Δ=$(make_short(laser.Δ))",
-#     )
-# end
-
-# function Base.show(io::IO, laser::Gaussian3D)
-#     return print(
-#         io,
-#         Crayon(; foreground=:blue),
-#         "Gaussian Wave with ",
-#         Crayon(; foreground=:red),
-#         "ω₀=$(make_short(laser.ω₀))",
-#         Crayon(; foreground=:blue),
-#         ", ",
-#         Crayon(; foreground=:red),
-#         "s=$(make_short(laser.s)) ",
-#         Crayon(; foreground=:blue),
-#         "and ",
-#         Crayon(; foreground=:red),
-#         "Δ=$(make_short(laser.Δ))",
-#     )
-# end
-
-# function Base.show(io::IO, simulation::SimulationScalar)
-#     return print(
-#         io,
-#         Crayon(; foreground=:red),
-#         "Scalar ",
-#         Crayon(; foreground=:blue),
-#         "Problem with a ",
-#         Crayon(; foreground=:red),
-#         "$(typeof(simulation.atoms)) ",
-#         Crayon(; foreground=:blue),
-#         "of ",
-#         Crayon(; foreground=:red),
-#         "N=$(make_short(simulation.atoms.N)) ",
-#         Crayon(; foreground=:blue),
-#         "atoms ",
-#     )
-# end
-
-# function Base.show(io::IO, simulation::SimulationMeanField)
-#     return print(
-#         io,
-#         Crayon(; foreground=:red),
-#         "Mean Field ",
-#         Crayon(; foreground=:blue),
-#         "Problem with a ",
-#         Crayon(; foreground=:red),
-#         "$(typeof(simulation.atoms)) ",
-#         Crayon(; foreground=:blue),
-#         "of ",
-#         Crayon(; foreground=:red),
-#         "N=$(make_short(simulation.atoms.N)) ",
-#         Crayon(; foreground=:blue),
-#         "atoms ",
-#     )
-# end
-
