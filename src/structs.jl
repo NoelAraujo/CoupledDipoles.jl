@@ -17,12 +17,6 @@ struct Atom{T <: Dimension}
     N::Int64
     sizes::Any
 end
-struct Atoms{T <: Dimension}
-    shape::Vector{T}
-    r::Vector{Matrix}
-    N::Vector{Int64}
-    sizes::Vector{Any}
-end
 
 get_dimension(atom::Atom{T}) where T <: TwoD = 2
 get_dimension(atom::Atom{T}) where T <: ThreeD = 3
@@ -70,7 +64,7 @@ struct Vectorial <: Linear end
 struct MeanField <: NonLinear end
 struct BBGKY     <: NonLinear end
 
-struct LinearProblem{T <: Linear}
+struct LinearOptics{T <: Linear}
     physic::T
     atoms::Atom
     laser::Laser
@@ -78,29 +72,13 @@ struct LinearProblem{T <: Linear}
     spectrum::Dict
     data::Dict
 end
-struct LinearProblems{T <: Linear}
-    physic::Vector{T}
-    atoms::Atoms
-    laser::Lasers
-    kernelFunction::Vector{Function}
-    spectrum::Vector{Dict}
-    data::Vector{Dict}
-end
 
-
-struct NonLinearProblem{T <: NonLinear}
+struct NonLinearOptics{T <: NonLinear}
     physic::T
     atoms::Atom
     laser::Laser
     excitations::Dict
     data::Dict
-end
-struct NonLinearProblems{T <: NonLinear}
-    physic::Vector{T}
-    atoms::Atoms
-    laser::Lasers
-    excitations::Vector{Dict}
-    data::Vector{Dict}
 end
 
 

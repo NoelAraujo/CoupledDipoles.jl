@@ -24,7 +24,7 @@ maxRep = 40
 @showprogress for rep in 1:maxRep
     atoms = Atom(Cube(), N, kL)
     laser = Laser(Gaussian3D(kL/8), s, Δ)
-    simulation = LinearProblem(Scalar(), atoms, laser)
+    simulation = LinearOptics(Scalar(), atoms, laser)
     
     βₙ = get_steady_state(simulation)
     intensities = get_intensities_over_sensors(simulation, βₙ, sensors)

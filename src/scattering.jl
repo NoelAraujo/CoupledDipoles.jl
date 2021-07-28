@@ -1,5 +1,5 @@
 function get_intensities_over_sensors(problem, β::AbstractArray, all_sensors::AbstractMatrix)
-	@debug "start : get_intensities_over_sensors"
+	@debug "start : get intensities over sensors"
 
     n_sensors = size(all_sensors,2)
     intensities = zeros(n_sensors)
@@ -11,7 +11,7 @@ function get_intensities_over_sensors(problem, β::AbstractArray, all_sensors::A
 		intensities[i] = _get_intensity_over_sensor(problem.atoms.shape, problem.laser, v_r, one_sensors, β)
     end
 
-	@debug "end  : get_intensities_over_sensors"
+	@debug "end  : get intensities over sensors"
     return intensities
 end
 #= WORKS ONLY FOR 3D CLOUD DISTRIBUTIONS =#

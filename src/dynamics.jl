@@ -1,12 +1,44 @@
-function get_steady_state(problem::LinearProblem{Scalar}) # @memoize 
-    @debug "start: get_steady_state"
+function get_steady_state(problem::LinearOptics{Scalar}) # @memoize 
+    @debug "start: get steady state"
     
     G  = get_interaction_matrix(problem)
     Ωₙ = apply_laser_over_atoms(problem.laser, problem.atoms)
     βₛ = (im/2)*(G \ Ωₙ)
 
-    @debug "end  : get_steady_state"
+    @debug "end  : get steady state"
     return βₛ
+end
+
+function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple;  kargs...) where T <: Linear
+    @debug "start: time evolution - LinearOptics"
+    ### parameters == constant vector and matrices
+    G = get_interaction_matrix(problem)
+    Ωₙ = -0.5im*apply_laser_over_atoms(problem.laser, problem.atoms)
+    parameters = view(G,:,:), view(Ωₙ,:)
+    
+    ### calls for solver
+    problemFunction = get_evolution_function(problem)
+    prob = ODEProblem(problemFunction, u₀, tspan, parameters)
+    solution = DifferentialEquations.solve(prob, VCABM(); dt=1e-10, abstol=1e-10, reltol=1e-10, kargs...)
+    
+    @debug "end  : time evolution - LinearOptics"
+    return solution
+end
+
+"""
+    default_evolution_initial_condition(::Scalar) = zeros(ComplexF64, N)
+"""
+function default_evolution_initial_condition(problem::LinearOptics{Scalar})
+    zeros(ComplexF64, problem.atoms.N) # I must use "zeros" and NOT an undef array - with trash data inside
+end
+
+get_evolution_function(problem::LinearOptics{Scalar}) = Scalar!
+
+function Scalar!(du, u, p, t)
+    G, Ωₙ = p
+
+    du[:] = G*u + Ωₙ
+    return nothing
 end
 
 # function get_steady_state(problem::SimulationMeanField; time_max=100)
@@ -16,44 +48,6 @@ end
 #     return steady_state
 # end
 
-# ### --------------- SCALAR ---------------
-# function time_evolution(problem::SimulationScalar; time_min = 0.0, time_max = 10, dt=1e-10, abstol=1e-10, reltol=1e-10, save_on=true)
-#     ############################################
-#     ### parameters == constant vector and matrices
-#     H = get_interaction_matrix(problem)
-#     Ωₙ = -0.5im*laser_over_atoms(problem.laser, problem.atoms)
-
-#     parameters = view(H,:,:), view(Ωₙ,:)
-    
-#     ############################################
-#     ### initial conditions
-#     u₀ = get_initial_conditions(problem)
-#     tspan = (time_min, time_max)
-
-#     ############################################
-#     ### calls for solver
-#     prob = ODEProblem(Scalar!, u₀, tspan, parameters)
-#     solution = DifferentialEquations.solve(prob, VCABM(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol, save_on=save_on)
-    
-#     ############################################
-#     time_array, βₜ = extract_solution_from_Scalar_Problem(solution)
-            
-#     return (time_array=time_array, βₜ=βₜ)
-# end
-# function get_initial_conditions(problem::SimulationScalar)
-#     # λ, ψ = get_spectrum(problem)
-#     # β₀ = ψ[:, end] # the last mode is the most subradiant == more loccalized
-#     # return β₀
-#     return zeros(ComplexF64, problem.atoms.N)
-# end
-# function Scalar!(du, u, p, t)
-#     G, Ωₙ = p
-
-#     # du[:] = G*u + Ωₙ
-#     BLAS.gemv!('N', ComplexF64(1.0), G, u, ComplexF64(0.0), du) 
-#     du[:] += Ωₙ
-#     return nothing
-# end
 # function extract_solution_from_Scalar_Problem(solution)
 #     nSteps = length(solution.u)
 #     time_array = [solution.t[i]  for i in 1:nSteps]

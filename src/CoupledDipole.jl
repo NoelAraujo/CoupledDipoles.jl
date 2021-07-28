@@ -5,7 +5,10 @@ using StaticArrays
 using Distances
 # using Plots, LaTeXStrings
 
-# using DifferentialEquations
+using DifferentialEquations
+using Logging: global_logger
+using TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger())
 # using ProgressMeter
 # using Random
 # using Statistics
@@ -14,7 +17,7 @@ using Printf
 # using LsqFit
 # using Optim: minimizer, optimize
 # using SpecialFunctions: besseli
-using Folds
+# using Folds
 using ThreadPools
 using LazyArrays
 using Memoize
@@ -38,8 +41,8 @@ export PlaneWave2D, PlaneWave3D
 export Gaussian2D, Gaussian3D
 
 export Physics, Linear
-export LinearProblem, Scalar, Vectorial
-export NonLinearProblem, MeanField, BBGKY
+export LinearOptics, Scalar, Vectorial
+export NonLinearOptics, MeanField, BBGKY
 
 include("linear_problems.jl")
 export myLinearProblem
@@ -85,7 +88,7 @@ export get_sensors_ring
 
 include("dynamics.jl")
 export get_steady_state
-# export time_evolution
+export time_evolution, default_evolution_initial_condition, get_evolution_function
 
 
 end
