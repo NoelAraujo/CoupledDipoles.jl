@@ -1,4 +1,4 @@
-using CoupledDipole, Revise
+using CoupledDipoles, Revise
 using Random
 Random.seed!(1134)
 

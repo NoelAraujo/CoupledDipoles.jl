@@ -1,5 +1,5 @@
-function get_intensities_over_sensors(problem, β::AbstractArray, all_sensors::AbstractMatrix)
-	@debug "start : get intensities over sensors"
+function get_intensities_over_sensors(problem::LinearOptics, β::AbstractArray, all_sensors::AbstractMatrix)
+	@debug "start : get intensities over sensors - LinearOptics"
 
     n_sensors = size(all_sensors,2)
     intensities = zeros(n_sensors)
@@ -11,7 +11,7 @@ function get_intensities_over_sensors(problem, β::AbstractArray, all_sensors::A
 		intensities[i] = _get_intensity_over_sensor(problem.atoms.shape, problem.laser, v_r, one_sensors, β)
     end
 
-	@debug "end  : get intensities over sensors"
+	@debug "end  : get intensities over sensors - LinearOptics"
     return intensities
 end
 #= WORKS ONLY FOR 3D CLOUD DISTRIBUTIONS =#
@@ -37,62 +37,8 @@ function _get_intensity_over_sensor(shape::T, laser::Laser, atoms::AbstractMatri
 	return abs2(E_L + E_scatt)
 end
 
-### --------------- SCALAR ---------------
-# function get_scattered_intensity(problem::T, atoms_states, sensors) where {T<:Scalar}
-#     ## Pump Field
-#     E_L = im * laser_over_sensors(problem.laser, sensors)
-#     n_sensors = get_number_sensors(sensors)
-#     intensities = Float64[]
-    
-#     ## Probably the code below will change in the future
-#     ## It is only in its simplest form to later tests
-#     for i in 1:n_sensors #
-#         sensor_position = sensors[i]
-#         r =  norm(sensor_position)
-#         n_hat = sensor_position / r
-        
 
-#         E_scatt = Folds.mapreduce(+, 1:problem.atoms.N) do j
-#             (
-#                 begin 
-#                     r_atom = problem.atoms.r[j]
-#                     cis(-dot(n_hat, r_atom))*atoms_states[j]
-#                 end 
-#             )
-#         end
-
-    
-#         ikr = im * k₀ * r
-        
-#         intensity = abs2(E_L[i] + (exp(ikr)/ikr)*E_scatt)
-#         push!(intensities, intensity)
-#     end
-
-#     return intensities
-# end
-
-# function get_scattered_light_scalar(problem::T, β, sensor_position, E_L) where {T<:Scalar}
-#     E_scatt = zero(ComplexF64)
-#     sensor_versor = sensor_position / norm(sensor_position)
-#     for n in 1:(problem.atoms.N)
-#         E_scatt += get_E_scatterd(problem.atoms, sensor_versor, sensor_position, β, n)
-#     end
-#     return abs2(E_L + E_scatt)
-# end
-
-# function get_E_scatterd(atoms::T, sensor_versor, sensor_position, β, n) where {T<:ThreeD}
-#     r_atom = atoms.r[n] # == get_one_atom(atoms, n)
-
-#     dot_n_r = cis(-dot(sensor_versor, r_atom))
-#     E_scatt = dot_n_r * β[n]
-
-#     ikr = im * k₀ * norm(sensor_position)
-#     E_scattFinal = E_scatt * cis(k₀ * norm(sensor_position)) / ikr
-#     return E_scattFinal
-# end
-
-
-# function get_scattered_intensity(problem::SimulationScalar, atoms_states, θ::Number; Gₙₘ=nothing)
+# function get_intensity_over_angle(problem::SimulationScalar, atoms_states, θ::Number; Gₙₘ=nothing)
 #     if isnothing(Gₙₘ)
 #         Gₙₘ = get_geometric_factor(problem.atoms, θ)
 #     end
@@ -109,76 +55,90 @@ end
 
 
 # ### --------------- MEAN FIELD ---------------
-# """
-#     get_scattered_intensity(problem::T, atoms_states, sensors::AbstractArray) where {T<:MeanFieldProblem}
+"""
+	get_intensities_over_sensors(problem::NonLinearOptics{MeanField}, atoms_states::AbstractArray, sensors::AbstractArray
 
-# atoms_states: vcat(β, z)
-# sensor: [ [sensor1], [sensor2], ... ,[sensorN]  ]
+atoms_states: vcat(β, z)
+sensor: [ [sensor1], [sensor2], ... ,[sensorN]  ]
 
-# **important**: this function does not handles single sensor.
-# If needed, create a dummy position or duplicate the sensor - then, ignore the one that you don't need.
-# sensor = [ [sensor1], [sensor_dummy]  ] or [ [sensor1], [sensor1]  ]
+**important**: check benchmark folders to understand how this code was produced
+"""
+function get_intensities_over_sensors(problem::NonLinearOptics{MeanField}, atoms_states::AbstractArray, sensors::AbstractArray)
+	@debug "start : get intensities over sensors - NonLinearOptics"
 
-# """
-# function get_scattered_intensity(problem::T, atoms_states, sensors::AbstractArray) where {T<:MeanFieldProblem}
-#     N = problem.atoms.N
-#     β = view(atoms_states, 1:N)
-#     z = view(atoms_states, (N+1):2N)    
-#     r = get_atoms_matrix(problem.atoms)
-#     number_configurations = ((N^2)÷2 - N÷2)
+    N, r = problem.atoms.N, problem.atoms.r
+    β, z = view(atoms_states, 1:N), view(atoms_states, (N+1):2N)    
+
+    number_configurations = ((N^2)÷2 - N÷2)
+
+    βₙₘ = Array{ComplexF64}(undef, number_configurations)
+    cont = 1
+    for n=1:N
+        for m=(n+1):N            
+            βₙₘ[cont] = conj(β[n])*β[m]
+            cont += 1
+        end
+    end
+    vβₙₘ = view(βₙₘ, :)
     
-#     βₙₘ = Array{ComplexF64}(undef, number_configurations)
-#     cont_i = 0
-#     cont_f = 0
-#     for n=1:N-1
-#         mm = (n+1):N
-
-#         cont_i = cont_i + 1
-#         cont_f = cont_f + length(mm)
-
-#         βₙₘ[cont_i:cont_f] = conj(β[n])*β[mm]
+    rₙₘ = Array{ComplexF64}(undef, 3, number_configurations)
+    cont = 1
+    for n=1:N
+        r_n = @view(r[:,n])
+        for m=(n+1):N
+            rₙₘ[1,cont] = r_n[1] - r[1,m]
+            rₙₘ[2,cont] = r_n[2] - r[2,m]
+            rₙₘ[3,cont] = r_n[3] - r[3,m]
+            cont += 1
+        end
+    end
+    vrₙₘ = view(rₙₘ,:, :)
     
-#         cont_i = cont_f
-#     end
-#     vβₙₘ = view(βₙₘ, :)
     
-#     cont_i = 0
-#     cont_f = 0
-#     rₙₘ = Array{ComplexF64}(undef, number_configurations, 3)
-#     for n=1:N-1
-#         m = (n+1):N
+    n_sensors = size(sensors, 2)
+    intensities = Float64[]
+    
+    if n_sensors==1
+        n_hat = sensors./norm(sensors)
+        intensity = _oneSensor_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations)
+        intensity +=  sum( (1 .+ z)./4 )
 
-#         cont_i = cont_i + 1
-#         cont_f = cont_f + length(m)
+        push!(intensities, 2real(intensity)   )
+    else
+        const_sum = sum( (1 .+ z)./4 )
+        for oneSensor in eachcol(sensors)
+            n_hat =  oneSensor./norm(oneSensor)
+            
+            intensity = _manySensors_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations)
+            intensity +=  const_sum
 
-#         rₙₘ[cont_i:cont_f,:] = repeat( r[n,:]', length(m), 1) - @view r[m,:] # 
+            push!(intensities, 2real(intensity)   )
+        end
+    end
 
-#         cont_i = cont_f
-#     end
-#     vrₙₘ = view(transpose(rₙₘ),:, :) # transpose necessary only on CPU mode, but I remove it with CUDA
-#     #=
-#         We don't need to compute each sensor in parallel, because the Folds.mapreduce
-#         is already doing an excelent job with multi-threading.
-#     =#
-#     n_sensors = CoupledDipole.get_number_sensors(sensors)
-#     intensities = Float64[]
-#     for i=1:n_sensors
-#         intensity = ComplexF64(0)
-#         n_hat = sensors[i]./norm(sensors[i])
-#         intensity = Folds.mapreduce(+, 1:number_configurations) do k
-#             (
-#                 begin 
-#                 dot_n_r = n_hat[1]*vrₙₘ[1, k] + n_hat[2]*vrₙₘ[2, k] + n_hat[3]*vrₙₘ[3, k];
-#                 vβₙₘ[k]*cis( k₀*dot_n_r) 
-#                 end 
-#             )
-#         end
-#         intensity +=  sum( (1 .+ z)./4 )
-#         push!(intensities, 2real(intensity)   )
-#     end
+	@debug "end  : get intensities over sensors - NonLinearOptics"
+    return intensities
+end
+function _oneSensor_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations; k₀=1)
+    intensity = ComplexF64(0)
+    for cont = 1:number_configurations
+        dot_n_r = n_hat[1]*vrₙₘ[1, cont] + n_hat[2]*vrₙₘ[2, cont] + n_hat[3]*vrₙₘ[3, cont]
+        intensity += vβₙₘ[cont]*cis( k₀*dot_n_r  )
+    end    
+    return intensity
+end
 
-#     return intensities
-# end
+function _manySensors_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations; k₀=1)
+    intensity = ComplexF64(0)
+    intensity = Folds.mapreduce(+, 1:number_configurations) do k
+        (
+            begin 
+                @inbounds vβₙₘ[k]*cis( k₀*(n_hat[1]*vrₙₘ[1, k] + n_hat[2]*vrₙₘ[2, k] + n_hat[3]*vrₙₘ[3, k])) 
+            end 
+        )
+    end
+    return intensity
+end
 
 # function get_scattered_intensity(problem::T, atoms_states, θ::Number; Gₙₘ=nothing) where {T<:MeanFieldProblem} 
 #     if isnothing(Gₙₘ)

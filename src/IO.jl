@@ -3,8 +3,12 @@ Base.size(x::Atom{T}) where T = x.sizes
 import Base.eltype
 eltype(laser::Laser{PlaneWave3D}) = "PlaneWave3D"
 eltype(laser::Laser{Gaussian3D}) = "Gaussian3D"
+
 eltype(problem::LinearOptics{Scalar}) = "Scalar"
 eltype(problem::LinearOptics{Vectorial}) = "Vectorial"
+
+eltype(problem::NonLinearOptics{MeanField}) = "MeanField"
+
 
 function Base.show(io::IO, atoms::Atom{Cube})
     geometry_text = "Atoms on a $( highlight("Cube", :yellow) )"
@@ -37,7 +41,13 @@ end
 
 
 function Base.show(io::IO, problem::LinearOptics{T}) where T <: Linear
-    s_t = "$( highlight(eltype(problem), :yellow) ) problem "
+    s_t = "$( highlight("LinearOptics", :blue) ): $( highlight(eltype(problem), :yellow) ) problem "
+    N_t = "with N=$(highlight(problem.atoms.N, :yellow)) atoms, "
+    l_t = "and $(highlight(eltype(problem.laser), :yellow)) laser"
+    return printstyled(io, s_t*N_t*l_t )
+end
+function Base.show(io::IO, problem::NonLinearOptics{T}) where T <: NonLinear
+    s_t = "$( highlight("NonLinearOptics", :blue) ): $( highlight(eltype(problem), :yellow) ) problem "
     N_t = "with N=$(highlight(problem.atoms.N, :yellow)) atoms, "
     l_t = "and $(highlight(eltype(problem.laser), :yellow)) laser"
     return printstyled(io, s_t*N_t*l_t )

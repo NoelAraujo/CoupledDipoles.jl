@@ -1,5 +1,5 @@
-using CoupledDipole, Revise, LinearAlgebra, Folds
-using Random, StaticArrays
+using CoupledDipoles, Revise, LinearAlgebra, Folds
+using Random
 
 
 #=
@@ -19,7 +19,7 @@ rⱼ = atom position (j ∈ [n,m])
 =#
 
 """
-    Following the definition of I(θ, φ) without any possiblem optimization
+    Following the definition of I(θ, φ) without any optimization
 """
 function scattering_version_naive(β,z, n_hat, r; k₀=1)
     N = length(β)
@@ -28,7 +28,7 @@ function scattering_version_naive(β,z, n_hat, r; k₀=1)
     for n=1:N
         for m=1:N
             if n≠m
-                intensity += conj(β[n])*β[m]*exp( im*k₀*dot(n_hat, r[n,:]-r[m,:])   )
+                intensity += conj(β[n])*β[m]*exp( im*k₀*dot(n_hat, r[:, n]-r[:, m])   )
             end
         end
     end
@@ -41,7 +41,7 @@ end
 
 """
    - I compute `conj(β[n])*β[m]` once
-   - avoid accessing position rₙ inside loop m (r_n = @view(r[n,:]))
+   - avoid accessing position rₙ inside loop m (r_n = @view(r[:, n]))
    - put @view to access all collumns
 """
 function scattering_optimization_1(β, z, n_hat, r; k₀=1)
@@ -58,10 +58,10 @@ function scattering_optimization_1(β, z, n_hat, r; k₀=1)
 
     intensity = ComplexF64(0)
     for n=1:N
-        r_n = @view(r[n,:])
+        r_n = @view(r[:, n])
         for m=1:N
             if n≠m
-                intensity += βₙₘ[n,m]*exp( im*k₀*dot(n_hat, r_n - @view(r[m,:])  )   )
+                intensity += βₙₘ[n,m]*exp( im*k₀*dot(n_hat, r_n - @view(r[:,m])  )   )
             end
         end
     end
@@ -95,10 +95,10 @@ function scattering_optimization_2(β, z, n_hat, r; k₀=1)
     intensity = ComplexF64(0)
     r_nm = zeros(3)
     for n=1:N
-        r_n = @view(r[n,:])
+        r_n = @view(r[:, n])
         for m=1:N
             if n≠m
-                r_nm .= r_n - @view(r[m,:])
+                r_nm .= r_n - @view(r[:,m])
                 dot_n_r = n_hat[1]*r_nm[1] + n_hat[2]*r_nm[2] + n_hat[3]*r_nm[3]
                 intensity += βₙₘ[n,m]*cis( k₀*dot_n_r  )
             end
@@ -129,9 +129,9 @@ function scattering_optimization_3(β, z, n_hat, r; k₀=1)
     rₙₘ = Array{ComplexF64}(undef, 3, N^2)
     cont = 1
     for n=1:N
-        r_n = @view(r[n,:])
+        r_n = @view(r[:,n])
         for m=1:N
-            rₙₘ[:,cont] = r_n - @view(r[m,:])
+            rₙₘ[:,cont] = r_n - @view(r[:,m])
             cont += 1
         end
     end
@@ -186,11 +186,11 @@ function scattering_optimization_4(β, z, n_hat, r; k₀=1)
     rₙₘ = Array{ComplexF64}(undef, 3, number_configurations)
     cont = 1
     for n=1:N
-        r_n = @view(r[n,:])
+        r_n = @view(r[:,n])
         for m=(n+1):N
-            rₙₘ[1,cont] = r_n[1] - r[m,1]
-            rₙₘ[2,cont] = r_n[2] - r[m,2]
-            rₙₘ[3,cont] = r_n[3] - r[m,3]
+            rₙₘ[1,cont] = r_n[1] - r[1,m]
+            rₙₘ[2,cont] = r_n[2] - r[2,m]
+            rₙₘ[3,cont] = r_n[3] - r[3,m]
             cont += 1
         end
     end
@@ -235,11 +235,11 @@ function scattering_optimization_5(β, z, n_hat, r; k₀=1)
     rₙₘ = Array{ComplexF64}(undef, 3, number_configurations)
     cont = 1
     for n=1:N
-        r_n = @view(r[n,:])
+        r_n = @view(r[:,n])
         for m=(n+1):N
-            rₙₘ[1,cont] = r_n[1] - r[m,1]
-            rₙₘ[2,cont] = r_n[2] - r[m,2]
-            rₙₘ[3,cont] = r_n[3] - r[m,3]
+            rₙₘ[1,cont] = r_n[1] - r[1,m]
+            rₙₘ[2,cont] = r_n[2] - r[2,m]
+            rₙₘ[3,cont] = r_n[3] - r[3,m]
             cont += 1
         end
     end
@@ -277,11 +277,11 @@ function scattering_optimization_6(β, z, n_hat, r; k₀=1)
     rₙₘ = Array{ComplexF64}(undef, 3, number_configurations)
     cont = 1
     for n=1:N
-        r_n = @view(r[n,:])
+        r_n = @view(r[:,n])
         for m=(n+1):N
-            rₙₘ[1,cont] = r_n[1] - r[m,1]
-            rₙₘ[2,cont] = r_n[2] - r[m,2]
-            rₙₘ[3,cont] = r_n[3] - r[m,3]
+            rₙₘ[1,cont] = r_n[1] - r[1,m]
+            rₙₘ[2,cont] = r_n[2] - r[2,m]
+            rₙₘ[3,cont] = r_n[3] - r[3,m]
             cont += 1
         end
     end
@@ -304,6 +304,7 @@ end
 
 """
     - do not call for external functions inside mapreduce
+    - use @inbounds
 """
 function scattering_optimization_7(β, z, n_hat, r; k₀=1)
     N = length(β)
@@ -323,11 +324,11 @@ function scattering_optimization_7(β, z, n_hat, r; k₀=1)
     rₙₘ = Array{ComplexF64}(undef, 3, number_configurations)
     cont = 1
     for n=1:N
-        r_n = @view(r[n,:])
+        r_n = @view(r[:,n])
         for m=(n+1):N
-            rₙₘ[1,cont] = r_n[1] - r[m,1]
-            rₙₘ[2,cont] = r_n[2] - r[m,2]
-            rₙₘ[3,cont] = r_n[3] - r[m,3]
+            rₙₘ[1,cont] = r_n[1] - r[1,m]
+            rₙₘ[2,cont] = r_n[2] - r[2,m]
+            rₙₘ[3,cont] = r_n[3] - r[3,m]
             cont += 1
         end
     end
@@ -338,8 +339,8 @@ function scattering_optimization_7(β, z, n_hat, r; k₀=1)
     intensity = Folds.mapreduce(+, 1:number_configurations) do k
         (
             begin 
-            dot_n_r = n_hat[1]*vrₙₘ[1, k] + n_hat[2]*vrₙₘ[2, k] + n_hat[3]*vrₙₘ[3, k];
-            vβₙₘ[k]*cis( k₀*dot_n_r) 
+                @inbounds dot_n_r = n_hat[1]*vrₙₘ[1, k] + n_hat[2]*vrₙₘ[2, k] + n_hat[3]*vrₙₘ[3, k];
+                @inbounds vβₙₘ[k]*cis( k₀*dot_n_r) 
             end 
         )
     end
@@ -352,18 +353,18 @@ end
 N = 400
 kL  = 10
 s = 1e-6
-Δ = 0
-sensors = ring_on_space(; num_pts=90, kR=1.5kL, θ=5π/12)
+Δ = 0.0
+sensors = get_sensors_ring(;num_pts=90, kR=1.5kL, θ=5π/12)
 
 Random.seed!(1301)
-atoms = Cube(N, kL)
-laser = Gaussian_3D(estimate_waist(atoms), s, Δ)
-simulation = MeanFieldProblem(atoms, laser)
+atoms = Atom(Cube(), N, kL)
+laser = Laser(Gaussian3D(kL/8), s, Δ)
+simulation = NonLinearOptics(MeanField(), atoms, laser)
 
 β = rand(ComplexF64, N)
 z = 2conj(β).*β .- 1
-r = get_atoms_matrix(atoms)
-n = sensors[1]./norm(sensors[1])
+r = atoms.r
+n = sensors[:,1]./norm(sensors[:,1])
 
 print("naive:");@time  I_naive = scattering_version_naive(β,z, n, r);
 print("opt1: "); @time I_opt_1 = scattering_optimization_1(β,z, n, r); @assert I_naive ≈ I_opt_1
@@ -379,13 +380,13 @@ print("opt7: "); @time I_opt_7 = scattering_optimization_7(β,z, n, r); @assert 
 N = 6000
 
 Random.seed!(1301)
-atoms = Cube(N, kL)
-laser = Gaussian_3D(estimate_waist(atoms), s, Δ)
-simulation = MeanFieldProblem(atoms, laser)
+atoms = Atom(Cube(), N, kL)
+laser = Laser(Gaussian3D(kL/8), s, Δ)
+simulation = NonLinearOptics(MeanField(), atoms, laser)
 
 β = rand(ComplexF64, N)
 z = 2conj(β).*β .- 1
-r = get_atoms_matrix(atoms)
+r = atoms.r
 
 print("naive:");@time  I_naive = scattering_version_naive(β,z, n, r);
 print("opt1: "); @time I_opt_1 = scattering_optimization_1(β,z, n, r); @assert I_naive ≈ I_opt_1
@@ -420,36 +421,62 @@ function scattering_current_best(β, z, r, sensors; k₀=1)
     rₙₘ = Array{ComplexF64}(undef, 3, number_configurations)
     cont = 1
     for n=1:N
-        r_n = r[n]
+        r_n = @view(r[:,n])
         for m=(n+1):N
-            rₙₘ[:,cont] = r_n - r[m]
+            rₙₘ[1,cont] = r_n[1] - r[1,m]
+            rₙₘ[2,cont] = r_n[2] - r[2,m]
+            rₙₘ[3,cont] = r_n[3] - r[3,m]
             cont += 1
         end
     end
     vrₙₘ = view(rₙₘ,:, :)
     
     
-    n_sensors = CoupledDipole.get_number_sensors(sensors)
+    n_sensors = size(sensors, 2)
     intensities = Float64[]
-    for i=1:n_sensors
-        intensity = ComplexF64(0)
-        n_hat = sensors[i]./norm(sensors[i])
-        intensity = Folds.mapreduce(+, 1:number_configurations) do k
-            (
-                begin 
-                dot_n_r = n_hat[1]*vrₙₘ[1, k] + n_hat[2]*vrₙₘ[2, k] + n_hat[3]*vrₙₘ[3, k];
-                vβₙₘ[k]*cis( k₀*dot_n_r) 
-                end 
-            )
-        end
+    
+    if n_sensors==1
+        n_hat = sensors./norm(sensors)
+        intensity = _oneSensor_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations)
         intensity +=  sum( (1 .+ z)./4 )
-        push!(intensities, 2real(intensity)   )
-    end
 
+        push!(intensities, 2real(intensity)   )
+    else
+        const_sum = sum( (1 .+ z)./4 )
+        for oneSensor in eachcol(sensors)
+            n_hat =  oneSensor./norm(oneSensor)
+            
+            intensity = _manySensors_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations)
+            intensity +=  const_sum
+
+            push!(intensities, 2real(intensity)   )
+        end
+    end
     return intensities
 end
+function _oneSensor_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations; k₀=1)
+    intensity = ComplexF64(0)
+    for cont = 1:number_configurations
+        dot_n_r = n_hat[1]*vrₙₘ[1, cont] + n_hat[2]*vrₙₘ[2, cont] + n_hat[3]*vrₙₘ[3, cont]
+        intensity += vβₙₘ[cont]*cis( k₀*dot_n_r  )
+    end    
+    return intensity
+end
 
-@time scattering_current_best(β, z, atoms.r, sensors);
+function _manySensors_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations; k₀=1)
+    intensity = ComplexF64(0)
+    intensity = Folds.mapreduce(+, 1:number_configurations) do k
+        (
+            begin 
+                @inbounds vβₙₘ[k]*cis( k₀*(n_hat[1]*vrₙₘ[1, k] + n_hat[2]*vrₙₘ[2, k] + n_hat[3]*vrₙₘ[3, k])) 
+            end 
+        )
+    end
+    return intensity
+end
+@profview scattering_current_best(β, z, atoms.r, sensors)
 
-
+for i=1:10
+    @time scattering_current_best(β, z, atoms.r, sensors)
+end
 

@@ -1,7 +1,6 @@
 module CoupledDipoles
 
 using LinearAlgebra
-using StaticArrays
 using Distances
 # using Plots, LaTeXStrings
 
@@ -17,7 +16,7 @@ using Printf
 using LsqFit
 using Optim: minimizer, optimize, Options
 # using SpecialFunctions: besseli
-# using Folds
+using Folds
 using ThreadPools
 using LazyArrays
 using Memoize
@@ -46,7 +45,8 @@ export LinearOptics, Scalar, Vectorial
 export NonLinearOptics, MeanField, BBGKY
 
 include("linear_problems.jl")
-export myLinearProblem
+include("nonlinear_problems.jl")
+
 
 include("atoms.jl")
 export cube_inputs, sphere_inputs

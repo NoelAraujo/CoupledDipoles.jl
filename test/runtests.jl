@@ -1,16 +1,14 @@
-using CoupledDipole
+using CoupledDipoles
 using Test
 
-@testset "CoupledDipole.jl" begin
+@testset "CoupledDipoles.jl" begin
     @testset "3D scalar: 2 atoms" begin
         r =[1 2 0;
             1 0 1.0]
-        atoms =  Cube(r, 10)
-        laser = PlaneWave_3D(:z, 1e-6, 1)
-        problem = ScalarProblem(atoms, laser)
-        S = get_spectrum(problem)
-        Γₙ = sort(-real.(S.λ))
-        ωₙ = sort(imag.(S.λ))
+        atoms = Atom(Cube(), Array(transpose(r)), 10)
+        laser = Laser(PlaneWave3D([0,0,1]), 1e-6, 1.0)
+        problem = LinearOptics(Scalar(), atoms, laser)
+        ωₙ, Γₙ = get_spectrum(problem)
     
         Γₙ_ans = [0.675922453937850, 0.324077546062151]
         ωₙ_ans = [0.861973588757495, 1.13802641124251]
@@ -26,12 +24,10 @@ using Test
         r =[ 0 0 0;
              1 1 1; 
             -1 1 0.5]
-        atoms =  Cube(r, 10)
-        laser = PlaneWave_3D(:z, 1e-6, 0)
-        problem = ScalarProblem(atoms, laser)
-        S = get_spectrum(problem)
-        Γₙ = sort(-real.(S.λ))
-        ωₙ = sort(imag.(S.λ))
+        atoms = Atom(Cube(), Array(transpose(r)), 10)
+        laser = Laser(PlaneWave3D([0,0,1]), 1e-6, 0.0)
+        problem = LinearOptics(Scalar(), atoms, laser)
+        ωₙ, Γₙ = get_spectrum(problem)
     
         Γₙ_ans = [0.293248907595325, 0.15447403278592, 1.05227705967608]
         ωₙ_ans = [-0.0853652197846037, -0.0371827945713394,0.12254801435943]

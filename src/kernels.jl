@@ -18,6 +18,24 @@ function get_empty_matrix(physic::Vectorial, atoms::Atom{<:ThreeD})
     Array{ComplexF64}(undef, 3atoms.N, 3atoms.N)
 end
 
+function get_interaction_matrix(problem::NonLinearOptics{MeanField})
+    @debug "start: get_interaction_matrix"
+    
+    if haskey(problem.data, :G)
+        return problem.data[:G]
+    end
+    
+    temp_scalar_problem = LinearOptics(Scalar(), problem.atoms, problem.laser)
+    G = get_empty_matrix(temp_scalar_problem.physic, temp_scalar_problem.atoms)
+    temp_scalar_problem.kernelFunction(temp_scalar_problem.atoms, problem.laser, G)
+    
+    temp_scalar_problem = 1; GC.gc()
+    problem.data[:G] = G
+    @debug "end  : get_interaction_matrix"
+    return G
+end
+
+
 
 """
     green_scalar!(atoms, laser, G)

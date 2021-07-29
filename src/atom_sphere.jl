@@ -17,6 +17,10 @@ function Atom(geometry::Sphere, N::Int64, kR::Union{Real, Integer}; createFuncti
     return Atom(Sphere(), r, N, Float64(kR))
 end
 
+function Atom(geometry::Sphere, r::Matrix, kR::Union{Real, Integer})
+    N = size(r, 2) # remember to use each collum as a atom position
+    return Atom(Sphere(), r, N, Float64(kR))
+end
 
 function ftn_AtomsOnSphere(; kwargs...)
     kR = kwargs[:kR]

@@ -110,14 +110,6 @@ end
 # b₀_of(atoms::Sphere) = (ρ_of(atoms) .^ 2 * atoms.N / ((4π / 3) * (3 / (16π))^3))^(1 / 3)
 # ρ_of(atoms::Sphere) = atoms.N / VolumeSphere(atoms.kR)
 
-# ### --------------- PHYSICS ---------------
-
-#     MeanFieldProblem(atoms, laser)
-# """
-# function MeanFieldProblem(atoms, laser)
-#     return SimulationMeanField(atoms, laser, nothing, nothing, nothing, nothing)
-# end
-
 
 
 # ### --------------- LASER ---------------
@@ -154,9 +146,3 @@ end
 #     return PlaneWave(matrix_slace, s, Δ)
 # end
 # """
-#     Gaussian_3D(ω₀=1, s=1e-6, Δ=0)
-# """
-# function Gaussian_3D(ω₀=1, s=1e-6, Δ=0)
-#     return Gaussian3D(ω₀, s, Δ)
-# end
-

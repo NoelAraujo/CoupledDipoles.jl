@@ -8,6 +8,15 @@ function get_steady_state(problem::LinearOptics{Scalar}) # @memoize
     @debug "end  : get steady state"
     return βₛ
 end
+function get_steady_state(problem::NonLinearOptics{MeanField}; time_max=50)
+    u0 = default_evolution_initial_condition(problem)
+    tspan = (0.0, time_max)
+
+    steady_state = time_evolution(problem, u0, tspan; save_on=false)[end]
+    return steady_state
+end
+
+
 
 function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple;  kargs...) where T <: Linear
     @debug "start: time evolution - LinearOptics"
@@ -41,12 +50,7 @@ function Scalar!(du, u, p, t)
     return nothing
 end
 
-# function get_steady_state(problem::SimulationMeanField; time_max=100)
-#     full_evolution = time_evolution(problem, time_max=time_max, save_on=true)
-#     steady_state = vcat(  deepcopy(full_evolution.βₜ[end]), deepcopy(full_evolution.zₜ[end]) )
-#     full_evolution = 1; GC.gc()
-#     return steady_state
-# end
+
 
 # function extract_solution_from_Scalar_Problem(solution)
 #     nSteps = length(solution.u)
@@ -57,73 +61,74 @@ end
 
 
 # ### --------------- MEAN FIELD ---------------
-# function time_evolution(problem::SimulationMeanField;time_min = 0.0, time_max = 10, dt=1e-10, abstol=1e-10, reltol=1e-10, save_on=true)
-#     ############################################
-#     ### parameters
-#     H = get_interaction_matrix(problem)
+function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;  kargs...)
+    @debug "start: time evolution - NonLinearOptics"
+    G = get_interaction_matrix(problem)
 
-#     ## -> I don't sum over diagonal elements during time evolution
-#     ## to avoid an IF statement, I put a zero on diagonal
-#     H[diagind(H)] .= zero(eltype(H))
+    #= 
+        I don't sum over diagonal elements during time evolution
+     thus, to avoid an IF statement, I put a zero on diagonal 
+    =#
+    G[diagind(G)] .= zero(eltype(G))
 
-#     ## -> Also, the definition for Mean Field evolution needs
-#     ## +(Γ/2), where scalar kernel return -(Γ/2).
-#     ## Just multiply by -1 fixes
-#     H = -H
+    #= 
+        Also, the definition for Mean Field evolution needs
+     +(Γ/2), where scalar kernel return -(Γ/2).
+     Just multiply by -1 fixes
+    =#
+    G = -G
 
-#     Ωₙ = laser_over_atoms(problem.laser, problem.atoms)
-#     Wₙ = similar(Ωₙ)
-#     G_βₙ = similar(Ωₙ)
-#     parameters = view(H,:,:), view(diag(H),:), view(Ωₙ,:), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ
+    Ωₙ = apply_laser_over_atoms(problem.laser, problem.atoms)
+    Wₙ = zeros(eltype(Ωₙ),  size(Ωₙ))
+    G_βₙ = zeros(eltype(Ωₙ), size(Ωₙ))
+    parameters = view(G,:,:), view(diag(G),:), view(Ωₙ,:), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ
+    
+    ### calls for solver
+    problemFunction = get_evolution_function(problem)
+    prob = ODEProblem(problemFunction, u₀, tspan, parameters)
+    solution = DifferentialEquations.solve(prob, VCABM(); dt=1e-10, abstol=1e-10, reltol=1e-10, kargs...)
 
-#     ############################################
-#     ### initial conditions
-#     u₀ = get_initial_conditions(problem)
-#     tspan = (time_min, time_max)
-    
-#     ############################################
-#     ### calls for solver
-#     prob = ODEProblem(MeanField!, u₀, tspan, parameters)
-#     solution = DifferentialEquations.solve(prob, VCABM(), adaptive=true, dt=dt, reltol=reltol, abstol=abstol, save_on=save_on)
-    
-#     ############################################
-#     time_array, βₜ, zₜ = extract_solution_from_MeanField_Problem(solution)
-        
-#     return (time_array=time_array, βₜ=βₜ, zₜ=zₜ)
-# end
-# function get_initial_conditions(problem::SimulationMeanField)
-#     # λ, ψ = get_spectrum(problem)
-#     # β₀ = ψ[:, end] # the last mode is the most subradiant == more loccalized
-#     β₀ = zeros(ComplexF64, problem.atoms.N)
-#     z₀ = 2β₀.*conj.(β₀) .- 1
-#     u₀ = vcat(β₀, z₀)
-#     return u₀
-# end
-# function MeanField!(du, u, p, t)
-#     # parameters
-#     G, diagG, Ωₙ, Wₙ, Δ, N, G_βₙ = p
-    
-#     βₙ = @view u[1:N]
-#     zₙ = @view u[N+1:end]
-    
-#     ### Code below is equivalento to
-#     # Wₙ[:] .= Ωₙ/2 - im*(G*βₙ - diagG.*βₙ) # don't forget the element wise multiplication of "diagG.*βₙ"
-#     # @. du[1:N] = (im*Δ - Γ/2)*βₙ + im*Wₙ*zₙ
-#     # @. du[N+1:end] = -Γ*(1 + zₙ) - 4*imag(βₙ*conj(Wₙ))
-    
-#     BLAS.gemv!('N', ComplexF64(1.0), G, βₙ, ComplexF64(0.0), G_βₙ) # == G_βₙ = G*βₙ
-#     @simd for i = 1:N
-#         @inbounds Wₙ[i] = Ωₙ[i]/2 - im*(G_βₙ[i] - diagG[i]*βₙ[i])
-#     end
-#     @simd for i = 1:N
-#         @inbounds du[i] = (im*Δ - Γ/2)*βₙ[i] + im*Wₙ[i]*zₙ[i]
-#     end
-#     @simd for i = 1:N
-#         @inbounds du[i+N] = -Γ*(1 + zₙ[i]) - 4*imag(βₙ[i]*conj(Wₙ[i]))
-#     end
+    @debug "end  : time evolution - NonLinearOptics"
+    return solution
+end
+get_evolution_function(problem::NonLinearOptics{MeanField}) = MeanField!
 
-#     return nothing
-# end
+"""
+    default_evolution_initial_condition(NonLinearOptics{MeanField})
+β₀ = zeros(ComplexF64, atoms.N)
+z₀ = 2β₀.*conj.(β₀) .- 1
+"""
+function default_evolution_initial_condition(problem::NonLinearOptics{MeanField})
+    β₀ = zeros(ComplexF64, problem.atoms.N)
+    z₀ = 2β₀.*conj.(β₀) .- 1
+    u₀ = vcat(β₀, z₀)
+    return u₀
+end
+function MeanField!(du, u, p, t)
+    # parameters
+    G, diagG, Ωₙ, Wₙ, Δ, N, G_βₙ = p
+    
+    βₙ = @view u[1:N]
+    zₙ = @view u[N+1:end]
+    
+    #= Code below is equivalento to =#
+    # Wₙ[:] .= Ωₙ/2 - im*(G*βₙ - diagG.*βₙ) # don't forget the element wise multiplication of "diagG.*βₙ"
+    # @. du[1:N] = (im*Δ - Γ/2)*βₙ + im*Wₙ*zₙ
+    # @. du[N+1:end] = -Γ*(1 + zₙ) - 4*imag(βₙ*conj(Wₙ))
+    
+    BLAS.gemv!('N', ComplexF64(1.0), G, βₙ, ComplexF64(0.0), G_βₙ) # == G_βₙ = G*βₙ
+    @simd for i ∈ eachindex(Wₙ)
+        @inbounds Wₙ[i] = Ωₙ[i]/2 - im*(G_βₙ[i] - diagG[i]*βₙ[i])
+    end
+    @simd for i ∈ eachindex(βₙ)
+        @inbounds du[i] = (im*Δ - Γ/2)*βₙ[i] + im*Wₙ[i]*zₙ[i]
+    end
+    @simd for i ∈ eachindex(zₙ)
+        @inbounds du[i+N] = -Γ*(1 + zₙ[i]) - 4*imag(βₙ[i]*conj(Wₙ[i]))
+    end
+
+    return nothing
+end
 # function extract_solution_from_MeanField_Problem(solution)
 #     nTimeSteps = length(solution.u)
 #     time_array = [solution.t[i]  for i in 1:nTimeSteps   ]
