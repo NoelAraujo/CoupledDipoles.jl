@@ -1,4 +1,4 @@
-module CoupledDipole
+module CoupledDipoles
 
 using LinearAlgebra
 using StaticArrays
@@ -14,8 +14,8 @@ global_logger(TerminalLogger())
 # using Statistics
 
 using Printf
-# using LsqFit
-# using Optim: minimizer, optimize
+using LsqFit
+using Optim: minimizer, optimize, Options
 # using SpecialFunctions: besseli
 # using Folds
 using ThreadPools
@@ -29,10 +29,11 @@ const R1_threshold = 0.5
 
 include("structs.jl")
 include("atom_cube.jl")
+include("atom_sphere.jl")
 include("formulas.jl")
 include("IO.jl")
 export Atom
-export Square, Circle
+# export Square, Circle
 export Cube, Sphere
 
 export get_dimension
@@ -48,7 +49,7 @@ include("linear_problems.jl")
 export myLinearProblem
 
 include("atoms.jl")
-# export cube_inputs, sphere_inputs
+export cube_inputs, sphere_inputs
 export get_rₘᵢₙ
 export get_pairwise_matrix
 
@@ -62,16 +63,14 @@ include("pump_gaussians.jl")
 include("pump_planewaves.jl")
 export apply_laser_over_atoms, apply_laser_over_oneAtom
 
-# include("eigen_analysis.jl")
-# export get_interaction_matrix
-# export get_spectrum
-# export get_energy_shift_and_linewith
-# export get_IPRs, get_PRs
-# export get_all_ξ_and_R1
+include("eigen_analysis.jl")
+export get_spectrum
+export get_IPRs, get_PRs
+export get_localization_length
 # export get_spatial_profile_single_mode
-# export classify_modes
+export classify_modes
 
-# include("exponential_fit.jl")
+include("exponential_fit.jl")
 
 # include("plot_modes.jl")
 # export plot_atoms_and_mode

@@ -12,6 +12,12 @@ function Base.show(io::IO, atoms::Atom{Cube})
     size_text = "side kL=$(highlight(make_short(atoms.sizes), :yellow))"
     return printstyled(io, geometry_text*N_text*size_text )
 end
+function Base.show(io::IO, atoms::Atom{Sphere})
+    geometry_text = "Atoms on a $( highlight("Sphere", :yellow) )"
+    N_text = " with N=$(highlight(atoms.N, :yellow)) and "
+    size_text = "side kR=$(highlight(make_short(atoms.sizes), :yellow))"
+    return printstyled(io, geometry_text*N_text*size_text )
+end
 
 function Base.show(io::IO, laser::Laser{PlaneWave3D})
     l_t = "$( highlight("PlaneWave 3D", :yellow) ) "
