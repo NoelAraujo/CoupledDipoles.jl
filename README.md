@@ -1,4 +1,4 @@
-# CoupledDipole
+# CoupledDipoles
 
 [![Build Status](https://travis-ci.com/NoelAraujo/CoupledDipole.jl.svg?branch=master)](https://travis-ci.com/NoelAraujo/CoupledDipole.jl)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/NoelAraujo/CoupledDipole.jl?svg=true)](https://ci.appveyor.com/project/NoelAraujo/CoupledDipole-jl)
