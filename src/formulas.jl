@@ -8,7 +8,13 @@ Computes Volumetric Density
 """
     Volume_of(atoms::Shape{Cube})
 """
-Volume_of(atoms::Atom{Cube}) = atoms.sizes^3 # sizes == length of Cube's Sides
+Volume_of(atoms::Atom{Cube}) = π * atoms.sizes^2 # sizes == length of Cube's Sides
+
+"""
+    Volume_of(atoms::Shape{Cube})
+"""
+Volume_of(atoms::Atom{Circle}) = atoms.sizes^3 # sizes == length of Cube's Sides
+
 
 """
     b₀_of(atoms::Shape{Cube})
