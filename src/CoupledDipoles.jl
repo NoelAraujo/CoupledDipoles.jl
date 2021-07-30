@@ -15,7 +15,7 @@ global_logger(TerminalLogger())
 using Printf
 using LsqFit
 using Optim: minimizer, optimize, Options
-# using SpecialFunctions: besseli
+using SpecialFunctions: besseli
 using Folds
 using ThreadPools
 using LazyArrays
@@ -32,7 +32,7 @@ include("atom_sphere.jl")
 include("formulas.jl")
 include("IO.jl")
 export Atom
-# export Square, Circle
+export Square, Circle
 export Cube, Sphere
 
 export get_dimension
