@@ -15,11 +15,12 @@ global_logger(TerminalLogger())
 using Printf
 using LsqFit
 using Optim: minimizer, optimize, Options
-using SpecialFunctions: besseli
+using SpecialFunctions
 using Folds
 using ThreadPools
 using LazyArrays
 using Memoize
+using SharedArrays
 
 const k₀ = 1
 const Γ = 1
@@ -80,7 +81,7 @@ include("exponential_fit.jl")
 
 include("scattering.jl")
 export get_intensities_over_sensors
-# export get_geometric_factor
+export get_intensity_over_an_angle
 
 include("sensors.jl")
 export get_sensors_ring
@@ -89,5 +90,13 @@ include("dynamics.jl")
 export get_steady_state
 export time_evolution, default_evolution_initial_condition, get_evolution_function
 
+#=
+    One needs attention to use @memoize not forget to update this function
+=#
+function clear_cache_for_long_simulations(problem)
+    empty!(memoize_cache(get_xyz_distances))
+    nothing
+end
+export clear_cache_for_long_simulations
 
 end

@@ -140,36 +140,85 @@ function _manySensors_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_co
     return intensity
 end
 
-# function get_scattered_intensity(problem::T, atoms_states, θ::Number; Gₙₘ=nothing) where {T<:MeanFieldProblem} 
-#     if isnothing(Gₙₘ)
-#         Gₙₘ = view(get_geometric_factor(problem.atoms, θ),:,:)
-#     end
 
-#     N = problem.atoms.N
-#     β = view(atoms_states, 1:N)
-#     z = view(atoms_states, (N+1):2N)
 
-#     βₙₘ = transpose(β*β')
-#     βₙₘ[diagind(βₙₘ)] .= (1 .+ z)./2
+function get_intensity_over_an_angle(problem::NonLinearOptics{MeanField}, atoms_states::Vector, θ::Float64)
+    @debug "start : get intensity over an angle - NonLinearOptics{MeanField}"
+    
+    if is_integration_const_term_available(problem)
+        Gₙₘ = problem.data[:Gₙₘ]
+    else
+        Gₙₘ = _get_meanfield_constant_term(problem.atoms, θ)
+        problem.data[:Gₙₘ] = Gₙₘ
+    end
 
-#     intensity = real(sum(βₙₘ.*Gₙₘ))
-#     return intensity
-# end
+    N = problem.atoms.N
+    β = view(atoms_states, 1:N)
+    z = view(atoms_states, (N+1):2N)
 
-# function get_geometric_factor(atoms, Θ)
-#     N = atoms.N
-#     r = atoms.r
+    βₙₘ = transpose(β*β') # I have to do "transpose" and NOT "adjoint = complex+tranpose"
+    βₙₘ[diagind(βₙₘ)] .= (1 .+ z)./2
 
-#     Gₙₘ = zeros(ComplexF64, N,N)
-#     for n=1:N
-#         for m=n:N 
-#             rx = r[n][1] - r[m][1]
-#             ry = r[n][2] - r[m][2]
-#             rz = r[n][3] - r[m][3]
-            
-#             argument_bessel = sqrt( Complex( -k₀^2*(sin(Θ)^2)*(rx^2 +ry^2)) )
-#             Gₙₘ[n,m] = cis(k₀*rz*cos(Θ))*besseli(0, argument_bessel )
-#         end
-#     end
-#     return Hermitian(Gₙₘ)
-# end
+    intensity = real(sum(βₙₘ.*Gₙₘ)) # IMPORTANT: one does ELEMENT WISE multiplication
+
+    @debug "end  : get intensity over an angle - NonLinearOptics{MeanField}"
+    return intensity
+end
+
+function is_integration_const_term_available(problem)
+    if haskey(problem.data, :Gₙₘ)
+        return true
+    else
+        return false
+    end
+end
+
+function _get_meanfield_constant_term(atoms, Θ)
+    N, r = atoms.N, atoms.r
+
+    xₙₘ, yₙₘ, zₙₘ = get_xyz_distances(r)
+    k₀sinΘ = abs(k₀*sin(Θ))
+    cos_Θ = cos(Θ)
+
+    Gₙₘ_shared = SharedArray{ComplexF64,2}(N, N)    
+    @sync for n=1:N
+        Threads.@spawn for m=(n+1):N
+            rx, ry, rz = xₙₘ[n,m], yₙₘ[n,m], zₙₘ[n,m]
+            argument_bessel = k₀sinΘ*sqrt(rx^2 +ry^2)
+            @inbounds Gₙₘ_shared[n,m] = cis(k₀*rz*cos_Θ)*besselj(0, argument_bessel )
+        end
+    end
+    Gₙₘ = Array(Hermitian(Gₙₘ_shared))
+    
+    #= 
+        Before returning, we HAVE to do some memory cleaning,      
+        EVEN to get more performance. 
+
+        Without this cleaning, the garbage collector gets lost 
+        outside this function when many simulation occurs at the same time.
+    =#
+    Gₙₘ_shared = xₙₘ =  yₙₘ = zₙₘ = 1; GC.gc()  # DO NOT DELETE
+    return Gₙₘ
+end
+
+@memoize function get_xyz_distances(r)
+    dimensions = size(r, 1)
+    N = size(r, 2)
+    
+    xₙₘ = SharedArray{Float64,2}(N, N)
+    yₙₘ = SharedArray{Float64,2}(N, N)
+    zₙₘ = SharedArray{Float64,2}(N, N)
+
+    r_shared = SharedArray{Float64,2}(dimensions, N)
+    r_shared .= r
+    @sync for n=1:N
+        r_n = view(r_shared,:,n)
+        Threads.@spawn for m=1:N
+            xₙₘ[n,m] = r_n[1] - r_shared[1,m]
+            yₙₘ[n,m] = r_n[2] - r_shared[2,m]
+            zₙₘ[n,m] = r_n[3] - r_shared[3,m]
+        end
+    end
+    
+    return xₙₘ, yₙₘ, zₙₘ
+end
