@@ -68,16 +68,16 @@ include("eigen_analysis.jl")
 export get_spectrum
 export get_IPRs, get_PRs
 export get_localization_length
-# export get_spatial_profile_single_mode
+export get_spatial_profile_single_mode
 export classify_modes
 
 include("exponential_fit.jl")
+export select_points
 
-# include("plot_modes.jl")
-# export plot_atoms_and_mode
-# export get_spatial_profile_data_to_save
-# export get_atoms_matrix
-# export get_X_axes, get_Y_axes, get_Z_axes
+include("plot_modes.jl")
+export get_spatial_profile_single_mode_and_fit
+export get_decay_fit
+
 
 include("scattering.jl")
 export get_intensities_over_sensors

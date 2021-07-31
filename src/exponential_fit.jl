@@ -35,12 +35,11 @@ function is_R1_localized(R1)
 end
 
 """
-    x_use, y_use = select_points(DCM, ψ²; probability_threshold = 0.999)
+    x_use, y_use = select_points(DCM::Vector, ψ²::Vector)
 
-computes how many points since the center of mass are important based upon the `probability_threshold`
-and return them in variables `x_use`, `y_use`
+computes how many points since the center of mass are important based upon the `probability_threshold` (constant defined as 0.9999)
 """
-function select_points(DCM, ψ²)
+function select_points(DCM::Vector, ψ²::Vector)
     if length(ψ²) < 10
         error("Very few data. Need at least 10 points")
     end
