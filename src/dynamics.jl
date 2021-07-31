@@ -19,10 +19,24 @@ end
 
 
 function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple;  kargs...) where T <: Linear
-    @debug "start: time evolution - LinearOptics"
-    ### parameters == constant vector and matrices
+    ### use default G and Ωₙ
     G = get_interaction_matrix(problem)
     Ωₙ = -0.5im*apply_laser_over_atoms(problem.laser, problem.atoms)
+    solution = time_evolution(problem, u₀, tspan, Ωₙ, G;  kargs...)
+    
+    return solution
+end
+function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple, Ωₙ::Vector;  kargs...) where T <: Linear
+    ### use default G
+    G = get_interaction_matrix(problem)
+    solution = time_evolution(problem, u₀, tspan, Ωₙ, G;  kargs...)
+    
+    return solution
+end
+function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple, Ωₙ::Vector, G::Matrix;  kargs...) where T <: Linear
+    @debug "start: time evolution - LinearOptics"
+
+    ### parameters == constant vector and matrices
     parameters = view(G,:,:), view(Ωₙ,:)
     
     ### calls for solver
@@ -49,15 +63,6 @@ function Scalar!(du, u, p, t)
     du[:] = G*u + Ωₙ
     return nothing
 end
-
-
-
-# function extract_solution_from_Scalar_Problem(solution)
-#     nSteps = length(solution.u)
-#     time_array = [solution.t[i]  for i in 1:nSteps]
-#     βₜ = [solution.u[i]  for i in 1:nSteps]
-#     return time_array, βₜ
-# end
 
 
 # ### --------------- MEAN FIELD ---------------
@@ -129,12 +134,3 @@ function MeanField!(du, u, p, t)
 
     return nothing
 end
-# function extract_solution_from_MeanField_Problem(solution)
-#     nTimeSteps = length(solution.u)
-#     time_array = [solution.t[i]  for i in 1:nTimeSteps   ]
-    
-#     N = length(solution.u[1])÷2
-#     βₜ = [solution.u[i][1:N]  for i in 1:nTimeSteps   ]
-#     zₜ = [solution.u[i][(N+1):end]  for i in 1:nTimeSteps   ]
-#     return time_array, βₜ, zₜ
-# end

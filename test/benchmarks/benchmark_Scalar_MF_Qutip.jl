@@ -1,11 +1,11 @@
-using CoupledDipole, Revise, Plots, DelimitedFiles
+using CoupledDipoles, Revise, Plots, DelimitedFiles
 
 ### --- INITIAL CONDITIONS ARE CHANGED TO AGREE WITH QUTIP SAVED DATA ---
-function CoupledDipole.get_initial_conditions(problem::SimulationScalar)
+function get_initial_condition(problem::LinearOptics{Scalar})
     return zeros(ComplexF64, problem.atoms.N)
 end
 
-function CoupledDipole.get_initial_conditions(problem::SimulationMeanField)   
+function get_initial_condition(problem::NonLinearOptics{MeanField})   
     β₀ = zeros(ComplexF64, problem.atoms.N)
     z₀ = -ones(problem.atoms.N)
     u₀ = vcat(β₀, z₀)
@@ -21,30 +21,35 @@ r = [ -1.01015   -0.455099     0.543082;
       -1.89765    0.84797      0.248158;
       0.664911   0.00503915  -0.177228]
 
-atoms = Cube(r, 10);
+atoms = Atom(Cube(), Array(transpose(r)), 10);
 
 Δ = -2.0
 s = 0.0022
-laser = PlaneWave_3D(:z, s, Δ);
+laser = Laser(PlaneWave3D([0,0,1]), s, Δ);
 
 ### ------------ CREATE PROBLEM AND EVOLVE ---------------------
-simulationScalar = ScalarProblem(atoms, laser);
-simulationMeanField = MeanFieldProblem(atoms, laser);
+simulationScalar =  LinearOptics(Scalar(), atoms, laser)
+simulationMeanField = NonLinearOptics(MeanField(), atoms, laser)
 
-aS = time_evolution(simulationScalar, time_max=100);
-aMF = time_evolution(simulationMeanField, time_max=100);
+u0_scalar    = get_initial_condition(simulationScalar)
+u0_meanfield = get_initial_condition(simulationMeanField)
+tspan = (0.0,100)
+
+
+aS = time_evolution(simulationScalar, u0_scalar, tspan);
+aMF = time_evolution(simulationMeanField, u0_meanfield, tspan);
 
 
 ### ------------ GET INTENSITIES ---------------------
-iS = zeros( length(aS.time_array) )
+iS = zeros( length(aS.t) );
 for t ∈ eachindex(iS)
-    iS[t] = get_scattered_intensity(simulationScalar, aS.βₜ[t], deg2rad(35))
+    iS[t] = get_intensity_over_an_angle(simulationScalar, aS.u[t], deg2rad(35))
 end
 
 
-iMF = zeros( length(aMF.time_array) )
+iMF = zeros( length(aMF.t) );
 for t ∈ eachindex(iMF)
-    iMF[t] = get_scattered_intensity(simulationMeanField, vcat(aMF.βₜ[t], aMF.zₜ[t]), deg2rad(35))
+    iMF[t] = get_intensity_over_an_angle(simulationMeanField, aMF.u[t], deg2rad(35))
 end
 
 
@@ -56,12 +61,12 @@ iQutip = matrixData[:,2]
 ss_S = get_steady_state(simulationScalar)
 ss_MF = get_steady_state(simulationMeanField; time_max=1000)
 
-i_ss_S = get_scattered_intensity(simulationScalar, ss_S, deg2rad(35))
-i_ss_MF = get_scattered_intensity(simulationMeanField, ss_MF , deg2rad(35))
+i_ss_S = get_intensity_over_an_angle(simulationScalar, ss_S, deg2rad(35))
+i_ss_MF =get_intensity_over_an_angle(simulationMeanField, ss_MF , deg2rad(35))
 
 ### ------------ PLOTS ---------------------
-plot(aS.time_array, iS, label="Scalar", lw=5, ylabel="intensity", xlabel="time")
-plot!(aMF.time_array, iMF, label="Mean Field", lw=4, linestyle=:dash, size=(800,600))
+plot(aS.t, iS, label="Scalar", lw=5, ylabel="intensity", xlabel="time")
+plot!(aMF.t, iMF, label="Mean Field", lw=4, linestyle=:dash, size=(800,600))
 plot!( time_Qutip, iQutip, label="Qutip", lw=4, linestyle=:dot  )
 plot!(guidefont=17, tickfont=15, legendfontsize=15, legend=:bottomright)
 

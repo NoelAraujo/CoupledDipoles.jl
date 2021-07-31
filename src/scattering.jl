@@ -38,18 +38,28 @@ function _get_intensity_over_sensor(shape::T, laser::Laser, atoms::AbstractMatri
 end
 
 
-# function get_intensity_over_angle(problem::SimulationScalar, atoms_states, θ::Number; Gₙₘ=nothing)
-#     if isnothing(Gₙₘ)
-#         Gₙₘ = get_geometric_factor(problem.atoms, θ)
-#     end
-
-#     β = atoms_states
+function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector, θ::Number)
+    @debug "start : get intensity over an angle - LinearOptics{Scalar}"
     
-#     βₙₘ = transpose(β*β')
-#     βₙₘ[diagind(βₙₘ)] .= abs2.(β)
+    if is_integration_const_term_available(problem)
+        Gₙₘ = problem.data[:Gₙₘ]
+    else
+        Gₙₘ = _get_meanfield_constant_term(problem.atoms, θ)
+        problem.data[:Gₙₘ] = Gₙₘ
+    end
 
-#     intensity = real(sum(βₙₘ.*Gₙₘ))
-# end
+    N = problem.atoms.N
+    β = view(atoms_states, 1:N)
+    
+
+    βₙₘ = transpose(β*β') # I have to do "transpose" and NOT "adjoint = complex+tranpose"
+    βₙₘ[diagind(βₙₘ)] .= abs2.(β)
+
+    intensity = real(sum(βₙₘ.*Gₙₘ)) # IMPORTANT: one does ELEMENT WISE multiplication
+
+    @debug "end  : get intensity over an angle - LinearOptics{Scalar}"
+    return intensity
+end
 
 
 
@@ -177,19 +187,25 @@ function _get_meanfield_constant_term(atoms, Θ)
     N, r = atoms.N, atoms.r
 
     xₙₘ, yₙₘ, zₙₘ = get_xyz_distances(r)
-    k₀sinΘ = abs(k₀*sin(Θ))
+    k₀sinΘ = k₀*sin(Θ)
     cos_Θ = cos(Θ)
 
     Gₙₘ_shared = SharedArray{ComplexF64,2}(N, N)    
     @sync for n=1:N
-        Threads.@spawn for m=(n+1):N
+        Threads.@spawn for m=1:N # we had to compute all terms, and not the upper part
             rx, ry, rz = xₙₘ[n,m], yₙₘ[n,m], zₙₘ[n,m]
             argument_bessel = k₀sinΘ*sqrt(rx^2 +ry^2)
             @inbounds Gₙₘ_shared[n,m] = cis(k₀*rz*cos_Θ)*besselj(0, argument_bessel )
         end
     end
-    Gₙₘ = Array(Hermitian(Gₙₘ_shared))
-    
+    Gₙₘ = Array(Gₙₘ_shared) 
+    #=
+        IF I want to compute only the upper part,
+        I have to multiply all terms by π/2:   Gₙₘ = (π/2)Array(Gₙₘ_shared)
+
+        I decided to don't make this, to don't appear with factors
+        not mentioned on theory.
+    =#
     #= 
         Before returning, we HAVE to do some memory cleaning,      
         EVEN to get more performance. 
@@ -201,7 +217,7 @@ function _get_meanfield_constant_term(atoms, Θ)
     return Gₙₘ
 end
 
-@memoize function get_xyz_distances(r)
+function get_xyz_distances(r) # @memoize  --> creating warning, let's ignore it right now
     dimensions = size(r, 1)
     N = size(r, 2)
     
