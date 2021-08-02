@@ -82,6 +82,7 @@ export get_decay_fit
 include("scattering.jl")
 export get_intensities_over_sensors
 export get_intensity_over_an_angle
+export get_intensity_over_an_angle_legacy
 
 include("sensors.jl")
 export get_sensors_ring
@@ -93,10 +94,10 @@ export time_evolution, default_evolution_initial_condition, get_evolution_functi
 #=
     One needs attention to use @memoize not forget to update this function
 =#
-function clear_cache_for_long_simulations(problem)
-    empty!(memoize_cache(get_xyz_distances))
-    nothing
-end
-export clear_cache_for_long_simulations
+# function clear_cache_for_long_simulations(problem)
+#     empty!(memoize_cache(get_xyz_distances))
+#     nothing
+# end
+# export clear_cache_for_long_simulations
 
 end

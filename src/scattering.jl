@@ -61,7 +61,26 @@ function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states
     return intensity
 end
 
+function get_intensity_over_an_angle_legacy(problem::LinearOptics{Scalar}, atoms_states::Vector, θ::Number)  
+    N = problem.atoms.N
+    β = view(atoms_states, 1:N)
 
+    ϕ_range = range(0,2π,length=30)
+    vr = view(problem.atoms.r,:,:)   
+    total_intensity = Folds.mapreduce(+, 1:length(ϕ_range)) do k
+        (
+            begin 
+                @inbounds abs2( sum(cis(-k₀*fⱼ(vr[:,j], θ, ϕ_range[k]) )*β[j] for j = 1:N) )
+            end 
+        )
+    end
+
+    return total_intensity/length(ϕ_range)
+end
+
+function fⱼ(r, θ, ϕ)
+    r[1] * sin(θ) * cos(ϕ) + r[2] * sin(θ) * sin(ϕ) + r[3] * cos(θ)
+end
 
 
 # ### --------------- MEAN FIELD ---------------
@@ -193,9 +212,7 @@ function _get_meanfield_constant_term(atoms, Θ)
     Gₙₘ_shared = SharedArray{ComplexF64,2}(N, N)    
     @sync for n=1:N
         Threads.@spawn for m=1:N # we had to compute all terms, and not the upper part
-            rx, ry, rz = xₙₘ[n,m], yₙₘ[n,m], zₙₘ[n,m]
-            argument_bessel = k₀sinΘ*sqrt(rx^2 +ry^2)
-            @inbounds Gₙₘ_shared[n,m] = cis(k₀*rz*cos_Θ)*besselj(0, argument_bessel )
+            @inbounds Gₙₘ_shared[n,m] = _constant_term_core_computation(xₙₘ,yₙₘ,zₙₘ, n,m, cos_Θ, k₀sinΘ)
         end
     end
     Gₙₘ = Array(Gₙₘ_shared) 
@@ -216,7 +233,11 @@ function _get_meanfield_constant_term(atoms, Θ)
     Gₙₘ_shared = xₙₘ =  yₙₘ = zₙₘ = 1; GC.gc()  # DO NOT DELETE
     return Gₙₘ
 end
-
+function _constant_term_core_computation(xₙₘ,yₙₘ,zₙₘ, n,m, cos_Θ, k₀sinΘ)
+    a = zero(ComplexF64)
+    a = cis(k₀*zₙₘ[n,m]*cos_Θ)*besselj(0, k₀sinΘ*sqrt(xₙₘ[n,m]^2 +yₙₘ[n,m]^2) )
+    return a
+end
 function get_xyz_distances(r) # @memoize  --> creating warning, let's ignore it right now
     dimensions = size(r, 1)
     N = size(r, 2)
