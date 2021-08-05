@@ -3,7 +3,7 @@ function get_steady_state(problem::LinearOptics{Scalar}) # @memoize
     
     G  = get_interaction_matrix(problem)
     Ωₙ = apply_laser_over_atoms(problem.laser, problem.atoms)
-    βₛ = (im/2)*(G \ Ωₙ)
+    βₛ = (-0.5im)*(G \ Ωₙ)
 
     @debug "end  : get steady state"
     return βₛ
@@ -60,7 +60,14 @@ get_evolution_function(problem::LinearOptics{Scalar}) = Scalar!
 function Scalar!(du, u, p, t)
     G, Ωₙ = p
 
-    du[:] = G*u + Ωₙ
+    #=
+    Equivalent to:
+        "du[:] = G,u + Ωₙ"
+    But using inplace operation
+    =#
+    mul!(du,G,u)
+    du .+= Ωₙ
+    
     return nothing
 end
 

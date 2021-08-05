@@ -37,49 +37,35 @@ function _get_intensity_over_sensor(shape::T, laser::Laser, atoms::AbstractMatri
 	return abs2(E_L + E_scatt)
 end
 
-
-function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector, θ::Number)
-    @debug "start : get intensity over an angle - LinearOptics{Scalar}"
-    
-    if is_integration_const_term_available(problem)
-        Gₙₘ = problem.data[:Gₙₘ]
-    else
-        Gₙₘ = _get_meanfield_constant_term(problem.atoms, θ)
-        problem.data[:Gₙₘ] = Gₙₘ
-    end
-
-    N = problem.atoms.N
-    β = view(atoms_states, 1:N)
-    
-
-    βₙₘ = transpose(β*β') # I have to do "transpose" and NOT "adjoint = complex+tranpose"
-    βₙₘ[diagind(βₙₘ)] .= abs2.(β)
-
-    intensity = real(sum(βₙₘ.*Gₙₘ)) # IMPORTANT: one does ELEMENT WISE multiplication
-
-    @debug "end  : get intensity over an angle - LinearOptics{Scalar}"
-    return intensity
-end
-
-function get_intensity_over_an_angle_legacy(problem::LinearOptics{Scalar}, atoms_states::Vector, θ::Number)  
+function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ::Number)  
     N = problem.atoms.N
     β = view(atoms_states, 1:N)
 
     ϕ_range = range(0,2π,length=30)
-    vr = view(problem.atoms.r,:,:)   
-    total_intensity = Folds.mapreduce(+, 1:length(ϕ_range)) do k
-        (
-            begin 
-                @inbounds abs2( sum(cis(-k₀*fⱼ(vr[:,j], θ, ϕ_range[k]) )*β[j] for j = 1:N) )
-            end 
-        )
+    vr = view(problem.atoms.r,:,:)
+    
+    complex_intensity = zeros(ComplexF64, N)
+    total_intensity = 0.0
+    
+    for k= 1:length(ϕ_range)
+        ϕ = ϕ_range[k]
+        Threads.@threads for j = 1:N
+            complex_intensity[j] = cis(-k₀*(vr[1,j]*sin(θ)*cos(ϕ) + vr[2,j]*sin(θ)*sin(ϕ) + vr[3,j]*cos(θ)) )*β[j] 
+        end                 
+        total_intensity += abs2( sum(complex_intensity) )
     end
-
     return total_intensity/length(ϕ_range)
 end
 
-function fⱼ(r, θ, ϕ)
-    r[1] * sin(θ) * cos(ϕ) + r[2] * sin(θ) * sin(ϕ) + r[3] * cos(θ)
+function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Matrix, θ::Number)  
+    timeSteps = size(atoms_states, 2)
+    intensities = zeros(timeSteps)
+    for i = 1:timeSteps
+        oneState = view(atoms_states,:, i)
+        intensities[i] = get_intensity_over_an_angle(problem, oneState, θ)
+    end
+
+    return intensities
 end
 
 
@@ -187,8 +173,10 @@ function get_intensity_over_an_angle(problem::NonLinearOptics{MeanField}, atoms_
 
     βₙₘ = transpose(β*β') # I have to do "transpose" and NOT "adjoint = complex+tranpose"
     βₙₘ[diagind(βₙₘ)] .= (1 .+ z)./2
-
-    intensity = real(sum(βₙₘ.*Gₙₘ)) # IMPORTANT: one does ELEMENT WISE multiplication
+    # IMPORTANT: one does ELEMENT WISE multiplication
+    # and one can use lesse memory with inplace multiplication
+    βₙₘ .*=Gₙₘ 
+    intensity = real(sum(βₙₘ)) 
 
     @debug "end  : get intensity over an angle - NonLinearOptics{MeanField}"
     return intensity
