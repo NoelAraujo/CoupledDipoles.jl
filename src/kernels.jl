@@ -60,14 +60,18 @@ end
 
 
 """
-    experimental: green_vectorial!(atoms, laser, G)    
+    green_vectorial!(atoms, laser, G)
+
+check bencmark file for details
 """
 function green_vectorial!(atoms, laser, G)
     @debug "start: green_vectorial!"
 
     δ(x,y) = Int(==(x,y))
+    N = atoms.N
+    Δ = laser.Δ
 
-    Xt, Yt, Zt = r[:,1], r[:,2] ,r[:,3]
+    Xt, Yt, Zt = atoms.r[1,:], atoms.r[2,:], atoms.r[3,:]
 
     Xjn = Xt*ones(1,N) - ones(N,1)*Xt'
     Yjn = Yt*ones(1,N) - ones(N,1)*Yt'
@@ -81,14 +85,14 @@ function green_vectorial!(atoms, laser, G)
 
     α_range = β_range = [-1, +1, 0]
 
-    term2 = (3/2)*exp.(im*Rjn)./Rjn
+    term2 = (3/2)*exp.(im*k₀*Rjn)./(k₀*Rjn)
     term2[findall(isnan.(term2))] .= 0
     term2[findall(isinf.(term2))] .= 0
 
-    P_Rjn = P.(im*Rjn)
+    P_Rjn = P.(im*k₀*Rjn)
     P_Rjn[findall(isnan.(P_Rjn))] .= 0
 
-    Q_Rjn_over_Rjn_squared = Q.(im*Rjn)./Rjn.^2
+    Q_Rjn_over_Rjn_squared = Q.(im*k₀*Rjn)./(k₀*Rjn).^2
     Q_Rjn_over_Rjn_squared[findall(isnan.(Q_Rjn_over_Rjn_squared))] .= 0
 
     A = []
@@ -106,7 +110,9 @@ function green_vectorial!(atoms, laser, G)
         push!(A, vcat(B[1:length(β_range)]...)  )
     end
 
-    G[:] = hcat(A[1:length(α_range)]...)
+    G[:] = (-Γ/2)*hcat(A[1:length(α_range)]...) #join all matrices
+    G .= -im*G # For my code to work, I need this imaginary number. Credits to Sheila
+    G[diagind(G)] .= (-Γ/2 + 1im*Δ)
     
     @debug "end  : green_vectorial!"
     return nothing

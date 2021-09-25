@@ -88,12 +88,14 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;
      +(Γ/2), where scalar kernel return -(Γ/2).
      Just multiply by -1 fixes
     =#
-    G = -G
+    G .= -G
 
     Ωₙ = apply_laser_over_atoms(problem.laser, problem.atoms)
     Wₙ = zeros(eltype(Ωₙ),  size(Ωₙ))
     G_βₙ = zeros(eltype(Ωₙ), size(Ωₙ))
-    parameters = view(G,:,:), view(diag(G),:), view(Ωₙ,:), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ
+    temp1 = similar(Ωₙ)
+    temp2 = similar(Ωₙ)
+    parameters = view(G,:,:), view(diag(G),:), view(Ωₙ,:), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ,  temp1, temp2 
     
     ### calls for solver
     problemFunction = get_evolution_function(problem)
@@ -118,7 +120,7 @@ function default_evolution_initial_condition(problem::NonLinearOptics{MeanField}
 end
 function MeanField!(du, u, p, t)
     # parameters
-    G, diagG, Ωₙ, Wₙ, Δ, N, G_βₙ = p
+    G, diagG, Ωₙ, Wₙ, Δ, N, G_βₙ, temp1, temp2 = p
     
     βₙ = @view u[1:N]
     zₙ = @view u[N+1:end]
@@ -128,16 +130,22 @@ function MeanField!(du, u, p, t)
     # @. du[1:N] = (im*Δ - Γ/2)*βₙ + im*Wₙ*zₙ
     # @. du[N+1:end] = -Γ*(1 + zₙ) - 4*imag(βₙ*conj(Wₙ))
     
-    BLAS.gemv!('N', ComplexF64(1.0), G, βₙ, ComplexF64(0.0), G_βₙ) # == G_βₙ = G*βₙ
-    @simd for i ∈ eachindex(Wₙ)
-        @inbounds Wₙ[i] = Ωₙ[i]/2 - im*(G_βₙ[i] - diagG[i]*βₙ[i])
-    end
-    @simd for i ∈ eachindex(βₙ)
-        @inbounds du[i] = (im*Δ - Γ/2)*βₙ[i] + im*Wₙ[i]*zₙ[i]
-    end
-    @simd for i ∈ eachindex(zₙ)
-        @inbounds du[i+N] = -Γ*(1 + zₙ[i]) - 4*imag(βₙ[i]*conj(Wₙ[i]))
-    end
+    # mul!(G_βₙ, G, βₙ) # == G_βₙ = G*βₙ
+    # @simd for i ∈ eachindex(Wₙ)
+    #     @inbounds Wₙ[i] = Ωₙ[i]/2 - im*(G_βₙ[i] - diagG[i]*βₙ[i])
+    # end
+    # @simd for i ∈ eachindex(βₙ)
+    #     @inbounds du[i] = (im*Δ - Γ/2)*βₙ[i] + im*Wₙ[i]*zₙ[i]
+    # end
+    # @simd for i ∈ eachindex(zₙ)
+    #     @inbounds du[i+N] = -Γ*(1 + zₙ[i]) - 4*imag(βₙ[i]*conj(Wₙ[i]))
+    # end
+    
+    mul!(G_βₙ, G, βₙ) # == G_βₙ = G*βₙ
+    Wₙ .= Ωₙ/2 .- im*(G_βₙ - diagG.*βₙ)
+    temp1 .= (im*Δ - Γ/2)*βₙ .+ im*Wₙ.*zₙ
+    temp2 .= -Γ*(1 .+ zₙ) - 4*imag.(βₙ.*conj.(Wₙ))
+    du[:] .= vcat(temp1, temp2)
 
     return nothing
 end

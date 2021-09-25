@@ -21,7 +21,7 @@ function get_number_modes(problem::LinearOptics{Scalar})
 end
 """
     get_spectrum(problem; forceComputation=false)
-return λ, ψ
+return ωₙ, Γₙ
 """
 function get_spectrum(problem; forceComputation=false)
     @debug "start: get spectrum"
