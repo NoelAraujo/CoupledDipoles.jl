@@ -30,7 +30,10 @@ const R1_threshold = 0.5
 include("structs.jl")
 include("atom_cube.jl")
 include("atom_sphere.jl")
+
 include("formulas.jl")
+export ρ_of, b₀_of
+
 include("IO.jl")
 export Atom
 export Square, Circle

@@ -1,3 +1,9 @@
+b₀_of(problem) = σ₀_of(problem.physic)*ρ_of(problem.atoms)*geometric_integral(problem.atoms)
+
+σ₀_of(problem::Scalar) = 4π/k₀^2
+σ₀_of(problem::Vectorial) = 6π/k₀^2
+
+
 """
     ρ_of(atoms::Shape{T})
 Computes Volumetric Density
@@ -17,9 +23,15 @@ Volume_of(atoms::Atom{Cube}) = atoms.sizes^3 # sizes == length of Cube's Sides
 
 
 """
-    b₀_of(atoms::Shape{Cube})
+    Volume_of(atoms::Shape{Sphere})
 """
-b₀_of(atoms::Atom{Cube}) = (ρ_of(atoms) .^ 2 * atoms.N / ((4π / 3) * (3 / (16π))^3))^(1 / 3)
+Volume_of(atoms::Atom{Sphere}) = (4π/3)*atoms.sizes^3 # sizes == radius of Sphere
+
+
+# these "geometric_integral" values holds only for homogeneous distributions
+geometric_integral(atoms::Atom{Sphere}) = 2*atoms.sizes # diameter = 2*Radius
+geometric_integral(atoms::Atom{Cube}) = atoms.size # diameter = cube side = L
+
 
 """
     estimate_E₀(laser)
