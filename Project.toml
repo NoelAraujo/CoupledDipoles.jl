@@ -1,7 +1,7 @@
 name = "CoupledDipoles"
 uuid = "1aa92a3a-72ac-4ef3-9973-aaf9b373e3c1"
 authors = ["Noel Araujo"]
-version = "0.1.9.1"
+version = "0.1.9"
 
 [deps]
 Crayons = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"

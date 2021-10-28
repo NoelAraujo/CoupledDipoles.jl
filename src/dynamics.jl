@@ -62,7 +62,7 @@ function Scalar!(du, u, p, t)
 
     #=
     Equivalent to:
-        "du[:] = G,u + Ωₙ"
+        "du[:] = G*u + Ωₙ"
     But using inplace operation
     =#
     mul!(du,G,u)

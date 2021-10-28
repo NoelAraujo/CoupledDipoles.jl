@@ -55,9 +55,11 @@ function get_Distance_A_to_b(A, b)
 end
 
 """
-    get_rₘᵢₙ(ρ) = (ρ^(-2 / 3)) / π^2
+    get_rₘᵢₙ(ρ)
+
+AD HOC value that changes many sometimes to fix different problems
 """
-get_rₘᵢₙ(ρ) = (ρ^(-1 / 3)) / (0.8π^2)  # AD HOC
+get_rₘᵢₙ(ρ) = (ρ^(-1 / 3)) / (0.8π^2)
 
 """
     get_pairwise_matrix(r)
