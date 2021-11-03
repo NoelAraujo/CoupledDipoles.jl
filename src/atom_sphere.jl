@@ -31,21 +31,3 @@ function ftn_AtomsOnSphere(; kwargs...)
     new_atom[:] = sph2cart(new_atom)
     return new_atom
 end
-"""
-    spherical_coordinate=[azimuth, elevation, r]
-
-    azimuth = projection on XY-plane (in radians)
-    "elevation" or "Polar" = projection on Z-axis (in radians)
-    r = radius
-
-	ref: https://www.mathworks.com/help/matlab/ref/sph2cart.html
-"""
-function sph2cart(spherical_coordinate)
-    azimuth = spherical_coordinate[1]
-    elevation = spherical_coordinate[2]
-    radius = spherical_coordinate[3]
-    x = radius * cos(elevation) * cos(azimuth)
-    y = radius * cos(elevation) * sin(azimuth)
-    z = radius * sin(elevation)
-    return [x, y, z]
-end

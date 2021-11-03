@@ -7,8 +7,8 @@ function get_intensities_over_sensors(problem::LinearOptics, β::AbstractArray, 
 	v_r = view(problem.atoms.r, :, :)
 	
 	Threads.@threads for i = 1:n_sensors
-		one_sensors = view(all_sensors, :, i)
-		intensities[i] = _get_intensity_over_sensor(problem.atoms.shape, problem.laser, v_r, one_sensors, β)
+		oneSensor = view(all_sensors, :, i)
+		intensities[i] = _get_intensity_over_sensor(problem.atoms.shape, problem.laser, v_r, oneSensor, β)
     end
 
 	@debug "end  : get intensities over sensors - LinearOptics"
@@ -17,7 +17,7 @@ end
 #= WORKS ONLY FOR 3D CLOUD DISTRIBUTIONS =#
 function _get_intensity_over_sensor(shape::T, laser::Laser, atoms::AbstractMatrix, sensor::AbstractArray,  β::AbstractArray) where T <: ThreeD
 	## Laser Pump
-	E_L = (im/Γ)*apply_laser_over_oneAtom(laser, sensor)
+	E_L = (im/Γ)*apply_laser_over_oneSensor(laser, sensor)
     
     # ## Scattered
 	E_scatt = zero(ComplexF64)
@@ -33,9 +33,11 @@ function _get_intensity_over_sensor(shape::T, laser::Laser, atoms::AbstractMatri
 	end
     
 	ikr = im*k₀*norm(sensor)
-	E_scatt = E_scatt*exp(ikr)/ikr
+	E_scatt = -(Γ/2)*E_scatt*exp(ikr)/ikr
+
 	return abs2(E_L + E_scatt)
 end
+
 
 function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ::Number)  
     N = problem.atoms.N
@@ -195,8 +197,9 @@ function get_intensity_over_an_angle(problem::NonLinearOptics{MeanField}, atoms_
 
     βₙₘ = transpose(β*β') # I have to do "transpose" and NOT "adjoint = complex+tranpose"
     βₙₘ[diagind(βₙₘ)] .= (1 .+ z)./2
-    # IMPORTANT: one does ELEMENT WISE multiplication
-    # and one can use lesse memory with inplace multiplication
+    
+    # IMPORTANT FOR NEXT LINE: you should use ELEMENT WISE multiplication.
+    # Also, you can reduce memory allocation with inplace multiplication
     βₙₘ .*=Gₙₘ 
     intensity = real(sum(βₙₘ)) 
 
@@ -235,10 +238,10 @@ function _get_meanfield_constant_term(atoms, Θ)
     =#
     #= 
         Before returning, we HAVE to do some memory cleaning,      
-        EVEN to get more performance. 
+        EVEN losing some performance. 
 
         Without this cleaning, the garbage collector gets lost 
-        outside this function when many simulation occurs at the same time.
+        outside this function - when many simulation occurs at the same time.
     =#
     Gₙₘ_shared = xₙₘ =  yₙₘ = zₙₘ = 1; GC.gc()  # DO NOT DELETE
     return Gₙₘ

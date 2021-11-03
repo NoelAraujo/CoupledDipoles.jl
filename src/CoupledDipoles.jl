@@ -21,6 +21,7 @@ using ThreadPools
 using LazyArrays
 using Memoize
 using SharedArrays
+using HCubature
 
 const k₀ = 1
 const Γ = 1
@@ -61,11 +62,9 @@ include("kernels.jl")
 export get_interaction_matrix
 export green_scalar!
 
-# include("lasers.jl")
-# export laser_over_atoms, estimate_waist
-include("pump_gaussians.jl")
-include("pump_planewaves.jl")
+include("lasers.jl")
 export apply_laser_over_atoms, apply_laser_over_oneAtom
+export apply_laser_over_sensors, apply_laser_over_oneSensor
 
 include("eigen_analysis.jl")
 export get_spectrum
@@ -89,18 +88,13 @@ export get_intensity_over_an_angle_legacy
 
 include("sensors.jl")
 export get_sensors_ring
+export get_sensors_sphereSurface
 
 include("dynamics.jl")
 export get_steady_state
 export time_evolution, default_evolution_initial_condition, get_evolution_function
 
-#=
-    One needs attention to use @memoize not forget to update this function
-=#
-# function clear_cache_for_long_simulations(problem)
-#     empty!(memoize_cache(get_xyz_distances))
-#     nothing
-# end
-# export clear_cache_for_long_simulations
+include("transmission.jl")
+export get_transmission
 
 end

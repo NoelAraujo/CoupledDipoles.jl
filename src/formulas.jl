@@ -37,3 +37,32 @@ geometric_integral(atoms::Atom{Cube}) = atoms.size # diameter = cube side = L
     estimate_E₀(laser)
 """
 estimate_E₀(laser) = √(laser.s * (1 + 4(laser.Δ / Γ)^2) / 2)
+
+
+"""
+    sph2cart([θ, ϕ, r])
+    
+    θ = "elevation" or "Polar" = projection on Z-axis (in radians)
+    ϕ = azimuth = projection on XY-plane (in radians)
+    r = radius
+
+	ref: https://doc.sagemath.org/html/en/thematic_tutorials/vector_calculus/vector_calc_change.html
+"""
+function sph2cart(spherical_coordinate)
+    θ = spherical_coordinate[1]
+    ϕ = spherical_coordinate[2]
+    r = spherical_coordinate[3]
+    x = r*cos(ϕ)*sin(θ)
+    y = r*sin(ϕ)*sin(θ)
+    z = r*cos(θ)
+    return [x, y, z]
+end
+function cart2sph(cartesian_coordinate)
+    x = cartesian_coordinate[1]
+    y = cartesian_coordinate[2]
+    z = cartesian_coordinate[3]
+    ϕ = atan(y, x)
+    θ = atan(sqrt(x^2 + y^2), z)
+    r = sqrt(x^2 + y^2 + z^2)
+    return [θ, ϕ, r]
+end

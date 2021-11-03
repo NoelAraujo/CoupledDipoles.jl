@@ -21,7 +21,8 @@ sensors = get_sensors_ring(; num_pts=360, kR=1.5kL, θ=5π / 12)
 many_intensities = Float64[]
 maxRep = 40
 
-@showprogress for rep in 1:maxRep
+p = Progress(maxRep; showspeed=true)
+for rep in 1:maxRep
     atoms = Atom(Cube(), N, kL)
     laser = Laser(Gaussian3D(kL/8), s, Δ)
     simulation = LinearOptics(Scalar(), atoms, laser)
@@ -32,6 +33,7 @@ maxRep = 40
     for i in intensities
         push!(many_intensities, copy(i))
     end
+    ProgressMeter.next!(p)
 end
 all_intensities_over_mean = many_intensities ./ mean(many_intensities)
 
