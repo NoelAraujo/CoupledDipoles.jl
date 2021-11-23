@@ -4,7 +4,7 @@
 function get_IPRs(problem)
     n_modes = get_number_modes(problem)
     IPRs = zeros(n_modes)
-    Threads.@threads for n in 1:n_modes
+    Threads.@threads for n = 1:n_modes
         Ψ² = get_ψ²(problem, n)
         Ψ⁴ = Ψ² .^ 2
         IPRs[n] = sum(Ψ⁴) / sum(Ψ²)
@@ -23,7 +23,7 @@ end
     get_spectrum(problem; forceComputation=false)
 return ωₙ, Γₙ
 """
-function get_spectrum(problem; forceComputation=false)
+function get_spectrum(problem; forceComputation = false)
     @debug "start: get spectrum"
     ωₙ, Γₙ = zeros(problem.atoms.N), zeros(problem.atoms.N)
 
@@ -33,9 +33,9 @@ function get_spectrum(problem; forceComputation=false)
 
         problem.spectrum[:λ] = spectrum.values
         problem.spectrum[:ψ] = spectrum.vectors
-        
+
         ωₙ, Γₙ = imag.(spectrum.values), -real.(spectrum.values)
-        if any(Γₙ .< 0 )
+        if any(Γₙ .< 0)
             @warn "some Γₙ were negatives and ignored without further investigation"
             Γₙ = abs.(Γₙ)
         end
@@ -48,7 +48,7 @@ function get_spectrum(problem; forceComputation=false)
 end
 
 function is_spectrum_NOT_available(problem)
-    if iszero(problem.spectrum[:λ] ) || iszero(problem.spectrum[:ψ] )
+    if iszero(problem.spectrum[:λ]) || iszero(problem.spectrum[:ψ])
         return true
     else
         return false
@@ -56,11 +56,11 @@ function is_spectrum_NOT_available(problem)
 end
 
 function get_ψ(problem::LinearOptics, n::Integer)
-    ψ = view(problem.spectrum[:ψ],:,n)
+    ψ = view(problem.spectrum[:ψ], :, n)
     return ψ
 end
 function get_ψ²(problem::LinearOptics, n::Integer)
-    ψ = problem.spectrum[:ψ][:,n]
+    ψ = problem.spectrum[:ψ][:, n]
     return abs2.(ψ)
 end
 
@@ -71,18 +71,18 @@ end
 
 Main function to obtain the `Localization Length`, ξ, and its `Coefficient of Determination`, R1 (R¹).
 """
-function get_localization_length(problem::LinearOptics; forceComputation=false)
-    if is_localization_NOT_available(problem) && forceComputation==false
+function get_localization_length(problem::LinearOptics; forceComputation = false)
+    if is_localization_NOT_available(problem) && forceComputation == false
         return problem.data[:ξ], problem.data[:R1]
     end
     N = problem.atoms.N
     ξₙ = zeros(N)
-    R¹ₙ = zeros(N) 
+    R¹ₙ = zeros(N)
 
     # create spectrum if neeeded
     get_spectrum(problem)
 
-    for n in 1:N # faster without Threads.@threads
+    for n = 1:N # faster without Threads.@threads
         DCM, ψ² = get_spatial_profile_single_mode(problem, n)
         ξₙ[n], R¹ₙ[n] = get_single_ξ_and_R1(DCM, ψ²)
     end
@@ -96,7 +96,7 @@ function is_localization_NOT_available(problem)
     else
         return false
     end
-    
+
 end
 
 function get_spatial_profile_single_mode(problem, mode_index::Integer)
@@ -104,7 +104,7 @@ function get_spatial_profile_single_mode(problem, mode_index::Integer)
     try
         ψ²ₙ = get_ψ²(problem, mode_index)
         r_cm = get_coordinates_of_center_of_mass(r, ψ²ₙ)
-        
+
         # Specific for the problem (ones needs to define this function)
         DCM = get_Distances_from_r_to_CM(r, r_cm)
 
@@ -125,10 +125,10 @@ function get_coordinates_of_center_of_mass(r, Ψ²_mode)
     r_cm = zeros(dimensions)
     j = 1
     for c in eachcol(r)
-        r_cm .+= c.*Ψ²_mode[j]
+        r_cm .+= c .* Ψ²_mode[j]
         j += 1
     end
-    return r_cm./ sum(Ψ²_mode)
+    return r_cm ./ sum(Ψ²_mode)
 end
 
 """
@@ -151,13 +151,12 @@ end
     classify_modes(problem)
 returns a tuple `(loc, sub, super)` with indices
 """
-function classify_modes(problem; forceComputation=false) 
-    ωₙ, Γₙ = get_spectrum(problem;             forceComputation=forceComputation)
-    ξₙ, R¹ₙ = get_localization_length(problem; forceComputation=forceComputation)
+function classify_modes(problem; forceComputation = false)
+    ωₙ, Γₙ = get_spectrum(problem; forceComputation = forceComputation)
+    ξₙ, R¹ₙ = get_localization_length(problem; forceComputation = forceComputation)
 
     localized_modes = findall((Γₙ .< Γ) .* (R¹ₙ .≥ R1_threshold))
     sub_radiant_modes = findall((Γₙ .< Γ) .* (R¹ₙ .< R1_threshold))
     super_radiant_modes = findall(Γₙ .> Γ)
-    return (loc=localized_modes, sub=sub_radiant_modes, super=super_radiant_modes)
+    return (loc = localized_modes, sub = sub_radiant_modes, super = super_radiant_modes)
 end
-

@@ -7,17 +7,17 @@
 """
 function get_atoms(dimensions, N, rₘᵢₙ; kwargs...)
     new_atom = zeros(dimensions)
-    
+
     get_single_atom = kwargs[:createFunction]
-    r = get_single_atom(;kwargs...)
+    r = get_single_atom(; kwargs...)
     if N == 1
         return r
     end
     temp_atom = zeros(eltype(r), dimensions)
     nValid = 1
-    for iLoop in 1:1_000_000
-        temp_atom = get_single_atom(;kwargs...)
-    
+    for iLoop = 1:1_000_000
+        temp_atom = get_single_atom(; kwargs...)
+
         if is_atom_valid(temp_atom, r, rₘᵢₙ)
             nValid = nValid + 1
             r = hcat(r, temp_atom)
@@ -44,10 +44,10 @@ function is_atom_valid(new_atom, r, rₘᵢₙ)
 end
 
 function get_Distance_A_to_b(A, b)
-    N = size(A,2)
+    N = size(A, 2)
     distanceAb = zeros(N)
     i = 1
-    for c = eachcol(A)
+    for c in eachcol(A)
         distanceAb[i] = Distances.evaluate(Euclidean(), c, b)
         i += 1
     end
@@ -69,13 +69,13 @@ returns a `NxN` Float64 matrix, with zeros at diagonal
 """
 function get_pairwise_matrix(r)
     r_matrix = transpose(r)
-    R_jk = Distances.pairwise(Euclidean(), r_matrix, r_matrix; dims=1)
+    R_jk = Distances.pairwise(Euclidean(), r_matrix, r_matrix; dims = 1)
     R_jk[diagind(R_jk)] .= 0
     return R_jk
 end
 
 ### -----SHAPE CONSTRUCTOR GIVEN MATRIX -------
-function Atom(geometry::T, r::Matrix, kR::Union{Real, Integer}) where T <: Dimension
+function Atom(geometry::T, r::Matrix, kR::Union{Real,Integer}) where {T<:Dimension}
     N = size(r, 2) # remember to use each collum as a atom position
     return Atom(geometry, r, N, Float64(kR))
 end

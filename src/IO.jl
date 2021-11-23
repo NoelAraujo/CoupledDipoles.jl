@@ -1,4 +1,4 @@
-Base.size(x::Atom{T}) where T = x.sizes
+Base.size(x::Atom{T}) where {T} = x.sizes
 
 import Base.eltype
 eltype(laser::Laser{PlaneWave3D}) = "PlaneWave3D"
@@ -14,13 +14,13 @@ function Base.show(io::IO, atoms::Atom{Cube})
     geometry_text = "Atoms on a $( highlight("Cube", :yellow) )"
     N_text = " with N=$(highlight(atoms.N, :yellow)) and "
     size_text = "side kL=$(highlight(make_short(atoms.sizes), :yellow))"
-    return printstyled(io, geometry_text*N_text*size_text )
+    return printstyled(io, geometry_text * N_text * size_text)
 end
 function Base.show(io::IO, atoms::Atom{Sphere})
     geometry_text = "Atoms on a $( highlight("Sphere", :yellow) )"
     N_text = " with N=$(highlight(atoms.N, :yellow)) and "
     size_text = "side kR=$(highlight(make_short(atoms.sizes), :yellow))"
-    return printstyled(io, geometry_text*N_text*size_text )
+    return printstyled(io, geometry_text * N_text * size_text)
 end
 
 function Base.show(io::IO, laser::Laser{PlaneWave3D})
@@ -28,7 +28,7 @@ function Base.show(io::IO, laser::Laser{PlaneWave3D})
     dr_t = " laser at direction=$(highlight(laser.pump.direction, :yellow)), "
     s_t = " s=$(highlight(make_short(laser.s), :yellow)) and "
     d_t = "Δ=$(highlight(make_short(laser.Δ), :yellow))"
-    return printstyled(io, l_t*dr_t*s_t*d_t )
+    return printstyled(io, l_t * dr_t * s_t * d_t)
 end
 
 function Base.show(io::IO, laser::Laser{Gaussian3D})
@@ -36,21 +36,21 @@ function Base.show(io::IO, laser::Laser{Gaussian3D})
     w_t = " laser with waist w₀=$(highlight(laser.pump.w₀, :yellow)), "
     s_t = "s=$(highlight(make_short(laser.s), :yellow)) and "
     d_t = "Δ=$(highlight(make_short(laser.Δ), :yellow))"
-    return printstyled(io, l_t*w_t*s_t*d_t )
+    return printstyled(io, l_t * w_t * s_t * d_t)
 end
 
 
-function Base.show(io::IO, problem::LinearOptics{T}) where T <: Linear
+function Base.show(io::IO, problem::LinearOptics{T}) where {T<:Linear}
     s_t = "$( highlight("LinearOptics", :blue) ): $( highlight(eltype(problem), :yellow) ) problem "
     N_t = "with N=$(highlight(problem.atoms.N, :yellow)) atoms, "
     l_t = "and $(highlight(eltype(problem.laser), :yellow)) laser"
-    return printstyled(io, s_t*N_t*l_t )
+    return printstyled(io, s_t * N_t * l_t)
 end
-function Base.show(io::IO, problem::NonLinearOptics{T}) where T <: NonLinear
+function Base.show(io::IO, problem::NonLinearOptics{T}) where {T<:NonLinear}
     s_t = "$( highlight("NonLinearOptics", :blue) ): $( highlight(eltype(problem), :yellow) ) problem "
     N_t = "with N=$(highlight(problem.atoms.N, :yellow)) atoms, "
     l_t = "and $(highlight(eltype(problem.laser), :yellow)) laser"
-    return printstyled(io, s_t*N_t*l_t )
+    return printstyled(io, s_t * N_t * l_t)
 end
 
 function highlight(s, colour)
@@ -64,6 +64,6 @@ function make_short(x)
     elseif (abs(x) ≥ 1e3) || (abs(x) ≤ 1e-3)
         return @sprintf("%.2E", x)
     else
-        return round(x; digits=2)
+        return round(x; digits = 2)
     end
 end

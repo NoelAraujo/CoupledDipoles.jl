@@ -2,13 +2,11 @@ module CoupledDipoles
 
 using LinearAlgebra
 using Distances
-# using Plots, LaTeXStrings
 
 using DifferentialEquations
 using Logging: global_logger
 using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
-# using ProgressMeter
 # using Random
 # using Statistics
 
@@ -19,9 +17,10 @@ using SpecialFunctions
 using Folds
 using ThreadPools
 using LazyArrays
-using Memoize
+# using Memoize
 using SharedArrays
 using HCubature
+using MKL
 
 const k₀ = 1
 const Γ = 1

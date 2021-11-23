@@ -6,7 +6,7 @@ return (data = ( x=DCM, y=ψ² ), fit=(x=x_fit, y=y_fit) )
 function get_spatial_profile_single_mode_and_fit(problem, mode_index)
     DCM, ψ² = get_spatial_profile_single_mode(problem, mode_index)
     x_fit, y_fit = get_decay_fit(problem, mode_index)
-    return (DCM=DCM, ψ²=ψ², fit=(x=x_fit, y=y_fit))
+    return (DCM = DCM, ψ² = ψ², fit = (x = x_fit, y = y_fit))
 end
 
 function get_decay_fit(problem, mode_index)

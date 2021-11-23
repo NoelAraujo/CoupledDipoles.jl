@@ -60,7 +60,8 @@ end
 Assumes that (x,y) have a exponential decay of form `y(x) = A*exp(-x/ξ)`
 """
 function get_exp_fit_coeffs_with_L1(x, y)
-    fit_result = optimize(xx -> model_exp_minimize(xx, x, y), rand(2), Options(iterations = 30))
+    fit_result =
+        optimize(xx -> model_exp_minimize(xx, x, y), rand(2), Options(iterations = 30))
     A = minimizer(fit_result)[1]
     ξ = minimizer(fit_result)[2]
     return A, ξ

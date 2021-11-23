@@ -3,49 +3,49 @@
 #######################################################
 
 abstract type Dimension end
-abstract type TwoD   <: Dimension end
+abstract type TwoD <: Dimension end
 abstract type ThreeD <: Dimension end
 
 struct Square <: TwoD end
 struct Circle <: TwoD end
-struct Cube   <: ThreeD end
+struct Cube <: ThreeD end
 struct Sphere <: ThreeD end
 
-struct Atom{T <: Dimension}
+struct Atom{T<:Dimension}
     shape::T
     r::Matrix
     N::Int64
     sizes::Any
 end
 
-get_dimension(atom::Atom{T}) where T <: TwoD = 2
-get_dimension(atom::Atom{T}) where T <: ThreeD = 3
+get_dimension(atom::Atom{T}) where {T<:TwoD} = 2
+get_dimension(atom::Atom{T}) where {T<:ThreeD} = 3
 
 
 abstract type Pump end
 abstract type PlaneWave <: Pump end
-abstract type Gaussian  <: Pump end
+abstract type Gaussian <: Pump end
 
-struct PlaneWave2D <: PlaneWave 
+struct PlaneWave2D <: PlaneWave
     direction::Vector
 end
-struct PlaneWave3D <: PlaneWave 
+struct PlaneWave3D <: PlaneWave
     direction::Vector
 end
-struct Gaussian2D  <: Gaussian 
+struct Gaussian2D <: Gaussian
     w₀::Float64
 end
-struct Gaussian3D  <: Gaussian 
+struct Gaussian3D <: Gaussian
     w₀::Float64
 end
 
 
-struct Laser{T <: Pump}
+struct Laser{T<:Pump}
     pump::T
     s::Float64
     Δ::Float64
 end
-struct Lasers{T <: Pump}
+struct Lasers{T<:Pump}
     pump::Vector{T}
     s::Vector{Float64}
     Δ::Vector{Float64}
@@ -56,15 +56,15 @@ end
 
 
 abstract type Physics end
-abstract type Linear    <: Physics end
+abstract type Linear <: Physics end
 abstract type NonLinear <: Physics end
 
-struct Scalar    <: Linear end
+struct Scalar <: Linear end
 struct Vectorial <: Linear end
 struct MeanField <: NonLinear end
-struct BBGKY     <: NonLinear end
+struct BBGKY <: NonLinear end
 
-struct LinearOptics{T <: Linear}
+struct LinearOptics{T<:Linear}
     physic::T
     atoms::Atom
     laser::Laser
@@ -73,7 +73,7 @@ struct LinearOptics{T <: Linear}
     data::Dict
 end
 
-struct NonLinearOptics{T <: NonLinear}
+struct NonLinearOptics{T<:NonLinear}
     physic::T
     atoms::Atom
     laser::Laser
