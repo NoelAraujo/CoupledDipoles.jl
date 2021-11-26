@@ -26,6 +26,7 @@ const k₀ = 1
 const Γ = 1
 const probability_threshold = 0.9999
 const R1_threshold = 0.5
+const farField_factor = 100
 
 include("structs.jl")
 include("atom_cube.jl")
@@ -94,6 +95,6 @@ export get_steady_state
 export time_evolution, default_evolution_initial_condition, get_evolution_function
 
 include("transmission.jl")
-export get_transmission
+export get_transmission, how_far_is_FarField
 
 end

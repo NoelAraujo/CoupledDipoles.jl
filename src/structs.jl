@@ -37,6 +37,15 @@ struct Gaussian2D <: Gaussian
 end
 struct Gaussian3D <: Gaussian
     w₀::Float64
+    function Gaussian3D(w₀)
+        λ = 2π/k₀
+        if w₀ < 2λ
+            @warn "Waist is Too Small, it should be larger than 2λ (~ $(round(2λ, digits=3))). 
+            \n If the input value is correct, at least make sure that `w₀` is larger than `system size`.
+            \n This advice garantee that Transmission curves will have values below 1." maxlog=50
+        end
+        return new(w₀)
+    end
 end
 
 
