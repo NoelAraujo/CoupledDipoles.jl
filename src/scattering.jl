@@ -41,7 +41,7 @@ function _get_intensity_over_sensor(
 
     dot_n_r = zero(ComplexF64)
     j = 1
-    for atom in eachcol(atoms)
+    @inbounds for atom in eachcol(atoms)
         dot_n_r = n̂[1] * atom[1] + n̂[2] * atom[2] + n̂[3] * atom[3]
         dot_n_r = cis(-k₀ * dot_n_r)
         E_scatt += dot_n_r * β[j]

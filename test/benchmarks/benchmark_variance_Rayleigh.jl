@@ -57,7 +57,7 @@ plot(x_ray, y_ray; linestyle=:dash, label="Rayleigh", lw=4)
 scatter!(
     bins_centers, h_norm.weights; label="N=$(N), kL=$(kL)", markershape=:circle, markersize=5
 )
-plot!(; guidefont=15, tickfont=15, legendfont=10, size=(1000, 500))
+plot!(; guidefont=15,tickfont=15, legendfontsize=10,  size=(1000, 500))
 plot!(;
     left_margin=5Plots.mm,
     right_margin=5Plots.mm,

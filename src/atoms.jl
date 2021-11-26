@@ -6,8 +6,6 @@
 `rₘᵢₙ` : radius of exclusion
 """
 function get_atoms(dimensions, N, rₘᵢₙ; kwargs...)
-    new_atom = zeros(dimensions)
-
     get_single_atom = kwargs[:createFunction]
     r = get_single_atom(; kwargs...)
     if N == 1

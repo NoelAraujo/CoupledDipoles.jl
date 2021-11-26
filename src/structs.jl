@@ -13,7 +13,7 @@ struct Sphere <: ThreeD end
 
 struct Atom{T<:Dimension}
     shape::T
-    r::Matrix
+    r::AbstractMatrix
     N::Int64
     sizes::Any
 end

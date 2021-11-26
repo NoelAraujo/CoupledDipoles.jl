@@ -4,11 +4,18 @@
 function get_transmission(problem, β)
     new_R = how_far_is_FarField(problem.atoms)
     v_r = view(problem.atoms.r, :, :)
-
+    #= 
+        For small number of atoms, I need to integrate more surface area.
+        Larger number of particles have stable results, and I can speed up 
+        the computation using a smaller area.
+        "Small number" means 50 atoms, but is a number ad hoc.
+    =#
+    θₘₐₓ = problem.atoms.N < 50 ? deg2rad(45) : deg2rad(15)
+    ϕₘₐₓ = 2π
     (int_scatt, err) =
-        hcubature(x -> _func_total(x, new_R, problem, v_r, β), (0, 0.0), (deg2rad(15), 2π))
+        hcubature(x -> _func_total(x, new_R, problem, v_r, β), (0, 0.0), (θₘₐₓ, ϕₘₐₓ))
     (int_laser, err) =
-        hcubature(x -> _func_laser(x, new_R, problem, v_r, β), (0, 0.0), (deg2rad(15), 2π))
+        hcubature(x -> _func_laser(x, new_R, problem, v_r, β), (0, 0.0), (θₘₐₓ, ϕₘₐₓ))
     return int_scatt / int_laser
 end
 

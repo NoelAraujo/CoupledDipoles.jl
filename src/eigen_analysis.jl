@@ -33,7 +33,8 @@ function get_spectrum(problem; forceComputation = false)
 
         problem.spectrum[:λ] = spectrum.values
         problem.spectrum[:ψ] = spectrum.vectors
-
+        make_spectrum_available(problem)
+        
         ωₙ, Γₙ = imag.(spectrum.values), -real.(spectrum.values)
         if any(Γₙ .< 0)
             @warn "some Γₙ were negatives and ignored without further investigation"
@@ -48,11 +49,14 @@ function get_spectrum(problem; forceComputation = false)
 end
 
 function is_spectrum_NOT_available(problem)
-    if iszero(problem.spectrum[:λ]) || iszero(problem.spectrum[:ψ])
+    if problem.spectrum[:isSpectrumAvailable]
         return true
     else
         return false
     end
+end
+function make_spectrum_available(problem)
+    problem.spectrum[:isSpectrumAvailable] = true
 end
 
 function get_ψ(problem::LinearOptics, n::Integer)
