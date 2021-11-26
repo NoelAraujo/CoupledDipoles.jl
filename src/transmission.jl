@@ -32,7 +32,19 @@ function _func_laser(x, new_R, problem, v_r, β)
     return abs2(apply_laser_over_oneSensor(problem.laser, sensor))
 end
 
+#=
+    The value of "farField_factor*size(atoms)" is necessary to avoid
+    transmission above 100% for small number of particles - numerical erros 
+    goes to zero, and we get invalid results, if I allow the Far Field
+    be to far, i induce such mistakes.
 
+    The "5.1*(size(atoms)^2)" expression is based on math arguments.
+    See the explanation inside benchmarks folder ('benchmarks/benchmark_farField.jl')
+=#
 function how_far_is_FarField(atoms)
-    return farField_factor*size(atoms)
+    if atoms.N < 50
+        return farField_factor*size(atoms)
+    else
+        return 5.01*(size(atoms)^2)
+    end
 end
