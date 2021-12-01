@@ -100,7 +100,7 @@ for idx ∈ 1:length(Δ_range)
     Δ = Δ_range[idx]
     println("computing Δ = $(Δ)")
     _laser   = Laser(Gaussian3D(w₀), s, Δ)
-    _problem = LinearOptics(Scalar(), cloud, _laser)
+    _problem = LinearOptics(Scalar(), spherical_cloud, _laser)
     _βₙ      = get_steady_state(_problem)
 
     T[idx] = get_transmission(_problem, _βₙ)

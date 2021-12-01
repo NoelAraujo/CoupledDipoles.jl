@@ -50,9 +50,9 @@ end
 
 function is_spectrum_NOT_available(problem)
     if problem.spectrum[:isSpectrumAvailable]
-        return true
-    else
         return false
+    else
+        return true
     end
 end
 function make_spectrum_available(problem)

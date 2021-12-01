@@ -15,6 +15,8 @@ N = floor(Int, ρ_over_k₀³ * kL^3)
 ### ------------ LASER SPECS ---------------------
 Δ = 1.0
 s = 1e-6
+radial_increase = 1/2
+w₀ = kL*radial_increase
 
 ### -------- PRODUCE INTENSITIES -----------------
 sensors = get_sensors_ring(; num_pts=360, kR=1.5kL, θ=5π / 12)
@@ -24,7 +26,7 @@ maxRep = 40
 p = Progress(maxRep; showspeed=true)
 for rep in 1:maxRep
     atoms = Atom(Cube(), N, kL)
-    laser = Laser(Gaussian3D(kL/8), s, Δ)
+    laser = Laser(Gaussian3D(w₀), s, Δ)
     simulation = LinearOptics(Scalar(), atoms, laser)
     
     βₙ = get_steady_state(simulation)
@@ -79,4 +81,4 @@ plot!(;
 plot!(; ylims=(1e-6, 10), xlims=(1e-1, 100), scale=:log10)
 xlabel!("I")
 ylabel!("P(I)")
-title!("variance = $(  round(var(all_intensities_over_mean),digits=3 ))")
+title!("w₀=$(round(w₀,digits=2)),variance = $(  round(var(all_intensities_over_mean),digits=3 ))")
