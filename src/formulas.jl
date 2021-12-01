@@ -22,6 +22,10 @@ Volume_of(atoms::Atom{Circle}) = π * atoms.sizes^2 # sizes == circle radius
 """
 Volume_of(atoms::Atom{Cube}) = atoms.sizes^3 # sizes == length of Cube's Sides
 
+"""
+    Volume_of(atoms::Shape{Cylinder})
+"""
+Volume_of(atoms::Atom{Cylinder}) = atoms.sizes[:h] * π * atoms.sizes[:R]^2
 
 """
     Volume_of(atoms::Shape{Sphere})
@@ -29,9 +33,22 @@ Volume_of(atoms::Atom{Cube}) = atoms.sizes^3 # sizes == length of Cube's Sides
 Volume_of(atoms::Atom{Sphere}) = (4π / 3) * atoms.sizes^3 # sizes == radius of Sphere
 
 
-# these "geometric_integral" values holds only for homogeneous distributions
-geometric_integral(atoms::Atom{Sphere}) = 2 * atoms.sizes # diameter = 2*Radius
-geometric_integral(atoms::Atom{Cube}) = atoms.size # diameter = cube side = L
+#= 
+These "geometric_integral" values holds only for homogeneous distributions
+- They represent the light path acroos the cloud -
+For example, to cross a sphere, we need the diameter of the sphere (diameter = 2*radius)
+=#
+geometric_integral(atoms::Atom{Sphere}) = 2 * atoms.sizes # diameter = 2*radius
+geometric_integral(atoms::Atom{Cube}) = atoms.sizes # diameter = cube side = L
+
+#= 
+(usually) we want to know the physics in the laser direction, that is, at z-direction,
+thus, we want to know the light path across the height.
+=#
+function geometric_integral(atoms::Atom{Cylinder})
+    @info "using the cylinder height as light path"
+    return atoms.sizes[:h]
+end
 
 
 """

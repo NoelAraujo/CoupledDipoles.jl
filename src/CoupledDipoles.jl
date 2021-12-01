@@ -31,6 +31,7 @@ const farField_factor = 100
 include("structs.jl")
 include("atom_cube.jl")
 include("atom_sphere.jl")
+include("atom_cylinder.jl")
 
 include("formulas.jl")
 export ρ_of, b₀_of
@@ -38,7 +39,7 @@ export ρ_of, b₀_of
 include("IO.jl")
 export Atom
 export Square, Circle
-export Cube, Sphere
+export Cube, Sphere, Cylinder
 
 export get_dimension
 export Laser
@@ -54,7 +55,7 @@ include("nonlinear_problems.jl")
 
 
 include("atoms.jl")
-export cube_inputs, sphere_inputs
+export cube_inputs, sphere_inputs, cylinder_inputs
 export get_rₘᵢₙ
 export get_pairwise_matrix
 

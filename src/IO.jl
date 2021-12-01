@@ -1,4 +1,5 @@
 Base.size(x::Atom{T}) where {T} = x.sizes
+Base.size(x::Atom{Cylinder}) = x.sizes[:h]
 
 import Base.eltype
 eltype(laser::Laser{PlaneWave3D}) = "PlaneWave3D"
@@ -20,6 +21,12 @@ function Base.show(io::IO, atoms::Atom{Sphere})
     geometry_text = "Atoms on a $( highlight("Sphere", :yellow) )"
     N_text = " with N=$(highlight(atoms.N, :yellow)) and "
     size_text = "side kR=$(highlight(make_short(atoms.sizes), :yellow))"
+    return printstyled(io, geometry_text * N_text * size_text)
+end
+function Base.show(io::IO, atoms::Atom{Cylinder})
+    geometry_text = "Atoms on a $( highlight("Cylinder", :yellow) )"
+    N_text = " with N=$(highlight(atoms.N, :yellow)) and "
+    size_text = "[R=$(highlight(make_short(atoms.sizes[:R]), :yellow)), h=$(highlight(make_short(atoms.sizes[:h]), :yellow))]"
     return printstyled(io, geometry_text * N_text * size_text)
 end
 

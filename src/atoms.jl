@@ -93,13 +93,28 @@ function sphere_inputs(N::Integer, ρ::Real)
     kR = (N / ((4π / 3) * ρ))^(1 / 3)
     return (N, kR)
 end
-
-### --------------- IO ---------------
 """
-If atomic position is `atomic.r` of `size(N, dimensions)`.
-
-Select one column, effectively as : `atoms.r[:, direction]`
+    cylinder_inputs(N::Integer, ρ::Real; R::Real, h::Real)
+    
+- if the use does not specify, R or h, than, it is assumed that both should be equal  
+- if use only specify R or h, the other variable will change to match the density required
 """
-function select_atoms_axes(atoms, direction)
-    return select_matrix_axes(atoms.r, direction)
+function cylinder_inputs(N::Integer, ρ::Real; kwargs...)
+    R =  get(kwargs, :R, NaN)
+    h =  get(kwargs, :h, NaN)
+
+    if (R < 0) && (h < 0)
+        @error "Invalid inputs, R and h must be positives"
+        R = 0
+        h = 0
+    elseif isnan(R) && isnan(h) # R and h not provided
+        # assume that R=h ⇢ (h*πR^2 = πR^3) and solve for R
+        R = cbrt(N / π * ρ)
+        h = R
+    elseif isnan(R) && (h ≠ -1.0) # R not provided
+        R = sqrt(N / (π * ρ * h))
+    elseif (R ≠ -1.0) && isnan(h) # h not provided
+        h = sqrt(N / (π * ρ * R^2))
+    end
+    return (N, R, h)
 end
