@@ -97,5 +97,6 @@ export time_evolution, default_evolution_initial_condition, get_evolution_functi
 
 include("transmission.jl")
 export get_transmission, how_far_is_FarField
+export _create_sphere_sensor, _create_plane_sensor
 
 end

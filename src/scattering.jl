@@ -1,7 +1,8 @@
 function get_intensities_over_sensors(
     problem::LinearOptics,
     β::AbstractArray,
-    all_sensors::AbstractMatrix,
+    all_sensors::AbstractMatrix;
+    scattering = :farField,
 )
     @debug "start : get intensities over sensors - LinearOptics"
 
@@ -9,7 +10,13 @@ function get_intensities_over_sensors(
     intensities = zeros(n_sensors)
 
     v_r = view(problem.atoms.r, :, :)
-
+    if scattering == :nearField
+        scattering_func = _scattering_nearField
+    elseif scattering == :farField
+        scattering_func = _scattering_farField
+    else
+        @error "Invalid scattering Value: should be `:nearField` or `:farField` "
+    end
     Threads.@threads for i = 1:n_sensors
         oneSensor = view(all_sensors, :, i)
         intensities[i] = _get_intensity_over_sensor(
@@ -17,7 +24,8 @@ function get_intensities_over_sensors(
             problem.laser,
             v_r,
             oneSensor,
-            β,
+            β;
+            scattering_func = scattering_func,
         )
     end
 
@@ -30,12 +38,32 @@ function _get_intensity_over_sensor(
     laser::Laser,
     atoms::AbstractMatrix,
     sensor::AbstractArray,
-    β::AbstractArray,
+    β::AbstractArray;
+    scattering_func = _scattering_farField,
 ) where {T<:ThreeD}
     ## Laser Pump
     E_L = (im / Γ) * apply_laser_over_oneSensor(laser, sensor)
 
-    # ## Scattered
+    ## Scattered
+    E_scatt = scattering_func(sensor, atoms, β)
+
+    return abs2(E_L + E_scatt)
+end
+
+@inline function _scattering_nearField(sensor, atoms, β)
+    E_scatt = zero(eltype(β))
+    v⃗_SensorAtom = Array{eltype(sensor)}(undef, 3)
+    j = 1
+    @inbounds for atom in eachcol(atoms)
+        v⃗_SensorAtom .= sensor - atom # v = vector position
+        d_SensorAtom = norm(v⃗_SensorAtom)# d = distance : |v|
+        E_scatt += cis(k₀ * d_SensorAtom) * β[j] / (d_SensorAtom)
+        j += 1
+    end
+    E_scatt = +(Γ / 2) * im * E_scatt
+    return E_scatt
+end
+@inline function _scattering_farField(sensor, atoms, β)
     E_scatt = zero(ComplexF64)
     n̂ = sensor / norm(sensor)
 
@@ -50,8 +78,7 @@ function _get_intensity_over_sensor(
 
     ikr = im * k₀ * norm(sensor)
     E_scatt = -(Γ / 2) * E_scatt * exp(ikr) / ikr
-
-    return abs2(E_L + E_scatt)
+    return E_scatt
 end
 
 

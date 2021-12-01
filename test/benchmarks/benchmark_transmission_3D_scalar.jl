@@ -44,7 +44,7 @@ plot(
 hline!([1], linestyle = :dash, c = :black, label = "")
 xlabel!("Δ")
 ylabel!("Transmission")
-title!("Sphere : N=$(N), ρ=$(ρ),  w₀=$(radial_increase)*R")
+title!("Sphere : N=$(N), ρ=$(round(ρ,digits=3)), R=$(round(R,digits=2)), w₀=$(round(radial_increase*R,digits=2)), λ=$(round(2π,digits=2))")
 
 #=
     The code below is to visualize the intensity over the space in the Far Field limit.
