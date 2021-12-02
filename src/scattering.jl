@@ -50,20 +50,19 @@ function _get_intensity_over_sensor(
     return abs2(E_L + E_scatt)
 end
 
-@inline function _scattering_nearField(sensor, atoms, β)
+@inline function _scattering_nearField(sensor::AbstractVector, atoms, β::Vector{ComplexF64})
     E_scatt = zero(eltype(β))
-    v⃗_SensorAtom = Array{eltype(sensor)}(undef, 3)
+
     j = 1
     @inbounds for atom in eachcol(atoms)
-        v⃗_SensorAtom .= sensor - atom # v = vector position
-        d_SensorAtom = norm(v⃗_SensorAtom)# d = distance : |v|
-        E_scatt += cis(k₀ * d_SensorAtom) * β[j] / (d_SensorAtom)
+        d_SensorAtom = sqrt( (sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2 )
+        E_scatt += cis(k₀ * d_SensorAtom) * (β[j] / d_SensorAtom)
         j += 1
     end
     E_scatt = +(Γ / 2) * im * E_scatt
     return E_scatt
 end
-@inline function _scattering_farField(sensor, atoms, β)
+@inline function _scattering_farField(sensor::AbstractVector, atoms, β::Vector{ComplexF64})
     E_scatt = zero(ComplexF64)
     n̂ = sensor / norm(sensor)
 

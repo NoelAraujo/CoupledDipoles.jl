@@ -12,13 +12,8 @@ function get_transmission(problem, β; kwargs...)
     sensor_setup = SensorType(create_sensors_func, integral_domain)
 
     scattering = get(kwargs, :scattering, :farField)
-    I_scattered = _get_intensity_laser_plus_scattering(
-        problem,
-        β;
-        scattering = scattering,
-        sensor_setup = sensor_setup,
-    )
-    I_laser = _get_intensity_laser(problem, β; sensor_setup)
+    I_scattered = _get_intensity_laser_plus_scattering(problem,β; scattering = scattering, sensor_setup = sensor_setup)
+    I_laser =     _get_intensity_laser(problem; sensor_setup)
     T = I_scattered / I_laser
     return T
 end
@@ -40,21 +35,26 @@ function _get_intensity_laser_plus_scattering(
 
     view_of_atoms = view(problem.atoms.r, :, :)
 
-    (int_scatt, _e) = hcubature(
-        x -> _I_total(
-            x,
-            problem,
-            view_of_atoms,
-            β,
-            scattering_func,
-            sensor_setup.createSensor_func,
-        ),
-        sensor_setup.domain...,
+    _toCall_I_total(x) = _I_total(
+        x,
+        problem,
+        view_of_atoms,
+        β,
+        scattering_func,
+        sensor_setup.createSensor_func,
     )
+    (int_scatt, _e) = hcubature(_toCall_I_total, sensor_setup.domain...)
     return int_scatt
 end
-function _I_total(x, problem, v_r, β, scattering_func, getSensor)
-    
+function _I_total(
+    x,
+    problem::LinearOptics,
+    v_r,
+    β::Vector{ComplexF64},
+    scattering_func::Function,
+    getSensor::Function,
+)
+
     sensor = getSensor(x, problem)
 
     return _get_intensity_over_sensor(
@@ -68,7 +68,7 @@ function _I_total(x, problem, v_r, β, scattering_func, getSensor)
 end
 
 
-function _get_intensity_laser(problem, β; sensor_setup::SensorType)
+function _get_intensity_laser(problem; sensor_setup::SensorType)
     integral_args = sensor_setup.domain
     myargs = (:problem => problem, :createSensor_func => sensor_setup.createSensor_func)
 

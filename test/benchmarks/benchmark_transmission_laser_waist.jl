@@ -1,8 +1,10 @@
 using CoupledDipoles, Revise
 using ProgressMeter
 using Plots
+using Random
 
 function find_min_transmission(N, ρ, laser_increase_range, Δ_range; kwargs...)
+    Random.seed!(2243)
     new_cloud = Atom(CoupledDipoles.Cylinder(), cylinder_inputs(N, ρ)...)
     s = 1e-5
     
@@ -14,11 +16,11 @@ function find_min_transmission(N, ρ, laser_increase_range, Δ_range; kwargs...)
         If you try, make sure to use spawn, because the process do not
         takes the exact amount of time.
     =#
-    @sync for l_idx = 1:length(laser_increase_range)
+    for l_idx = 1:length(laser_increase_range)
         laser_increase = laser_increase_range[l_idx]
         w₀ = size(new_cloud) * laser_increase
 
-        Threads.@spawn for idx ∈ 1:length(Δ_range)
+        for idx ∈ 1:length(Δ_range)
             Δ = Δ_range[idx]
 
             _laser = Laser(Gaussian3D(w₀), s, Δ)
@@ -40,7 +42,7 @@ laser_increase_range = [2.0, 2.25, 2.5, 3.0]
 
 scattering = :nearField
 create_sensors_func = CoupledDipoles._create_sphere_sensor
-domain = ((0.0, 0.0), (π/6, 2π))
+domain = ((0.0, 0.0), (5π/12, 2π))
 
 # scattering = :nearField
 # create_sensors_func = CoupledDipoles._create_plane_sensor
