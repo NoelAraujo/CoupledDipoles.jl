@@ -25,7 +25,7 @@ using MKL
 const k₀ = 1
 const Γ = 1
 const probability_threshold = 0.9999
-const R1_threshold = 0.5
+const R1_threshold = 0.65
 const farField_factor = 100
 
 include("structs.jl")
