@@ -33,9 +33,32 @@ function add_box_inset(
     return inset_box
 end
 
-myColor1 = RGBf(1 / 255, 148 / 255, 154 / 255) # Teal
-myColor2 = RGBf(0, 67 / 255, 105 / 255) # Navy_Blue
-myColor3 = RGBf(219 / 255, 31 / 255, 72 / 255) # 
+function convert_hex_rhb(hex_color)
+    r = parse(Int, hex_color[1:2], base=16)/255
+    g = parse(Int, hex_color[3:4], base=16)/255
+    b = parse(Int, hex_color[5:6], base=16)/255
+    return RGBf(r,g,b)
+end
+
+
+myHex1 = ["03071E","370617","6A040F","9D0208","D00000","DC2F02","E85D04","F48C06","FAA307","FFBA08"]
+myGrad1 = cgrad(convert_hex_rhb.(myHex1))
+myColor4 = convert_hex_rhb("01FA70")
+
+## More Options
+# myHex2 = ["00072D", "001C55", "0A2472", "0E6BA8", "A6E1FA"]
+# myGrad2 = cgrad(convert_hex_rhb.(myHex2))
+# myColor4 = convert_hex_rhb("F4B000")
+
+# myHex3 = ["001219", "9B2226", "EE9B00" ]
+# myGrad3 = cgrad(convert_hex_rhb.(myHex3))
+# myColor4 = convert_hex_rhb("01FA70")
+
+myColors = cgrad(myGrad1, 3, categorical=true, rev=false)
+myColor1 = myColors[1]
+myColor2 = myColors[2]
+myColor3 = myColors[3]
+
 
 Fig1_theme = Theme(
     Axis = (

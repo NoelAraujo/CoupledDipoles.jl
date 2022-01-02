@@ -68,7 +68,7 @@ for modetype ∈ [modes.loc, modes.sub, modes.super]
         [IPRₙ[actual_index]],
         markersize = 30,
         strokewidth = 5,
-        strokecolor = :white,
+        strokecolor = myColor4,
     )
 end
 
