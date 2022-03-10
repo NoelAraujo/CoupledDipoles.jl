@@ -1,33 +1,35 @@
 using CoupledDipoles
 using Plots, ProgressMeter
-using Revise, ThreadPools
+using Revise
 
 # cloud settings
-N = 1500
+N = 520
 ρ = 0.3
 
-cloud = Atom(CoupledDipoles.Sphere(), sphere_inputs(N, ρ)...)
-R = size(cloud)
+cloud = Atom(CoupledDipoles.Cylinder(), cylinder_inputs(N, ρ; h=5π)...)
+R = cloud.sizes.R
 
 # laser settings
-radial_increase = 1.0
-w₀ = R * radial_increase
-s = 1e-5
-
+w₀ = 1.5*2π
+s = 1e-1
+scatt_func = scattering_fuction(:nearField, :ThreeD)
 
 # create transmission depending on detunning
-Δ_range = range(-50, 50, length = 50)
+Δ_range = range(-50, 50, length = 15)
 T = zeros(length(Δ_range))
 
 p = Progress(length(Δ_range); showspeed = true)
-ThreadPools.@qthreads for idx ∈ 1:length(Δ_range)
+for idx ∈ 1:length(Δ_range)
     Δ = Δ_range[idx]
 
     _laser = Laser(Gaussian3D(w₀), s, Δ)
     _problem = LinearOptics(Scalar(), cloud, _laser)
-    _βₙ = get_steady_state(_problem)
-
-    T[idx] = get_transmission(_problem, _βₙ)
+    _βₙ = steady_state(_problem)
+    
+    # _problem = NonLinearOptics(MeanField(), cloud, _laser)
+    # _βₙ = steady_state(_problem; time_max=25)
+    
+    T[idx] = transmission(_problem, _βₙ, scatt_func)
     ProgressMeter.next!(p)
 end
 
@@ -44,7 +46,7 @@ plot(
 hline!([1], linestyle = :dash, c = :black, label = "")
 xlabel!("Δ")
 ylabel!("Transmission")
-title!("Sphere : N=$(N), ρ=$(round(ρ,digits=3)), R=$(round(R,digits=2)), w₀=$(round(radial_increase*R,digits=2)), λ=$(round(2π,digits=2))")
+title!("Cylinder : N=$(N), ρ=$(round(ρ,digits=3)), R=$(round(R,digits=2)), w₀=$(round(w₀,digits=2)), λ=$(round(2π,digits=2))") |> display
 
 #=
     The code below is to visualize the intensity over the space in the Far Field limit.
@@ -84,7 +86,7 @@ sensors = Array([reshape(x, 200 * 200) reshape(y, 200 * 200) reshape(z, 200 * 20
 _Δ = 0.0
 _laser = Laser(Gaussian3D(w₀), s, _Δ)
 _problem = LinearOptics(Scalar(), cloud, _laser)
-_βₙ = get_steady_state(_problem)
+_βₙ = steady_state(_problem)
 
 intensities = get_intensities_over_sensors(_problem, _βₙ, sensors)
 intensities[findall(intensities .< 1e-20)] .= 0.0

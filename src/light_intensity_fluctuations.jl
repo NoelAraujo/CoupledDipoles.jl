@@ -30,7 +30,7 @@ end
     laser = Gaussian_3D(estimate_waist(atoms), s, Δ)
     simulation = ScalarProblem(atoms, laser)
 
-    βₙ = get_steady_state(simulation)
+    βₙ = steady_state(simulation)
     intensities = get_scattered_intensity(simulation, βₙ, sensors)
     GC.gc()
     return intensities

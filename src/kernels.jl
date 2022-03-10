@@ -1,13 +1,13 @@
 """
-    get_interaction_matrix(::LinearOptics)
+    interaction_matrix(::LinearOptics)
 """
-function get_interaction_matrix(problem::LinearOptics)
-    @debug "start: get_interaction_matrix"
+function interaction_matrix(problem::LinearOptics)
+    @debug "start: interaction_matrix"
 
     G = get_empty_matrix(problem.physic, problem.atoms)
     problem.kernelFunction(problem.atoms, problem.laser, G)
 
-    @debug "end  : get_interaction_matrix"
+    @debug "end  : interaction_matrix"
     return G
 end
 
@@ -18,8 +18,8 @@ function get_empty_matrix(physic::Vectorial, atoms::Atom{<:ThreeD})
     Array{ComplexF64}(undef, 3atoms.N, 3atoms.N)
 end
 
-function get_interaction_matrix(problem::NonLinearOptics{MeanField})
-    @debug "start: get_interaction_matrix"
+function interaction_matrix(problem::NonLinearOptics{MeanField})
+    @debug "start: interaction_matrix"
 
     if haskey(problem.data, :G)
         return problem.data[:G]
@@ -32,7 +32,7 @@ function get_interaction_matrix(problem::NonLinearOptics{MeanField})
     temp_scalar_problem = 1
     GC.gc()
     problem.data[:G] = G
-    @debug "end  : get_interaction_matrix"
+    @debug "end  : interaction_matrix"
     return G
 end
 

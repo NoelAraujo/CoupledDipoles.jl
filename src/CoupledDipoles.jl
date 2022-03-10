@@ -9,6 +9,7 @@ using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
 # using Random
 # using Statistics
+using ThreadsX
 
 using Printf
 using LsqFit
@@ -60,11 +61,11 @@ export get_rₘᵢₙ
 export get_pairwise_matrix
 
 include("kernels.jl")
-export get_interaction_matrix
+export interaction_matrix
 export green_scalar!
 
 include("lasers.jl")
-export apply_laser_over_atoms, apply_laser_over_oneAtom
+export laser_field, apply_laser_over_oneAtom
 export apply_laser_over_sensors, apply_laser_over_oneSensor
 
 include("eigen_analysis.jl")
@@ -83,7 +84,7 @@ export get_decay_fit
 
 
 include("scattering.jl")
-export get_intensities_over_sensors
+export scattering_intensity, scattering_fuction 
 export get_intensity_over_an_angle
 export get_intensity_over_an_angle_legacy
 
@@ -92,11 +93,11 @@ export get_sensors_ring
 export get_sensors_sphereSurface
 
 include("dynamics.jl")
-export get_steady_state
+export steady_state
 export time_evolution, default_evolution_initial_condition, get_evolution_function
 
 include("transmission.jl")
-export get_transmission, how_far_is_FarField
+export transmission, how_far_is_FarField
 export _create_sphere_sensor, _create_plane_sensor
 
 end

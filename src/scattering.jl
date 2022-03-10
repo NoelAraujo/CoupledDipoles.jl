@@ -1,72 +1,161 @@
-function get_intensities_over_sensors(
-    problem::LinearOptics,
-    β::AbstractArray,
-    all_sensors::AbstractMatrix;
-    scattering = :farField,
-)
-    @debug "start : get intensities over sensors - LinearOptics"
-
-    n_sensors = size(all_sensors, 2)
-    intensities = zeros(n_sensors)
-
-    v_r = view(problem.atoms.r, :, :)
-    if scattering == :nearField
-        scattering_func = _scattering_nearField
-    elseif scattering == :farField
-        scattering_func = _scattering_farField
+function scattering_fuction(distance::Symbol, dimension::Symbol)
+    if dimension == :ThreeD
+        if distance == :nearField
+            sf = default_farField3D
+        elseif distance == :farField
+            sf = default_farField3D
+        else
+            @error "Only options are `:nearField` and `:farField`"
+        end
     else
-        @error "Invalid scattering Value: should be `:nearField` or `:farField` "
+        @error "Only :ThreeD is supported."
     end
-    Threads.@threads for i = 1:n_sensors
-        oneSensor = view(all_sensors, :, i)
-        intensities[i] = _get_intensity_over_sensor(
-            problem.atoms.shape,
-            problem.laser,
-            v_r,
-            oneSensor,
-            β;
-            scattering_func = scattering_func,
-        )
-    end
-
-    @debug "end  : get intensities over sensors - LinearOptics"
-    return intensities
+    return sf
 end
-#= WORKS ONLY FOR 3D CLOUD DISTRIBUTIONS =#
-function _get_intensity_over_sensor(
-    shape::T,
-    laser::Laser,
-    atoms::AbstractMatrix,
-    sensor::AbstractArray,
-    β::AbstractArray;
-    scattering_func = _scattering_farField,
-) where {T<:ThreeD}
-    ## Laser Pump
-    E_L = (im / Γ) * apply_laser_over_oneSensor(laser, sensor)
 
-    ## Scattered
-    E_scatt = scattering_func(sensor, atoms, β)
+"""
+    scattering_intensity(SP::ScatteringProblem)
 
+    Computes the Total Electric Field (Laser Pump + Scattering), then returns the Intensity
+"""
+@views function scattering_intensity(
+    problem,
+    atomic_states,
+    measurement_positions,
+    scattering_func::Function,
+)
+    _laser = problem.laser
+    _r = problem.atoms.r
+    _physics = problem.physic
+    
+    _sensors = measurement_positions
+    _states = atomic_states
+    _func = scattering_func
+
+    n_sensors = _get_number_elements(_sensors)
+
+    if n_sensors == 1
+        return _OnePoint_Intensity(_physics, _laser, _r, _sensors, _states, _func)
+    else
+        scat_int = zeros(n_sensors)
+        for i = 1:n_sensors #Threads.@threads 
+            scat_int[i] = _OnePoint_Intensity(_physics, _laser, _r, _sensors[:, i], _states, _func)
+        end
+        return scat_int
+    end
+end
+function _OnePoint_Intensity(physic::Union{Scalar,Vectorial}, laser, atoms, sensor, β, scattering_func)
+    E_L = laser_field(laser, sensor)
+    E_scatt = scattering_func(atoms, β, sensor)
     return abs2(E_L + E_scatt)
 end
 
-@inline function _scattering_nearField(sensor::AbstractVector, atoms, β::Vector{ComplexF64})
+
+function _OnePoint_Intensity(physic::MeanField, laser, R⃗, sensor, β, scattering_func)
+    
+    Ω = laser_field(laser, sensor)
+    
+    r = norm(sensor)
+    n̂ = sensor/r
+    N = size(R⃗, 2)
+    
+    σ⁻ = β[1:N]
+    σ⁺ = conj.(σ⁻)
+    σᶻ = β[ (N+1) : end]
+
+    term1 = abs2(-im*Ω)
+    term2 = real(2Ω*(exp(-im*k₀*r)/(im*k₀*r))*ThreadsX.sum(σ⁺[j]*cis(+k₀ * (n̂⋅R⃗[:,j])) for j = 1:N), )
+    # term3 = ThreadsX.sum( σ⁻[j]*σ⁺[m]*cis(-k₀*(n̂⋅(R⃗[:,j] - R⃗[:,m]))) for j = 1:N, m = 1:N if j ≠ m )
+    term3 = _term3(σ⁻, σ⁺, n̂, R⃗)
+    term4 = ThreadsX.sum((1 + σᶻ[j]) / 2 for j = 1:N)
+
+    intensity_oneSensor = term1 + (Γ / 2)*term2 + (Γ/(2k₀*r))^2 * (term3 + term4)
+
+    return real(intensity_oneSensor)
+end
+@views function _term3(σ⁻, σ⁺, n̂, R⃗)
+    N = length(σ⁻)
+    number_configurations = ((N^2)÷2 - N÷2)
+
+    βₙₘ = Array{eltype(σ⁻)}(undef, number_configurations)
+    cont = 1
+    for n=1:N
+        for m=(n+1):N            
+            βₙₘ[cont] = σ⁺[n]*σ⁻[m]
+            cont += 1
+        end
+    end
+    
+
+    rₙₘ = Array{eltype(R⃗)}(undef, 3, number_configurations)
+    cont = 1
+    for n=1:N
+        r_n = R⃗[:,n]
+        for m=(n+1):N
+            rₙₘ[1,cont] = r_n[1] - R⃗[1,m]
+            rₙₘ[2,cont] = r_n[2] - R⃗[2,m]
+            rₙₘ[3,cont] = r_n[3] - R⃗[3,m]
+            cont += 1
+        end
+    end
+
+    intensity = ThreadsX.mapreduce(+, 1:number_configurations) do cont
+        (  
+           begin 
+                @inbounds dot_n_r = n̂[1]*rₙₘ[1, cont] + n̂[2]*rₙₘ[2, cont] + n̂[3]*rₙₘ[3, cont]
+                @inbounds βₙₘ[cont]*cis( -k₀*dot_n_r  )
+           end 
+        )
+    end
+    
+    return 2real(intensity)
+end
+
+
+
+"""
+    _core_nearField(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
+
+- atoms: each column is an atom
+- atomic_states: β for Scalar Model, ou [β,z] for Mean Field Model
+- sensor: measurement position
+
+Returns a Value : +(Γ/2) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)/(k₀* sensor⋅R⃗ⱼ)
+- R⃗ⱼ : atom j
+"""
+function default_nearField3D(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
     E_scatt = zero(eltype(β))
 
     j = 1
     @inbounds for atom in eachcol(atoms)
-        d_SensorAtom = sqrt( (sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2 )
+        d_SensorAtom = sqrt(
+            (sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2,
+        )
         E_scatt += cis(k₀ * d_SensorAtom) * (β[j] / d_SensorAtom)
         j += 1
     end
     E_scatt = +(Γ / 2) * im * E_scatt
     return E_scatt
 end
-@inline function _scattering_farField(sensor::AbstractVector, atoms, β::Vector{ComplexF64})
-    E_scatt = zero(ComplexF64)
+
+"""
+    default_farField3D(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
+
+- atoms: each column is an atom
+- atomic_states: β for Scalar Model, ou [β,z] for Mean Field Model
+- sensor: measurement position
+
+Returns a Value : -(Γ/2) * (exp(ikr) / ikr) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ) 
+     
+- r : distance sensor to origin (r = norm(sensor))
+- n̂ : norm of sensor ( n̂ = sensor / norm(sensor) )
+- R⃗ⱼ : atom j
+"""
+function default_farField3D(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
+    E_scatt = zero(eltype(β))
     n̂ = sensor / norm(sensor)
 
-    dot_n_r = zero(ComplexF64)
+    dot_n_r = zero(eltype(β))
     j = 1
     @inbounds for atom in eachcol(atoms)
         dot_n_r = n̂[1] * atom[1] + n̂[2] * atom[2] + n̂[3] * atom[3]
@@ -163,6 +252,109 @@ end
 
 
 # ### --------------- MEAN FIELD ---------------
+function get_intensities_over_oneSensor_v2(
+    problem::NonLinearOptics{MeanField},
+    atoms_states::AbstractArray,
+    oneSensor::AbstractArray,
+)
+    N = problem.atoms.N
+    R⃗ = view(problem.atoms.r, :, :)
+
+    σ⁻ = atoms_states[1:N]
+    σ⁺ = conj.(σ⁻)
+    σᶻ = atoms_states[(N+1):end]
+
+
+    r = norm(oneSensor)
+    n̂ = oneSensor ./ r
+    Ω = apply_laser_over_oneSensor(problem.laser, oneSensor)
+
+    intensity = intensity_laser_plus_field_oneSensor(
+        problem,
+        Ω,
+        r,
+        σ⁻,
+        σ⁺,
+        σᶻ,
+        n̂,
+        R⃗,
+        N,
+        atoms_states,
+        oneSensor,
+    )
+
+    intensity
+end
+function get_intensities_over_sensors_v2(
+    problem::NonLinearOptics{MeanField},
+    atoms_states::AbstractArray,
+    all_sensors::AbstractArray,
+)
+    N = problem.atoms.N
+    R⃗ = view(problem.atoms.r, :, :)
+
+    σ⁻ = atoms_states[1:N]
+    σ⁺ = conj.(σ⁻)
+    σᶻ = atoms_states[(N+1):end]
+
+    nSensors = size(all_sensors, 2)
+    intensities = zeros(nSensors)
+    j = 1
+    for sensor in eachcol(all_sensors)
+        r = norm(sensor)
+        n̂ = sensor ./ r
+        Ω = (im / Γ) * apply_laser_over_oneSensor(problem.laser, sensor)
+        intensities[j] = intensity_laser_plus_field_oneSensor(
+            problem,
+            Ω,
+            r,
+            σ⁻,
+            σ⁺,
+            σᶻ,
+            n̂,
+            R⃗,
+            N,
+            atoms_states,
+            sensor,
+        )
+        j += 1
+    end
+    intensities
+end
+
+using ThreadsX
+function intensity_laser_plus_field_oneSensor(
+    problem,
+    Ω,
+    r,
+    σ⁻,
+    σ⁺,
+    σᶻ,
+    n̂,
+    R⃗,
+    N,
+    atoms_states,
+    sensor,
+)
+    term1 = abs2(im * Ω) / 4
+    term2 = real(
+        im *
+        Ω *
+        (exp(-im * k₀ * r) / (im * k₀ * r)) *
+        ThreadsX.sum(σ⁺[j] * cis(+k₀ * (n̂ ⋅ R⃗[:, j])) for j = 1:N),
+    )
+    term3 = ThreadsX.sum(
+        σ⁻[j] * σ⁺[m] * cis(-k₀ * (n̂ ⋅ (R⃗[:, j] - R⃗[:, m]))) for
+        j = 1:N, m = 1:N if j ≠ m
+    )
+    term4 = ThreadsX.sum((1 + σᶻ[j]) / 2 for j = 1:N)
+
+    intensity_oneSensor =
+        term1 + (Γ / 2) * term2 + (Γ^2 / 4) * (1 / (k₀ * r)^2) * (term3 + term4)
+
+    return real(intensity_oneSensor)
+end
+
 """
 	get_intensities_over_sensors(problem::NonLinearOptics{MeanField}, atoms_states::AbstractArray, sensors::AbstractArray
 
@@ -308,17 +500,17 @@ function _get_meanfield_constant_term(atoms, Θ)
     k₀sinΘ = k₀ * sin(Θ)
     cos_Θ = cos(Θ)
 
-    Gₙₘ_shared = SharedArray{ComplexF64,2}(N, N)
+    Gₙₘ = Array{ComplexF64,2}(undef, N, N)
     @sync for n = 1:N
         Threads.@spawn for m = 1:N # we had to compute all terms, and not the upper part
-            @inbounds Gₙₘ_shared[n, m] =
+            @inbounds Gₙₘ[n, m] =
                 _constant_term_core_computation(xₙₘ, yₙₘ, zₙₘ, n, m, cos_Θ, k₀sinΘ)
         end
     end
-    Gₙₘ = Array(Gₙₘ_shared)
+
     #=
         IF I want to compute only the upper part,
-        I have to multiply all terms by π/2:   Gₙₘ = (π/2)Array(Gₙₘ_shared)
+        I have to multiply all terms by π/2:   Gₙₘ = (π/2)*Gₙₘ
 
         I decided to don't make this, to don't appear with factors
         not mentioned on theory.
@@ -330,7 +522,7 @@ function _get_meanfield_constant_term(atoms, Θ)
         Without this cleaning, the garbage collector gets lost 
         outside this function - when many simulation occurs at the same time.
     =#
-    Gₙₘ_shared = xₙₘ = yₙₘ = zₙₘ = 1
+    xₙₘ = yₙₘ = zₙₘ = 1
     GC.gc()  # DO NOT DELETE
     return Gₙₘ
 end
@@ -343,11 +535,11 @@ function get_xyz_distances(r) # @memoize  --> creating warning, let's ignore it 
     dimensions = size(r, 1)
     N = size(r, 2)
 
-    xₙₘ = SharedArray{Float64,2}(N, N)
-    yₙₘ = SharedArray{Float64,2}(N, N)
-    zₙₘ = SharedArray{Float64,2}(N, N)
+    xₙₘ = Array{Float64,2}(undef, N, N)
+    yₙₘ = Array{Float64,2}(undef, N, N)
+    zₙₘ = Array{Float64,2}(undef, N, N)
 
-    r_shared = SharedArray{Float64,2}(dimensions, N)
+    r_shared = Array{Float64,2}(undef, dimensions, N)
     r_shared .= r
     @sync for n = 1:N
         r_n = view(r_shared, :, n)

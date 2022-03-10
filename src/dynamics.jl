@@ -1,18 +1,21 @@
-function get_steady_state(problem::LinearOptics{Scalar}) # @memoize 
+function steady_state(problem::LinearOptics{Scalar}) # @memoize 
     @debug "start: get steady state"
 
-    G = get_interaction_matrix(problem)
-    Ωₙ = apply_laser_over_atoms(problem.laser, problem.atoms)
-    βₛ = (-0.5im) * (G \ Ωₙ)
+    G = interaction_matrix(problem)
+    Ωₙ = laser_field(problem.laser, problem.atoms)
+    βₛ = -(G \ Ωₙ)
 
     @debug "end  : get steady state"
     return βₛ
 end
-function get_steady_state(problem::NonLinearOptics{MeanField}; time_max = 50)
+function steady_state(problem::NonLinearOptics{MeanField}; time_max = 50)
     u0 = default_evolution_initial_condition(problem)
     tspan = (0.0, time_max)
 
     steady_state = time_evolution(problem, u0, tspan; save_on = false)[end]
+    #= Not clear why I need this factor `cis(π)`=#
+    N = problem.atoms.N
+    steady_state[1:N] .= cis(π).*steady_state[1:N]
     return steady_state
 end
 
@@ -25,8 +28,8 @@ function time_evolution(
     kargs...,
 ) where {T<:Linear}
     ### use default G and Ωₙ
-    G = get_interaction_matrix(problem)
-    Ωₙ = -0.5im * apply_laser_over_atoms(problem.laser, problem.atoms)
+    G = copy(interaction_matrix(problem))
+    Ωₙ = laser_field(problem.laser, problem.atoms)
     solution = time_evolution(problem, u₀, tspan, Ωₙ, G; kargs...)
 
     return solution
@@ -39,7 +42,7 @@ function time_evolution(
     kargs...,
 ) where {T<:Linear}
     ### use default G
-    G = get_interaction_matrix(problem)
+    G = copy(interaction_matrix(problem))
     solution = time_evolution(problem, u₀, tspan, Ωₙ, G; kargs...)
 
     return solution
@@ -91,7 +94,7 @@ function Scalar!(du, u, p, t)
     But using inplace operation
     =#
     mul!(du, G, u)
-    du .+= Ωₙ
+    du .-= Ωₙ
 
     return nothing
 end
@@ -100,7 +103,7 @@ end
 # ### --------------- MEAN FIELD ---------------
 function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)
     @debug "start: time evolution - NonLinearOptics"
-    G = get_interaction_matrix(problem)
+    G = copy(interaction_matrix(problem))
 
     #= 
         I don't sum over diagonal elements during time evolution
@@ -108,14 +111,9 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;
     =#
     G[diagind(G)] .= zero(eltype(G))
 
-    #= 
-        Also, the definition for Mean Field evolution needs
-     +(Γ/2), where scalar kernel return -(Γ/2).
-     Just multiply by -1 fixes
-    =#
-    G .= -G
 
-    Ωₙ = apply_laser_over_atoms(problem.laser, problem.atoms)
+    # laser_field returns `(im/2)*Ω`, but I need only `Ω`
+    Ωₙ = laser_field(problem.laser, problem.atoms)/(im/2)
     Wₙ = zeros(eltype(Ωₙ), size(Ωₙ))
     G_βₙ = zeros(eltype(Ωₙ), size(Ωₙ))
     temp1 = similar(Ωₙ)
@@ -154,7 +152,7 @@ z₀ = 2β₀.*conj.(β₀) .- 1
 """
 function default_evolution_initial_condition(problem::NonLinearOptics{MeanField})
     β₀ = zeros(ComplexF64, problem.atoms.N)
-    z₀ = 2β₀ .* conj.(β₀) .- 1
+    z₀ = -ones(ComplexF64, problem.atoms.N)
     u₀ = vcat(β₀, z₀)
     return u₀
 end
@@ -166,13 +164,13 @@ function MeanField!(du, u, p, t)
     zₙ = @view u[N+1:end]
 
     #= Code below is equivalento to =#
-    # Wₙ[:] .= Ωₙ/2 - im*(G*βₙ - diagG.*βₙ) # don't forget the element wise multiplication of "diagG.*βₙ"
+    # Wₙ[:] .= Ωₙ/2 + im*(G*βₙ - diagG.*βₙ) # don't forget the element wise multiplication of "diagG.*βₙ"
     # @. du[1:N] = (im*Δ - Γ/2)*βₙ + im*Wₙ*zₙ
     # @. du[N+1:end] = -Γ*(1 + zₙ) - 4*imag(βₙ*conj(Wₙ))
 
     # mul!(G_βₙ, G, βₙ) # == G_βₙ = G*βₙ
     # @simd for i ∈ eachindex(Wₙ)
-    #     @inbounds Wₙ[i] = Ωₙ[i]/2 - im*(G_βₙ[i] - diagG[i]*βₙ[i])
+    #     @inbounds Wₙ[i] = Ωₙ[i]/2 + im*(G_βₙ[i] - diagG[i]*βₙ[i])
     # end
     # @simd for i ∈ eachindex(βₙ)
     #     @inbounds du[i] = (im*Δ - Γ/2)*βₙ[i] + im*Wₙ[i]*zₙ[i]
@@ -182,7 +180,7 @@ function MeanField!(du, u, p, t)
     # end
 
     mul!(G_βₙ, G, βₙ) # == G_βₙ = G*βₙ
-    Wₙ .= Ωₙ / 2 .- im * (G_βₙ - diagG .* βₙ)
+    Wₙ .= Ωₙ / 2 .+ im * (G_βₙ - diagG .* βₙ)
     temp1 .= (im * Δ - Γ / 2) * βₙ .+ im * Wₙ .* zₙ
     temp2 .= -Γ * (1 .+ zₙ) - 4 * imag.(βₙ .* conj.(Wₙ))
     du[:] .= vcat(temp1, temp2)
