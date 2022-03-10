@@ -3,7 +3,7 @@ using ProgressMeter
 using Plots
 using Random
 
-function find_min_transmission(N, ρ, laser_increase_range, Δ_range; kwargs...)
+function find_min_transmission(N, ρ, laser_increase_range, Δ_range, scatt_func)
     Random.seed!(2243)
     new_cloud = Atom(CoupledDipoles.Cylinder(), cylinder_inputs(N, ρ)...)
     s = 1e-5
@@ -25,9 +25,9 @@ function find_min_transmission(N, ρ, laser_increase_range, Δ_range; kwargs...)
 
             _laser = Laser(Gaussian3D(w₀), s, Δ)
             _problem = LinearOptics(Scalar(), new_cloud, _laser)
-            _βₙ = get_steady_state(_problem)
+            _βₙ = steady_state(_problem)
 
-            Ts[l_idx, idx] = get_transmission(_problem, _βₙ; kwargs...)
+            Ts[l_idx, idx] = transmission(_problem, _βₙ, scatt_func)
             ProgressMeter.next!(p)
         end
     end
@@ -40,18 +40,9 @@ N = 500
 laser_increase_range = [2.0, 2.25, 2.5, 3.0]
 Δ_range = range(-100, 100, length = 20)
 
-scattering = :nearField
-create_sensors_func = CoupledDipoles._create_sphere_sensor
-domain = ((0.0, 0.0), (5π/12, 2π))
+scatt_func = scattering_fuction(:nearField, :ThreeD)
 
-# scattering = :nearField
-# create_sensors_func = CoupledDipoles._create_plane_sensor
-# domain = ((-8.0, -8.0), (+8.0, +8))
-
-Ts = find_min_transmission(N, ρ, laser_increase_range, Δ_range; 
-        scattering=scattering,
-        create_sensors_func=create_sensors_func,
-        domain=domain);
+Ts = find_min_transmission(N, ρ, laser_increase_range, Δ_range, scatt_func);
 
 
 chosen = :Spectral_10

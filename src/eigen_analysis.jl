@@ -28,7 +28,7 @@ function get_spectrum(problem; forceComputation = false)
     ωₙ, Γₙ = zeros(problem.atoms.N), zeros(problem.atoms.N)
 
     if is_spectrum_NOT_available(problem) || forceComputation
-        H = get_interaction_matrix(problem)
+        H = interaction_matrix(problem)
         spectrum = eigen(H)
 
         problem.spectrum[:λ] = spectrum.values

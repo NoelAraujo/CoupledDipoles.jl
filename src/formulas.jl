@@ -52,12 +52,6 @@ end
 
 
 """
-    estimate_E₀(laser)
-"""
-estimate_E₀(laser) = √(laser.s * (1 + 4(laser.Δ / Γ)^2) / 2)
-
-
-"""
     sph2cart([θ, ϕ, r])
     
     θ = "elevation" or "Polar" = projection on Z-axis (in radians)

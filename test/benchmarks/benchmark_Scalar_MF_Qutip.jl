@@ -58,8 +58,8 @@ time_Qutip = matrixData[:,1]
 iQutip = matrixData[:,2]
 
 ### ------------ STEADY STATES -----------------------
-ss_S = get_steady_state(simulationScalar)
-ss_MF = get_steady_state(simulationMeanField; time_max=1000)
+ss_S = steady_state(simulationScalar)
+ss_MF = steady_state(simulationMeanField; time_max=50)
 
 i_ss_S = get_intensity_over_an_angle(simulationScalar, ss_S, deg2rad(35))
 i_ss_MF =get_intensity_over_an_angle(simulationMeanField, ss_MF , deg2rad(35))

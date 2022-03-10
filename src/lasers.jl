@@ -1,24 +1,23 @@
-apply_laser_over_atoms(laser, atoms) = _apply_laser(laser, atoms)
-apply_laser_over_sensors(laser, sensors) = _apply_laser(laser, sensors)
+"""
+    laser_field(laser, points)
 
-apply_laser_over_oneAtom(laser, oneAtom) = _apply_laser_over_oneCoordinate(laser, oneAtom)
-apply_laser_over_oneSensor(laser, oneSensor) =
-    _apply_laser_over_oneCoordinate(laser, oneSensor)
-
-function _apply_laser(laser, spatial_coordinates)
+    Computes (im/2)*Ω.(points), where Ω is the laser (spatial distribution + parameters)
+"""
+@views function laser_field(laser, spatial_coordinates)
     N = _get_number_elements(spatial_coordinates)
     _core_LaserFunction = _get_core_LaserFunction(laser)
+    
     _spatial_matrix = _get_spatial_matrix(spatial_coordinates)
     E₀ = estimate_E₀(laser)
-
-    E = zeros(ComplexF64, N)
-    matrix_view = view(_spatial_matrix, :, :)
-
-    Threads.@threads for n = 1:N
-        oneCoordinate = matrix_view[:, n]
-        @inbounds E[n] = _core_LaserFunction(oneCoordinate, E₀, laser)
+    if N == 1
+        E = -(im/2)*_core_LaserFunction(_spatial_matrix, E₀, laser)
+    else
+        E = zeros(ComplexF64, N)
+        Threads.@threads for n = 1:N
+            oneCoordinate = _spatial_matrix[:, n]
+            @inbounds E[n] = -(im/2)*_core_LaserFunction(oneCoordinate, E₀, laser)
+        end
     end
-
     return E
 end
 function _apply_laser_over_oneCoordinate(laser, oneCoordinate)
@@ -28,16 +27,26 @@ function _apply_laser_over_oneCoordinate(laser, oneCoordinate)
 
     return E
 end
+"""
+    laser_intensity(laser, points)
 
+    Computes |(im/2)*Ω.(points)|^2, where Ω is the laser (spatial distribution + parameters)
+"""
+laser_intensity(laser, spatial_coordinates) = abs2( laser_field(laser, spatial_coordinates) )
 
-_get_number_elements(r::AbstractMatrix) = size(r, 2)
+_get_number_elements(r::Union{AbstractArray,AbstractMatrix}) = size(r, 2)
 _get_number_elements(atoms::Atom{T}) where {T} = atoms.N
 
-_get_spatial_matrix(r::AbstractMatrix) = r
+_get_spatial_matrix(r::Union{AbstractArray, AbstractMatrix}) = r
 _get_spatial_matrix(atoms::Atom{T}) where {T} = atoms.r
 
 _get_core_LaserFunction(laser::Laser{PlaneWave3D}) = _core_PlaneWave3D
 _get_core_LaserFunction(laser::Laser{Gaussian3D}) = _core_Gaussian3D
+
+"""
+    estimate_E₀(laser) = √(s * (1 + 4(Δ / Γ)^2) / 2)
+"""
+estimate_E₀(laser) = √(laser.s * (1 + 4(laser.Δ / Γ)^2) / 2)
 
 
 function _core_PlaneWave3D(oneAtom, E₀, laser)

@@ -3,88 +3,28 @@ struct SensorType
     domain::Tuple
 end
 
-function get_transmission(problem, β; kwargs...)
+function transmission(problem, β, scatt_func)
 
-    create_sensors_func = get(kwargs, :create_sensors_func, _create_sphere_sensor)
     θₘₐₓ = problem.atoms.N < 50 ? deg2rad(45) : deg2rad(15)
-    integral_domain = get(kwargs, :domain, ((0.0, 0.0), (θₘₐₓ, 2π)))
+    # integral_domain = get(kwargs, :domain, ((0.0, 0.0), (θₘₐₓ, 2π)))
+    integral_domain = ((0.0, 0.0), (θₘₐₓ, 2π))
+    
+    (I_scattered, _e) = hcubature(integral_domain...) do x # , rtol=1e-12
+        sensor = getSensor_on_Sphere(x, problem)
+        scattering_intensity(problem, β, sensor, scatt_func)
+    end
 
-    sensor_setup = SensorType(create_sensors_func, integral_domain)
+    (I_laser, _e) = hcubature(integral_domain...) do x # , rtol=1e-12
+        sensor = getSensor_on_Sphere(x, problem)
+        laser_intensity(problem.laser, sensor)
+    end
 
-    scattering = get(kwargs, :scattering, :farField)
-    I_scattered = _get_intensity_laser_plus_scattering(problem,β; scattering = scattering, sensor_setup = sensor_setup)
-    I_laser =     _get_intensity_laser(problem; sensor_setup)
     T = I_scattered / I_laser
     return T
 end
 
 
-function _get_intensity_laser_plus_scattering(
-    problem,
-    β;
-    scattering::Symbol,
-    sensor_setup::SensorType,
-)
-    if scattering == :nearField
-        scattering_func = _scattering_nearField
-    elseif scattering == :farField
-        scattering_func = _scattering_farField
-    else
-        @error "Invalid scattering Value: should be `:nearField` or `:farField` "
-    end
-
-    view_of_atoms = view(problem.atoms.r, :, :)
-
-    _toCall_I_total(x) = _I_total(
-        x,
-        problem,
-        view_of_atoms,
-        β,
-        scattering_func,
-        sensor_setup.createSensor_func,
-    )
-    (int_scatt, _e) = hcubature(_toCall_I_total, sensor_setup.domain...)
-    return int_scatt
-end
-function _I_total(
-    x,
-    problem::LinearOptics,
-    v_r,
-    β::Vector{ComplexF64},
-    scattering_func::Function,
-    getSensor::Function,
-)
-
-    sensor = getSensor(x, problem)
-
-    return _get_intensity_over_sensor(
-        problem.atoms.shape,
-        problem.laser,
-        v_r,
-        sensor,
-        β;
-        scattering_func = scattering_func,
-    )
-end
-
-
-function _get_intensity_laser(problem; sensor_setup::SensorType)
-    integral_args = sensor_setup.domain
-    myargs = (:problem => problem, :createSensor_func => sensor_setup.createSensor_func)
-
-    (int_laser, _e) = hcubature(x -> _I_laser(x; myargs...), integral_args...)
-    return int_laser
-end
-function _I_laser(x; kwargs...)
-    problem = kwargs[:problem]
-    getSensor = kwargs[:createSensor_func]
-    sensor = getSensor(x, problem)
-
-    return abs2(apply_laser_over_oneSensor(problem.laser, sensor))
-end
-
-
-@inline function _create_sphere_sensor(x, problem)
+@inline function getSensor_on_Sphere(x, problem)
     θ, ϕ = x[1], x[2]
     new_R = how_far_is_FarField(problem.atoms)
     spherical_coordinate = [θ, ϕ, new_R]
