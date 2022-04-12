@@ -9,17 +9,13 @@ using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
 # using Random
 # using Statistics
+# using Memoize
 using ThreadsX
-
+using LinearSolve
 using Printf
-using LsqFit
+using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
 using SpecialFunctions
-using Folds
-using ThreadPools
-using LazyArrays
-# using Memoize
-using SharedArrays
 using HCubature
 using MKL
 

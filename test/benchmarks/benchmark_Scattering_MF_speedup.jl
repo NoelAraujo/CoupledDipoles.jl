@@ -201,7 +201,7 @@ end
 
 
 """
-    - use multi-threading of `Folds.mapreduce`
+    - use multi-threading of `ThreadsX.mapreduce`
     - add `@inbounds`
 """
 @views function scattering_optimization_5(β, n_hat, r; k₀=1)

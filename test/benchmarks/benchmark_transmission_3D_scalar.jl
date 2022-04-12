@@ -2,8 +2,12 @@ using CoupledDipoles
 using Plots, ProgressMeter
 using Revise
 
+using Logging: global_logger
+using TerminalLoggers: TerminalLogger
+global_logger(TerminalLogger())
+
 # cloud settings
-N = 520
+N = 100
 ρ = 0.3
 
 cloud = Atom(CoupledDipoles.Cylinder(), cylinder_inputs(N, ρ; h=5π)...)
@@ -12,10 +16,10 @@ R = cloud.sizes.R
 # laser settings
 w₀ = 1.5*2π
 s = 1e-1
-scatt_func = scattering_fuction(:nearField, :ThreeD)
+scatt_func = scattering_fuction(:farField, :ThreeD)
 
 # create transmission depending on detunning
-Δ_range = range(-50, 50, length = 15)
+Δ_range = range(-50, 50, length = 30)
 T = zeros(length(Δ_range))
 
 p = Progress(length(Δ_range); showspeed = true)
@@ -23,11 +27,11 @@ for idx ∈ 1:length(Δ_range)
     Δ = Δ_range[idx]
 
     _laser = Laser(Gaussian3D(w₀), s, Δ)
-    _problem = LinearOptics(Scalar(), cloud, _laser)
-    _βₙ = steady_state(_problem)
+    # _problem = LinearOptics(Scalar(), cloud, _laser)
+    # _βₙ = steady_state(_problem)
     
-    # _problem = NonLinearOptics(MeanField(), cloud, _laser)
-    # _βₙ = steady_state(_problem; time_max=25)
+    _problem = NonLinearOptics(MeanField(), cloud, _laser)
+    _βₙ = steady_state(_problem)
     
     T[idx] = transmission(_problem, _βₙ, scatt_func)
     ProgressMeter.next!(p)
@@ -38,7 +42,7 @@ plot(
     Δ_range,
     T,
     label = "",
-    ylims = (0, 1.2),
+    # ylims = (0, 1.2),
     size = (800, 400),
     lw = 3,
     legend = :bottomright,

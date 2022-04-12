@@ -1,9 +1,9 @@
 function scattering_fuction(distance::Symbol, dimension::Symbol)
     if dimension == :ThreeD
         if distance == :nearField
-            sf = default_farField3D
+            sf = default_farField3D_Field
         elseif distance == :farField
-            sf = default_farField3D
+            sf = default_farField3D_Field
         else
             @error "Only options are `:nearField` and `:farField`"
         end
@@ -11,6 +11,62 @@ function scattering_fuction(distance::Symbol, dimension::Symbol)
         @error "Only :ThreeD is supported."
     end
     return sf
+end
+
+"""
+    default_nearField3D_Field(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
+
+- atoms: each column is an atom
+- atomic_states: β for Scalar Model, ou [β,z] for Mean Field Model
+- sensor: measurement position
+
+Returns a Complex Value of the Eletric Field: +(Γ/2) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)/(k₀* sensor⋅R⃗ⱼ)
+- R⃗ⱼ : atom j
+"""
+function default_nearField3D_Field(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
+    E_scatt = zero(eltype(β))
+
+    j = 1
+    @inbounds for atom in eachcol(atoms)
+        d_SensorAtom = sqrt(
+            (sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2,
+        )
+        E_scatt += cis(k₀ * d_SensorAtom) * (β[j] / d_SensorAtom)
+        j += 1
+    end
+    E_scatt = +(Γ / 2) * im * E_scatt
+    return E_scatt
+end
+
+"""
+    default_farField3D_Field(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
+
+- atoms: each column is an atom
+- atomic_states: β for Scalar Model, ou [β,z] for Mean Field Model
+- sensor: measurement position
+
+Returns a Complex Value of the Eletric Field: -(Γ/2) * (exp(ikr) / ikr) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ) 
+     
+- r : distance sensor to origin (r = norm(sensor))
+- n̂ : norm of sensor ( n̂ = sensor / norm(sensor) )
+- R⃗ⱼ : atom j
+"""
+function default_farField3D_Field(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
+    E_scatt = zero(eltype(β))
+    n̂ = sensor / norm(sensor)
+
+    dot_n_r = zero(eltype(β))
+    j = 1
+    @inbounds for atom in eachcol(atoms)
+        dot_n_r = n̂[1] * atom[1] + n̂[2] * atom[2] + n̂[3] * atom[3]
+        dot_n_r = cis(-k₀ * dot_n_r)
+        E_scatt += dot_n_r * β[j]
+        j += 1
+    end
+
+    ikr = im * k₀ * norm(sensor)
+    E_scatt = -(Γ / 2) * E_scatt * exp(ikr) / ikr
+    return E_scatt
 end
 
 """
@@ -33,6 +89,10 @@ end
     _func = scattering_func
 
     n_sensors = _get_number_elements(_sensors)
+    
+    # N = size(_r, 2)
+    # number_configurations = ((N^2)÷2 - N÷2)
+    # βₙₘ = Array{eltype(_states[1])}(undef, number_configurations)
 
     if n_sensors == 1
         return _OnePoint_Intensity(_physics, _laser, _r, _sensors, _states, _func)
@@ -44,6 +104,7 @@ end
         return scat_int
     end
 end
+
 function _OnePoint_Intensity(physic::Union{Scalar,Vectorial}, laser, atoms, sensor, β, scattering_func)
     E_L = laser_field(laser, sensor)
     E_scatt = scattering_func(atoms, β, sensor)
@@ -51,123 +112,8 @@ function _OnePoint_Intensity(physic::Union{Scalar,Vectorial}, laser, atoms, sens
 end
 
 
-function _OnePoint_Intensity(physic::MeanField, laser, R⃗, sensor, β, scattering_func)
-    
-    Ω = laser_field(laser, sensor)
-    
-    r = norm(sensor)
-    n̂ = sensor/r
-    N = size(R⃗, 2)
-    
-    σ⁻ = β[1:N]
-    σ⁺ = conj.(σ⁻)
-    σᶻ = β[ (N+1) : end]
-
-    term1 = abs2(-im*Ω)
-    term2 = real(2Ω*(exp(-im*k₀*r)/(im*k₀*r))*ThreadsX.sum(σ⁺[j]*cis(+k₀ * (n̂⋅R⃗[:,j])) for j = 1:N), )
-    # term3 = ThreadsX.sum( σ⁻[j]*σ⁺[m]*cis(-k₀*(n̂⋅(R⃗[:,j] - R⃗[:,m]))) for j = 1:N, m = 1:N if j ≠ m )
-    term3 = _term3(σ⁻, σ⁺, n̂, R⃗)
-    term4 = ThreadsX.sum((1 + σᶻ[j]) / 2 for j = 1:N)
-
-    intensity_oneSensor = term1 + (Γ / 2)*term2 + (Γ/(2k₀*r))^2 * (term3 + term4)
-
-    return real(intensity_oneSensor)
-end
-@views function _term3(σ⁻, σ⁺, n̂, R⃗)
-    N = length(σ⁻)
-    number_configurations = ((N^2)÷2 - N÷2)
-
-    βₙₘ = Array{eltype(σ⁻)}(undef, number_configurations)
-    cont = 1
-    for n=1:N
-        for m=(n+1):N            
-            βₙₘ[cont] = σ⁺[n]*σ⁻[m]
-            cont += 1
-        end
-    end
-    
-
-    rₙₘ = Array{eltype(R⃗)}(undef, 3, number_configurations)
-    cont = 1
-    for n=1:N
-        r_n = R⃗[:,n]
-        for m=(n+1):N
-            rₙₘ[1,cont] = r_n[1] - R⃗[1,m]
-            rₙₘ[2,cont] = r_n[2] - R⃗[2,m]
-            rₙₘ[3,cont] = r_n[3] - R⃗[3,m]
-            cont += 1
-        end
-    end
-
-    intensity = ThreadsX.mapreduce(+, 1:number_configurations) do cont
-        (  
-           begin 
-                @inbounds dot_n_r = n̂[1]*rₙₘ[1, cont] + n̂[2]*rₙₘ[2, cont] + n̂[3]*rₙₘ[3, cont]
-                @inbounds βₙₘ[cont]*cis( -k₀*dot_n_r  )
-           end 
-        )
-    end
-    
-    return 2real(intensity)
-end
 
 
-
-"""
-    _core_nearField(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
-
-- atoms: each column is an atom
-- atomic_states: β for Scalar Model, ou [β,z] for Mean Field Model
-- sensor: measurement position
-
-Returns a Value : +(Γ/2) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)/(k₀* sensor⋅R⃗ⱼ)
-- R⃗ⱼ : atom j
-"""
-function default_nearField3D(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
-    E_scatt = zero(eltype(β))
-
-    j = 1
-    @inbounds for atom in eachcol(atoms)
-        d_SensorAtom = sqrt(
-            (sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2,
-        )
-        E_scatt += cis(k₀ * d_SensorAtom) * (β[j] / d_SensorAtom)
-        j += 1
-    end
-    E_scatt = +(Γ / 2) * im * E_scatt
-    return E_scatt
-end
-
-"""
-    default_farField3D(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
-
-- atoms: each column is an atom
-- atomic_states: β for Scalar Model, ou [β,z] for Mean Field Model
-- sensor: measurement position
-
-Returns a Value : -(Γ/2) * (exp(ikr) / ikr) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ) 
-     
-- r : distance sensor to origin (r = norm(sensor))
-- n̂ : norm of sensor ( n̂ = sensor / norm(sensor) )
-- R⃗ⱼ : atom j
-"""
-function default_farField3D(atoms::AbstractMatrix, β::AbstractArray, sensor::AbstractArray)
-    E_scatt = zero(eltype(β))
-    n̂ = sensor / norm(sensor)
-
-    dot_n_r = zero(eltype(β))
-    j = 1
-    @inbounds for atom in eachcol(atoms)
-        dot_n_r = n̂[1] * atom[1] + n̂[2] * atom[2] + n̂[3] * atom[3]
-        dot_n_r = cis(-k₀ * dot_n_r)
-        E_scatt += dot_n_r * β[j]
-        j += 1
-    end
-
-    ikr = im * k₀ * norm(sensor)
-    E_scatt = -(Γ / 2) * E_scatt * exp(ikr) / ikr
-    return E_scatt
-end
 
 
 function get_intensity_over_an_angle(
@@ -239,8 +185,8 @@ function get_intensity_over_an_angle(
     timeSteps = size(atoms_states, 2)
     intensities = zeros(timeSteps)
 
-    r_shared = SharedArray{Float64,2}(3, problem.atoms.N)
-    r_shared .= problem.atoms.r
+    # r_shared = SharedArray{Float64,2}(3, problem.atoms.N)
+    r_shared = problem.atoms.r
 
     Threads.@threads for i = 1:timeSteps
         oneState = view(atoms_states, :, i)
@@ -252,207 +198,67 @@ end
 
 
 # ### --------------- MEAN FIELD ---------------
-function get_intensities_over_oneSensor_v2(
-    problem::NonLinearOptics{MeanField},
-    atoms_states::AbstractArray,
-    oneSensor::AbstractArray,
-)
-    N = problem.atoms.N
-    R⃗ = view(problem.atoms.r, :, :)
-
-    σ⁻ = atoms_states[1:N]
+function _OnePoint_Intensity(physic::MeanField, laser, R⃗, sensor, β, scattering_func)
+    
+    Ω = laser_field(laser, sensor)
+    
+    r = norm(sensor)
+    n̂ = sensor/r
+    N = size(R⃗, 2)
+    
+    σ⁻ = β[1:N]
     σ⁺ = conj.(σ⁻)
-    σᶻ = atoms_states[(N+1):end]
+    σᶻ = β[ (N+1) : end]
 
-
-    r = norm(oneSensor)
-    n̂ = oneSensor ./ r
-    Ω = apply_laser_over_oneSensor(problem.laser, oneSensor)
-
-    intensity = intensity_laser_plus_field_oneSensor(
-        problem,
-        Ω,
-        r,
-        σ⁻,
-        σ⁺,
-        σᶻ,
-        n̂,
-        R⃗,
-        N,
-        atoms_states,
-        oneSensor,
-    )
-
-    intensity
-end
-function get_intensities_over_sensors_v2(
-    problem::NonLinearOptics{MeanField},
-    atoms_states::AbstractArray,
-    all_sensors::AbstractArray,
-)
-    N = problem.atoms.N
-    R⃗ = view(problem.atoms.r, :, :)
-
-    σ⁻ = atoms_states[1:N]
-    σ⁺ = conj.(σ⁻)
-    σᶻ = atoms_states[(N+1):end]
-
-    nSensors = size(all_sensors, 2)
-    intensities = zeros(nSensors)
-    j = 1
-    for sensor in eachcol(all_sensors)
-        r = norm(sensor)
-        n̂ = sensor ./ r
-        Ω = (im / Γ) * apply_laser_over_oneSensor(problem.laser, sensor)
-        intensities[j] = intensity_laser_plus_field_oneSensor(
-            problem,
-            Ω,
-            r,
-            σ⁻,
-            σ⁺,
-            σᶻ,
-            n̂,
-            R⃗,
-            N,
-            atoms_states,
-            sensor,
-        )
-        j += 1
-    end
-    intensities
-end
-
-using ThreadsX
-function intensity_laser_plus_field_oneSensor(
-    problem,
-    Ω,
-    r,
-    σ⁻,
-    σ⁺,
-    σᶻ,
-    n̂,
-    R⃗,
-    N,
-    atoms_states,
-    sensor,
-)
-    term1 = abs2(im * Ω) / 4
-    term2 = real(
-        im *
-        Ω *
-        (exp(-im * k₀ * r) / (im * k₀ * r)) *
-        ThreadsX.sum(σ⁺[j] * cis(+k₀ * (n̂ ⋅ R⃗[:, j])) for j = 1:N),
-    )
-    term3 = ThreadsX.sum(
-        σ⁻[j] * σ⁺[m] * cis(-k₀ * (n̂ ⋅ (R⃗[:, j] - R⃗[:, m]))) for
-        j = 1:N, m = 1:N if j ≠ m
-    )
+    term1 = abs2(-im*Ω)
+    term2 = real(2Ω*(exp(-im*k₀*r)/(im*k₀*r))*ThreadsX.sum(σ⁺[j]*cis(+k₀ * (n̂⋅R⃗[:,j])) for j = 1:N), )
+    term3 = _term3(σ⁻, σ⁺, n̂, R⃗)
     term4 = ThreadsX.sum((1 + σᶻ[j]) / 2 for j = 1:N)
 
-    intensity_oneSensor =
-        term1 + (Γ / 2) * term2 + (Γ^2 / 4) * (1 / (k₀ * r)^2) * (term3 + term4)
+    intensity_oneSensor = term1 + (Γ / 2)*term2 + (Γ/(2k₀*r))^2 * (term3 + term4)
 
     return real(intensity_oneSensor)
 end
-
 """
-	get_intensities_over_sensors(problem::NonLinearOptics{MeanField}, atoms_states::AbstractArray, sensors::AbstractArray
-
-atoms_states: vcat(β, z)
-sensor: [ [sensor1], [sensor2], ... ,[sensorN]  ]
-
-**important**: check benchmark folders to understand how this code was produced
+    Hard core optimizations for term3. Check benchmarks folder for details.
 """
-function get_intensities_over_sensors(
-    problem::NonLinearOptics{MeanField},
-    atoms_states::AbstractArray,
-    sensors::AbstractArray,
-)
-    @debug "start : get intensities over sensors - NonLinearOptics"
+@views function _term3(σ⁻, σ⁺, n̂, R⃗)
+    N = length(σ⁻)
+    number_configurations = ((N^2)÷2 - N÷2)
 
-    N, r = problem.atoms.N, problem.atoms.r
-    β, z = view(atoms_states, 1:N), view(atoms_states, (N+1):2N)
-
-    number_configurations = ((N^2) ÷ 2 - N ÷ 2)
-
-    βₙₘ = Array{ComplexF64}(undef, number_configurations)
+    βₙₘ = Array{eltype(σ⁻)}(undef, number_configurations)
     cont = 1
-    for n = 1:N
-        for m = (n+1):N
-            βₙₘ[cont] = conj(β[n]) * β[m]
+    for n=1:N
+        for m=(n+1):N            
+            βₙₘ[cont] = σ⁺[n]*σ⁻[m]
             cont += 1
         end
     end
-    vβₙₘ = view(βₙₘ, :)
+    
 
-    rₙₘ = Array{ComplexF64}(undef, 3, number_configurations)
+    rₙₘ = Array{eltype(R⃗)}(undef, 3, number_configurations)
     cont = 1
-    for n = 1:N
-        r_n = @view(r[:, n])
-        for m = (n+1):N
-            rₙₘ[1, cont] = r_n[1] - r[1, m]
-            rₙₘ[2, cont] = r_n[2] - r[2, m]
-            rₙₘ[3, cont] = r_n[3] - r[3, m]
+    for n=1:N
+        r_n = R⃗[:,n]
+        for m=(n+1):N
+            rₙₘ[1,cont] = r_n[1] - R⃗[1,m]
+            rₙₘ[2,cont] = r_n[2] - R⃗[2,m]
+            rₙₘ[3,cont] = r_n[3] - R⃗[3,m]
             cont += 1
         end
     end
-    vrₙₘ = view(rₙₘ, :, :)
 
-
-    n_sensors = size(sensors, 2)
-    intensities = Float64[]
-
-    if n_sensors == 1
-        n_hat = sensors ./ norm(sensors)
-        intensity =
-            _oneSensor_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations)
-        intensity += sum((1 .+ z) ./ 4)
-
-        push!(intensities, 2real(intensity))
-    else
-        const_sum = sum((1 .+ z) ./ 4)
-        for oneSensor in eachcol(sensors)
-            n_hat = oneSensor ./ norm(oneSensor)
-
-            intensity =
-                _manySensors_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations)
-            intensity += const_sum
-
-            push!(intensities, 2real(intensity))
-        end
-    end
-
-    @debug "end  : get intensities over sensors - NonLinearOptics"
-    return intensities
-end
-function _oneSensor_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations; k₀ = 1)
-    intensity = ComplexF64(0)
-    for cont = 1:number_configurations
-        dot_n_r =
-            n_hat[1] * vrₙₘ[1, cont] + n_hat[2] * vrₙₘ[2, cont] + n_hat[3] * vrₙₘ[3, cont]
-        intensity += vβₙₘ[cont] * cis(k₀ * dot_n_r)
-    end
-    return intensity
-end
-
-function _manySensors_MeanField_scattering(n_hat, vβₙₘ, vrₙₘ, number_configurations; k₀ = 1)
-    intensity = ComplexF64(0)
-    intensity = Folds.mapreduce(+, 1:number_configurations) do k
-        (
-            begin
-                @inbounds vβₙₘ[k] * cis(
-                    k₀ * (
-                        n_hat[1] * vrₙₘ[1, k] +
-                        n_hat[2] * vrₙₘ[2, k] +
-                        n_hat[3] * vrₙₘ[3, k]
-                    ),
-                )
-            end
+    intensity = ThreadsX.mapreduce(+, 1:number_configurations) do cont
+        (  
+           begin 
+                @inbounds dot_n_r = n̂[1]*rₙₘ[1, cont] + n̂[2]*rₙₘ[2, cont] + n̂[3]*rₙₘ[3, cont]
+                @inbounds βₙₘ[cont]*cis( -k₀*dot_n_r  )
+           end 
         )
     end
-    return intensity
+    
+    return 2real(intensity)
 end
-
 
 
 function get_intensity_over_an_angle(

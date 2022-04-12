@@ -8,15 +8,50 @@ function steady_state(problem::LinearOptics{Scalar}) # @memoize
     @debug "end  : get steady state"
     return βₛ
 end
-function steady_state(problem::NonLinearOptics{MeanField}; time_max = 50)
-    u0 = default_evolution_initial_condition(problem)
-    tspan = (0.0, time_max)
+function steady_state(problem::NonLinearOptics{MeanField})
+    @debug "start: time evolution - NonLinearOptics"
+    u₀ = default_evolution_initial_condition(problem)
 
-    steady_state = time_evolution(problem, u0, tspan; save_on = false)[end]
-    #= Not clear why I need this factor `cis(π)`=#
-    N = problem.atoms.N
-    steady_state[1:N] .= cis(π).*steady_state[1:N]
-    return steady_state
+    G = interaction_matrix(problem)
+    #= 
+        I don't sum over diagonal elements during time evolution
+     thus, to avoid an IF statement, I put a zero on diagonal 
+    =#
+    saveDiag = diagind(G)
+    G[diagind(G)] .= zero(eltype(G))
+    
+
+    # laser_field returns `(-im/2)*Ω`, but I need only `Ω`
+    Ωₙ    = laser_field(problem.laser, problem.atoms)/(-im/2)
+    Wₙ    = zeros(eltype(Ωₙ), size(Ωₙ))
+    G_βₙ  = zeros(eltype(Ωₙ), size(Ωₙ))
+    temp1 = similar(Ωₙ)
+    temp2 = similar(Ωₙ)
+    parameters = view(G, :, :),
+    view(Ωₙ, :),
+    Wₙ,
+    problem.laser.Δ,
+    problem.atoms.N,
+    G_βₙ,
+    temp1,
+    temp2
+    
+    ### calls for solver
+    tspan = (0.0, 50.0)
+    problemFunction = get_evolution_function(problem)
+    prob = ODEProblem(problemFunction, u₀, tspan, parameters)
+    steady_state = DifferentialEquations.solve(
+        prob,
+        KenCarp47(autodiff=false, linsolve=KrylovJL_GMRES()),
+        dt = 1e-10, abstol = 1e-10,reltol = 1e-10,
+        save_on = false
+    )
+    
+    # !!!! restore diagonal !!!!
+    G[diagind(G)] .= saveDiag
+    
+    @debug "end  : time evolution - NonLinearOptics"    
+    return steady_state.u[end]
 end
 
 
@@ -103,23 +138,22 @@ end
 # ### --------------- MEAN FIELD ---------------
 function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)
     @debug "start: time evolution - NonLinearOptics"
-    G = copy(interaction_matrix(problem))
-
+    G = interaction_matrix(problem)
+    
     #= 
         I don't sum over diagonal elements during time evolution
      thus, to avoid an IF statement, I put a zero on diagonal 
     =#
+    saveDiag = diagind(G)
     G[diagind(G)] .= zero(eltype(G))
-
-
-    # laser_field returns `(im/2)*Ω`, but I need only `Ω`
-    Ωₙ = laser_field(problem.laser, problem.atoms)/(im/2)
+    
+    # laser_field returns `(-im/2)*Ω`, but I need only `Ω`
+    Ωₙ = laser_field(problem.laser, problem.atoms)/(-im/2)
     Wₙ = zeros(eltype(Ωₙ), size(Ωₙ))
     G_βₙ = zeros(eltype(Ωₙ), size(Ωₙ))
     temp1 = similar(Ωₙ)
     temp2 = similar(Ωₙ)
     parameters = view(G, :, :),
-    view(diag(G), :),
     view(Ωₙ, :),
     Wₙ,
     problem.laser.Δ,
@@ -140,6 +174,9 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;
         kargs...,
     )
 
+    # !!!! restore diagonal !!!!
+    G[diagind(G)] .= saveDiag
+    
     @debug "end  : time evolution - NonLinearOptics"
     return solution
 end
@@ -158,7 +195,7 @@ function default_evolution_initial_condition(problem::NonLinearOptics{MeanField}
 end
 function MeanField!(du, u, p, t)
     # parameters
-    G, diagG, Ωₙ, Wₙ, Δ, N, G_βₙ, temp1, temp2 = p
+    G, Ωₙ, Wₙ, Δ, N, G_βₙ, temp1, temp2 = p
 
     βₙ = @view u[1:N]
     zₙ = @view u[N+1:end]
@@ -180,9 +217,29 @@ function MeanField!(du, u, p, t)
     # end
 
     mul!(G_βₙ, G, βₙ) # == G_βₙ = G*βₙ
-    Wₙ .= Ωₙ / 2 .+ im * (G_βₙ - diagG .* βₙ)
+    # Wₙ .= Ωₙ / 2 .+ im * (G_βₙ - diagG .* βₙ) # if I don't clean the diagonal in callee function
+    Wₙ .= Ωₙ / 2 .+ im*G_βₙ
     temp1 .= (im * Δ - Γ / 2) * βₙ .+ im * Wₙ .* zₙ
     temp2 .= -Γ * (1 .+ zₙ) - 4 * imag.(βₙ .* conj.(Wₙ))
+    du[:] .= vcat(temp1, temp2)
+
+    return nothing
+end
+
+function MeanField!_v2(du, u, p, t)
+    # parameters
+    G, Ωₙ, Wₙ, Δ, N, G_βₙ, temp1, temp2 = p
+
+    βₙ = @view u[1:N]
+    zₙ = @view u[N+1:end]
+
+    for j=1:N
+        temp1[j] = (im*Δ - Γ/2)*βₙ[j] + 0.5*im*Ωₙ[j]*zₙ[j]  + (-2/Γ)*(Γ/2)*sum( G[j,m]*βₙ[m] for m =1:N if j ≠ m  )*zₙ[j]
+    end
+    for j=1:N
+        temp2[j] = (im*conj(Ωₙ[j])*βₙ[j] - im*Ωₙ[j]*conj(βₙ[j]))  - Γ*(1 + zₙ[j])  - (-2/Γ)*(sum(G[j,m]*βₙ[m]*conj(βₙ[j]) for m =1:N if m≠j) +  conj.( sum(G[j,m]*βₙ[m]*conj(βₙ[j]) for m =1:N if m≠j)  )  )
+    end 
+    
     du[:] .= vcat(temp1, temp2)
 
     return nothing
