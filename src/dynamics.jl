@@ -3,7 +3,13 @@ function steady_state(problem::LinearOptics{Scalar}) # @memoize
 
     G = interaction_matrix(problem)
     Ωₙ = laser_field(problem.laser, problem.atoms)
-    βₛ = -(G \ Ωₙ)
+    if problem.atoms.N > 1
+        βₛ = -(G \ Ωₙ)
+    else
+        # The negative sign was NOT forgotten
+        # after some math, I verified that it does not exist
+        βₛ = Ωₙ/G[1] 
+    end
 
     @debug "end  : get steady state"
     return βₛ
@@ -42,7 +48,8 @@ function steady_state(problem::NonLinearOptics{MeanField})
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
     steady_state = DifferentialEquations.solve(
         prob,
-        KenCarp47(autodiff=false, linsolve=KrylovJL_GMRES()),
+        # KenCarp47(autodiff=false, linsolve=KrylovJL_GMRES()),
+        OwrenZen3(),
         dt = 1e-10, abstol = 1e-10,reltol = 1e-10,
         save_on = false
     )
@@ -167,10 +174,8 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
     solution = DifferentialEquations.solve(
         prob,
-        VCABM();
+        OwrenZen3(),
         dt = 1e-10,
-        abstol = 1e-10,
-        reltol = 1e-10,
         kargs...,
     )
 

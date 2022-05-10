@@ -70,7 +70,7 @@ function default_farField3D_Field(atoms::AbstractMatrix, β::AbstractArray, sens
 end
 
 """
-    scattering_intensity(SP::ScatteringProblem)
+    scattering_intensity(problem, atomic_states, measurement_positions, scattering_func::Function)
 
     Computes the Total Electric Field (Laser Pump + Scattering), then returns the Intensity
 """
@@ -89,16 +89,13 @@ end
     _func = scattering_func
 
     n_sensors = _get_number_elements(_sensors)
-    
-    # N = size(_r, 2)
-    # number_configurations = ((N^2)÷2 - N÷2)
-    # βₙₘ = Array{eltype(_states[1])}(undef, number_configurations)
+        
 
     if n_sensors == 1
         return _OnePoint_Intensity(_physics, _laser, _r, _sensors, _states, _func)
     else
         scat_int = zeros(n_sensors)
-        for i = 1:n_sensors #Threads.@threads 
+        Threads.@threads for i = 1:n_sensors #
             scat_int[i] = _OnePoint_Intensity(_physics, _laser, _r, _sensors[:, i], _states, _func)
         end
         return scat_int
