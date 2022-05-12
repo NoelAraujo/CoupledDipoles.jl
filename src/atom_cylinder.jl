@@ -35,8 +35,8 @@ function ftn_AtomsOnCylinder(; kwargs...)
     
     r,θ = R*rand(), 2π*rand()
 
-    x = sqrt(r)*cos(θ)
-    y = sqrt(r)*sin(θ)
+    x = r*cos(θ)
+    y = r*sin(θ)
     z = -h*rand() + h/2
 
     return [x, y, z]
