@@ -103,18 +103,18 @@ function cylinder_inputs(N::Integer, ρ::Real; kwargs...)
     R =  get(kwargs, :R, NaN)
     h =  get(kwargs, :h, NaN)
 
-    if (R < 0) && (h < 0)
+    if (R < 0) || (h < 0)
         @error "Invalid inputs, R and h must be positives"
-        R = 0
-        h = 0
+        R = NaN
+        h = NaN
     elseif isnan(R) && isnan(h) # R and h not provided
         # assume that R=h ⇢ (h*πR^2 = πR^3) and solve for R
         R = cbrt(N / π * ρ)
         h = R
-    elseif isnan(R) && (h ≠ -1.0) # R not provided
+    elseif (h > 0) && isnan(R) # R not provided
         R = sqrt(N / (π * ρ * h))
-    elseif (R ≠ -1.0) && isnan(h) # h not provided
-        h = sqrt(N / (π * ρ * R^2))
+    elseif (R > 0) && isnan(h) # h not provided
+        h = N / (π * ρ * R^2)
     end
     return (N, R, h)
 end
