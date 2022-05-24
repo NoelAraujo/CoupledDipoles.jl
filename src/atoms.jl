@@ -13,7 +13,7 @@ function get_atoms(dimensions, N, rₘᵢₙ; kwargs...)
     end
     temp_atom = zeros(eltype(r), dimensions)
     nValid = 1
-    for iLoop = 1:1_000_000
+    for iLoop in 1:1_000_000
         temp_atom = get_single_atom(; kwargs...)
 
         if is_atom_valid(temp_atom, r, rₘᵢₙ)
@@ -67,7 +67,7 @@ returns a `NxN` Float64 matrix, with zeros at diagonal
 """
 function get_pairwise_matrix(r)
     r_matrix = transpose(r)
-    R_jk = Distances.pairwise(Euclidean(), r_matrix, r_matrix; dims = 1)
+    R_jk = Distances.pairwise(Euclidean(), r_matrix, r_matrix; dims=1)
     R_jk[diagind(R_jk)] .= 0
     return R_jk
 end
@@ -100,8 +100,8 @@ end
 - if use only specify R or h, the other variable will change to match the density required
 """
 function cylinder_inputs(N::Integer, ρ::Real; kwargs...)
-    R =  get(kwargs, :R, NaN)
-    h =  get(kwargs, :h, NaN)
+    R = get(kwargs, :R, NaN)
+    h = get(kwargs, :h, NaN)
 
     if (R < 0) || (h < 0)
         @error "Invalid inputs, R and h must be positives"

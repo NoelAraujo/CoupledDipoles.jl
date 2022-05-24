@@ -12,10 +12,10 @@ function interaction_matrix(problem::LinearOptics)
 end
 
 function get_empty_matrix(physic::Scalar, atoms::Atom{<:ThreeD})
-    Array{ComplexF64}(undef, atoms.N, atoms.N)
+    return Array{ComplexF64}(undef, atoms.N, atoms.N)
 end
 function get_empty_matrix(physic::Vectorial, atoms::Atom{<:ThreeD})
-    Array{ComplexF64}(undef, 3atoms.N, 3atoms.N)
+    return Array{ComplexF64}(undef, 3atoms.N, 3atoms.N)
 end
 
 function interaction_matrix(problem::NonLinearOptics{MeanField})
@@ -30,13 +30,10 @@ function interaction_matrix(problem::NonLinearOptics{MeanField})
     temp_scalar_problem.kernelFunction(temp_scalar_problem.atoms, problem.laser, G)
 
     temp_scalar_problem = 1
-    GC.gc()
     problem.data[:G] = G
     @debug "end  : interaction_matrix"
     return G
 end
-
-
 
 """
     green_scalar!(atoms, laser, G)
@@ -58,7 +55,6 @@ function green_scalar!(atoms, laser, G)
     @debug "end  : green_scalar!"
     return nothing
 end
-
 
 """
     green_vectorial!(atoms, laser, G)
@@ -97,9 +93,9 @@ function green_vectorial!(atoms, laser, G)
     Q_Rjn_over_Rjn_squared[findall(isnan.(Q_Rjn_over_Rjn_squared))] .= 0
 
     A = []
-    for (α_idx, α) ∈ enumerate(α_range)
+    for (α_idx, α) in enumerate(α_range)
         B = []
-        for (β_idx, β) ∈ enumerate(β_range)
+        for (β_idx, β) in enumerate(β_range)
             term1 = im * I(N) .* δ(α, β)
             # term2 = (3/2)*exp.(im*Rjn)./Rjn  ## Defined outside      
             term3 = P_Rjn .* δ(α, β)

@@ -3,12 +3,7 @@
 
 The cube goes from [-kL/2, kL/2] (with homogeneous distribution)
 """
-function Atom(
-    geometry::Cube,
-    N::Int64,
-    kL::Union{Real,Integer};
-    createFunction = ftn_AtomsOnCube::Function,
-)
+function Atom(geometry::Cube, N::Int64, kL::Union{Real,Integer}; createFunction=ftn_AtomsOnCube::Function)
     @debug "start: Shape - Cube"
 
     dimensions = 3

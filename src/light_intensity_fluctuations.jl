@@ -18,10 +18,10 @@ addprocs(3)
 # @everywhere push!(LOAD_PATH, pwd())
 # @everywhere using TestingNewCodes
 
-fullPATH = homedir()*"/Documentos/TestingNewCodingStyle"
+fullPATH = homedir() * "/Documentos/TestingNewCodingStyle"
 for p in workers()
     fetch(@spawnat p cd(fullPATH))
-    fetch(@spawnat p push!(LOAD_PATH, pwd()))    
+    fetch(@spawnat p push!(LOAD_PATH, pwd()))
 end
 @everywhere using TestingNewCodingStyle
 
@@ -37,44 +37,43 @@ end
 end
 
 ## data that I will use
-ρλ³_range = range(5,45,length=5)
+ρλ³_range = range(5, 45; length=5)
 maxRepAvailable = 10
 kL = 32.4;
 
 # each density needs different repetitions to convergence
 low_density_rep = maxRepAvailable
-high_density_rep = maxRepAvailable/2
-rep_range = round.(Int, range(low_density_rep,high_density_rep, length=length(ρλ³_range)))
+high_density_rep = maxRepAvailable / 2
+rep_range = round.(Int, range(low_density_rep, high_density_rep; length=length(ρλ³_range)))
 
 s = 1e-6
 nSensors = 360
-sensors = ring_on_space(num_pts=nSensors, kR=1.5kL, θ=5π/12)
-Δ_range = range(0,2,length=3)
-
+sensors = ring_on_space(; num_pts=nSensors, kR=1.5kL, θ=5π / 12)
+Δ_range = range(0, 2; length=3)
 
 variances = zeros(length(ρλ³_range), length(Δ_range))
 for (iρ, ρλ³) in enumerate(ρλ³_range)
-    ρ_over_k₀³ = ρλ³ / (2π)^3 
+    ρ_over_k₀³ = ρλ³ / (2π)^3
     N = floor(Int, ρ_over_k₀³ * kL^3)
-    
-    atoms_saved = load(fullPATH*"/saved/Cubes_kL=$(kL), rho=$(ρλ³), maxRepAvailable=$(maxRepAvailable).jld2", "atoms_saved")
+
+    atoms_saved = load(fullPATH * "/saved/Cubes_kL=$(kL), rho=$(ρλ³), maxRepAvailable=$(maxRepAvailable).jld2", "atoms_saved")
     maxRep = rep_range[iρ]
 
     for (iΔ, Δ) in enumerate(Δ_range)
         # println(iρ, " -- ", iΔ)
-        println("density: $(iρ)/$(length(ρλ³_range)) -- detuning: $(iΔ)/$(length(Δ_range))" )
+        println("density: $(iρ)/$(length(ρλ³_range)) -- detuning: $(iΔ)/$(length(Δ_range))")
         # @showprogress
-        many_intensities = pmap(1:maxRep) do rep    
+        many_intensities = pmap(1:maxRep) do rep
             intensities = get_intensity_sample(atoms_saved[rep], s, Δ, sensors)
         end
 
         all_intensities = Float64[]
         for i in many_intensities
-            for j = 1:length(i)
-                push!(all_intensities, i[j] )
+            for j in 1:length(i)
+                push!(all_intensities, i[j])
             end
         end
-        all_intensities_over_mean =  all_intensities./ mean(all_intensities)
+        all_intensities_over_mean = all_intensities ./ mean(all_intensities)
 
         variances[iρ, iΔ] = var(all_intensities_over_mean)
     end
@@ -84,21 +83,16 @@ for (iρ, ρλ³) in enumerate(ρλ³_range)
     # ) |> display
 end
 
-
 # save("heatmap_variances.jld2", Dict("variances" => variances))
-
 
 using FileIO
 variances = load("src/heatmap_variances.jld2", "variances")
 
-ρλ³_range = range(5,45,length=5)
-Δ_range = range(-1,2,length=5)
+ρλ³_range = range(5, 45; length=5)
+Δ_range = range(-1, 2; length=5)
 
 using Plots
 
 #Δ_range, ρλ³_range, 
-heatmap( variances, 
-        c=:jet, xlabel="Δ/Γ", ylabel="ρλ³",
-        title=""
-    ) 
+heatmap(variances; c=:jet, xlabel="Δ/Γ", ylabel="ρλ³", title="")
 # savefig("florent_middle_resolution.png")

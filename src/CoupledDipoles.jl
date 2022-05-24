@@ -7,11 +7,8 @@ using DifferentialEquations
 using Logging: global_logger
 using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
-# using Random
 # using Statistics
-# using Memoize
 using ThreadsX
-using LinearSolve
 using Printf
 using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
@@ -50,7 +47,6 @@ export NonLinearOptics, MeanField, BBGKY
 include("linear_problems.jl")
 include("nonlinear_problems.jl")
 
-
 include("atoms.jl")
 export cube_inputs, sphere_inputs, cylinder_inputs
 export get_rₘᵢₙ
@@ -78,9 +74,8 @@ include("plot_modes.jl")
 export get_spatial_profile_single_mode_and_fit
 export get_decay_fit
 
-
 include("scattering.jl")
-export scattering_intensity, scattering_fuction 
+export scattering_intensity, scattering_fuction
 export get_intensity_over_an_angle
 export get_intensity_over_an_angle_legacy
 
@@ -90,7 +85,7 @@ export get_sensors_sphereSurface
 
 include("dynamics.jl")
 export steady_state
-export time_evolution, default_evolution_initial_condition, get_evolution_function
+export time_evolution, default_initial_condition, get_evolution_function
 
 include("transmission.jl")
 export transmission, how_far_is_FarField

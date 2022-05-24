@@ -4,7 +4,7 @@
 function get_IPRs(problem)
     n_modes = get_number_modes(problem)
     IPRs = zeros(n_modes)
-    Threads.@threads for n = 1:n_modes
+    Threads.@threads for n in 1:n_modes
         Ψ² = get_ψ²(problem, n)
         Ψ⁴ = Ψ² .^ 2
         IPRs[n] = sum(Ψ⁴) / sum(Ψ²)
@@ -23,7 +23,7 @@ end
     get_spectrum(problem; forceComputation=false)
 return ωₙ, Γₙ
 """
-function get_spectrum(problem; forceComputation = false)
+function get_spectrum(problem; forceComputation=false)
     @debug "start: get spectrum"
     ωₙ, Γₙ = zeros(problem.atoms.N), zeros(problem.atoms.N)
 
@@ -34,7 +34,7 @@ function get_spectrum(problem; forceComputation = false)
         problem.spectrum[:λ] = spectrum.values
         problem.spectrum[:ψ] = spectrum.vectors
         make_spectrum_available(problem)
-        
+
         ωₙ, Γₙ = imag.(spectrum.values), -real.(spectrum.values)
         if any(Γₙ .< 0)
             @warn "some Γₙ were negatives and ignored without further investigation"
@@ -56,7 +56,7 @@ function is_spectrum_NOT_available(problem)
     end
 end
 function make_spectrum_available(problem)
-    problem.spectrum[:isSpectrumAvailable] = true
+    return problem.spectrum[:isSpectrumAvailable] = true
 end
 
 function get_ψ(problem::LinearOptics, n::Integer)
@@ -68,14 +68,12 @@ function get_ψ²(problem::LinearOptics, n::Integer)
     return abs2.(ψ)
 end
 
-
-
 """
     get_localization_length(LinearOptics; forceComputation=false)
 
 Main function to obtain the `Localization Length`, ξ, and its `Coefficient of Determination`, R1 (R¹).
 """
-function get_localization_length(problem::LinearOptics; forceComputation = false)
+function get_localization_length(problem::LinearOptics; forceComputation=false)
     if is_localization_NOT_available(problem) && forceComputation == false
         return problem.data[:ξ], problem.data[:R1]
     end
@@ -86,7 +84,7 @@ function get_localization_length(problem::LinearOptics; forceComputation = false
     # create spectrum if neeeded
     get_spectrum(problem)
 
-    for n = 1:N # faster without Threads.@threads
+    for n in 1:N # faster without Threads.@threads
         DCM, ψ² = get_spatial_profile_single_mode(problem, n)
         ξₙ[n], R¹ₙ[n] = get_single_ξ_and_R1(DCM, ψ²)
     end
@@ -100,7 +98,6 @@ function is_localization_NOT_available(problem)
     else
         return false
     end
-
 end
 
 function get_spatial_profile_single_mode(problem, mode_index::Integer)
@@ -115,9 +112,7 @@ function get_spatial_profile_single_mode(problem, mode_index::Integer)
         sort_spatial_profile!(DCM, ψ²ₙ)
         return DCM, ψ²ₙ
     catch
-        @error(
-            "Probably you tried to access a spectrum not created (run `get_spectrum(problem)`). Or `mode_index` is not valid"
-        )
+        @error("Probably you tried to access a spectrum not created (run `get_spectrum(problem)`). Or `mode_index` is not valid")
     end
 end
 """
@@ -155,12 +150,12 @@ end
     classify_modes(problem)
 returns a tuple `(loc, sub, super)` with indices
 """
-function classify_modes(problem; forceComputation = false)
-    ωₙ, Γₙ = get_spectrum(problem; forceComputation = forceComputation)
-    ξₙ, R¹ₙ = get_localization_length(problem; forceComputation = forceComputation)
+function classify_modes(problem; forceComputation=false)
+    ωₙ, Γₙ = get_spectrum(problem; forceComputation=forceComputation)
+    ξₙ, R¹ₙ = get_localization_length(problem; forceComputation=forceComputation)
 
     localized_modes = findall((Γₙ .< Γ) .* (R¹ₙ .≥ R1_threshold))
     sub_radiant_modes = findall((Γₙ .< Γ) .* (R¹ₙ .< R1_threshold))
     super_radiant_modes = findall(Γₙ .> Γ)
-    return (loc = localized_modes, sub = sub_radiant_modes, super = super_radiant_modes)
+    return (loc=localized_modes, sub=sub_radiant_modes, super=super_radiant_modes)
 end

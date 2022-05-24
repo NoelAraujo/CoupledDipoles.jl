@@ -1,12 +1,7 @@
 """
     Atom(T <: ThreeD, ::Int64, ::Union{Real, Integer})
 """
-function Atom(
-    geometry::Sphere,
-    N::Int64,
-    kR::Union{Real,Integer};
-    createFunction = ftn_AtomsOnSphere::Function,
-)
+function Atom(geometry::Sphere, N::Int64, kR::Union{Real,Integer}; createFunction=ftn_AtomsOnSphere::Function)
     @debug "start: Shape - Sphere"
 
     dimensions = 3

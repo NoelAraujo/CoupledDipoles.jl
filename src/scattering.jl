@@ -28,9 +28,7 @@ function default_nearField3D_Field(atoms::AbstractMatrix, β::AbstractArray, sen
 
     j = 1
     @inbounds for atom in eachcol(atoms)
-        d_SensorAtom = sqrt(
-            (sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2,
-        )
+        d_SensorAtom = sqrt((sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2)
         E_scatt += cis(k₀ * d_SensorAtom) * (β[j] / d_SensorAtom)
         j += 1
     end
@@ -74,28 +72,22 @@ end
 
     Computes the Total Electric Field (Laser Pump + Scattering), then returns the Intensity
 """
-@views function scattering_intensity(
-    problem,
-    atomic_states,
-    measurement_positions,
-    scattering_func::Function,
-)
+@views function scattering_intensity(problem, atomic_states, measurement_positions, scattering_func::Function)
     _laser = problem.laser
     _r = problem.atoms.r
     _physics = problem.physic
-    
+
     _sensors = measurement_positions
     _states = atomic_states
     _func = scattering_func
 
     n_sensors = _get_number_elements(_sensors)
-        
 
     if n_sensors == 1
         return _OnePoint_Intensity(_physics, _laser, _r, _sensors, _states, _func)
     else
         scat_int = zeros(n_sensors)
-        Threads.@threads for i = 1:n_sensors #
+        Threads.@threads for i in 1:n_sensors #
             scat_int[i] = _OnePoint_Intensity(_physics, _laser, _r, _sensors[:, i], _states, _func)
         end
         return scat_int
@@ -108,84 +100,52 @@ function _OnePoint_Intensity(physic::Union{Scalar,Vectorial}, laser, atoms, sens
     return abs2(E_L + E_scatt)
 end
 
-
-
-
-
-
-function get_intensity_over_an_angle(
-    problem::LinearOptics{Scalar},
-    atoms_states::AbstractVector,
-    θ::Number,
-)
+function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ::Number)
     N = problem.atoms.N
     β = view(atoms_states, 1:N)
 
-    ϕ_range = range(0, 2π, length = 30)
+    ϕ_range = range(0, 2π; length=30)
     vr = view(problem.atoms.r, :, :)
 
     complex_intensity = zeros(ComplexF64, N)
     total_intensity = 0.0
 
-    for k = 1:length(ϕ_range)
+    for k in 1:length(ϕ_range)
         ϕ = ϕ_range[k]
-        Threads.@threads for j = 1:N
-            complex_intensity[j] =
-                cis(
-                    -k₀ * (
-                        vr[1, j] * sin(θ) * cos(ϕ) +
-                        vr[2, j] * sin(θ) * sin(ϕ) +
-                        vr[3, j] * cos(θ)
-                    ),
-                ) * β[j]
+        Threads.@threads for j in 1:N
+            complex_intensity[j] = cis(-k₀ * (vr[1, j] * sin(θ) * cos(ϕ) + vr[2, j] * sin(θ) * sin(ϕ) + vr[3, j] * cos(θ))) * β[j]
         end
         total_intensity += abs2(sum(complex_intensity))
     end
     return total_intensity / length(ϕ_range)
 end
 
-function get_intensity_over_an_angle_shared(
-    problem::LinearOptics{Scalar},
-    β::AbstractVector,
-    θ::Number,
-    r_shared,
-)
+function get_intensity_over_an_angle_shared(problem::LinearOptics{Scalar}, β::AbstractVector, θ::Number, r_shared)
     N = problem.atoms.N
 
-    ϕ_range = range(0, 2π, length = 30)
+    ϕ_range = range(0, 2π; length=30)
 
     complex_intensity = zeros(ComplexF64, N)
     total_intensity = 0.0
 
-    for k = 1:length(ϕ_range)
+    for k in 1:length(ϕ_range)
         ϕ = ϕ_range[k]
-        for j = 1:N
-            complex_intensity[j] =
-                cis(
-                    -k₀ * (
-                        r_shared[1, j] * sin(θ) * cos(ϕ) +
-                        r_shared[2, j] * sin(θ) * sin(ϕ) +
-                        r_shared[3, j] * cos(θ)
-                    ),
-                ) * β[j]
+        for j in 1:N
+            complex_intensity[j] = cis(-k₀ * (r_shared[1, j] * sin(θ) * cos(ϕ) + r_shared[2, j] * sin(θ) * sin(ϕ) + r_shared[3, j] * cos(θ))) * β[j]
         end
         total_intensity += abs2(sum(complex_intensity))
     end
     return total_intensity / length(ϕ_range)
 end
 
-function get_intensity_over_an_angle(
-    problem::LinearOptics{Scalar},
-    atoms_states::Matrix,
-    θ::Number,
-)
+function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Matrix, θ::Number)
     timeSteps = size(atoms_states, 2)
     intensities = zeros(timeSteps)
 
     # r_shared = SharedArray{Float64,2}(3, problem.atoms.N)
     r_shared = problem.atoms.r
 
-    Threads.@threads for i = 1:timeSteps
+    Threads.@threads for i in 1:timeSteps
         oneState = view(atoms_states, :, i)
         intensities[i] = get_intensity_over_an_angle_shared(problem, oneState, θ, r_shared)
     end
@@ -193,26 +153,24 @@ function get_intensity_over_an_angle(
     return intensities
 end
 
-
 # ### --------------- MEAN FIELD ---------------
 function _OnePoint_Intensity(physic::MeanField, laser, R⃗, sensor, β, scattering_func)
-    
     Ω = laser_field(laser, sensor)
-    
+
     r = norm(sensor)
-    n̂ = sensor/r
+    n̂ = sensor / r
     N = size(R⃗, 2)
-    
+
     σ⁻ = β[1:N]
     σ⁺ = conj.(σ⁻)
-    σᶻ = β[ (N+1) : end]
+    σᶻ = β[(N + 1):end]
 
-    term1 = abs2(-im*Ω)
-    term2 = real(2Ω*(exp(-im*k₀*r)/(im*k₀*r))*ThreadsX.sum(σ⁺[j]*cis(+k₀ * (n̂⋅R⃗[:,j])) for j = 1:N), )
+    term1 = abs2(-im * Ω)
+    term2 = real(2Ω * (exp(-im * k₀ * r) / (im * k₀ * r)) * ThreadsX.sum(σ⁺[j] * cis(+k₀ * (n̂ ⋅ R⃗[:, j])) for j in 1:N))
     term3 = _term3(σ⁻, σ⁺, n̂, R⃗)
-    term4 = ThreadsX.sum((1 + σᶻ[j]) / 2 for j = 1:N)
+    term4 = ThreadsX.sum((1 + σᶻ[j]) / 2 for j in 1:N)
 
-    intensity_oneSensor = term1 + (Γ / 2)*term2 + (Γ/(2k₀*r))^2 * (term3 + term4)
+    intensity_oneSensor = term1 + (Γ / 2) * term2 + (Γ / (2k₀ * r))^2 * (term3 + term4)
 
     return real(intensity_oneSensor)
 end
@@ -221,48 +179,42 @@ end
 """
 @views function _term3(σ⁻, σ⁺, n̂, R⃗)
     N = length(σ⁻)
-    number_configurations = ((N^2)÷2 - N÷2)
+    number_configurations = ((N^2) ÷ 2 - N ÷ 2)
 
     βₙₘ = Array{eltype(σ⁻)}(undef, number_configurations)
     cont = 1
-    for n=1:N
-        for m=(n+1):N            
-            βₙₘ[cont] = σ⁺[n]*σ⁻[m]
+    for n in 1:N
+        for m in (n + 1):N
+            βₙₘ[cont] = σ⁺[n] * σ⁻[m]
             cont += 1
         end
     end
-    
 
     rₙₘ = Array{eltype(R⃗)}(undef, 3, number_configurations)
     cont = 1
-    for n=1:N
-        r_n = R⃗[:,n]
-        for m=(n+1):N
-            rₙₘ[1,cont] = r_n[1] - R⃗[1,m]
-            rₙₘ[2,cont] = r_n[2] - R⃗[2,m]
-            rₙₘ[3,cont] = r_n[3] - R⃗[3,m]
+    for n in 1:N
+        r_n = R⃗[:, n]
+        for m in (n + 1):N
+            rₙₘ[1, cont] = r_n[1] - R⃗[1, m]
+            rₙₘ[2, cont] = r_n[2] - R⃗[2, m]
+            rₙₘ[3, cont] = r_n[3] - R⃗[3, m]
             cont += 1
         end
     end
 
     intensity = ThreadsX.mapreduce(+, 1:number_configurations) do cont
-        (  
-           begin 
-                @inbounds dot_n_r = n̂[1]*rₙₘ[1, cont] + n̂[2]*rₙₘ[2, cont] + n̂[3]*rₙₘ[3, cont]
-                @inbounds βₙₘ[cont]*cis( -k₀*dot_n_r  )
-           end 
+        (
+            begin
+                @inbounds dot_n_r = n̂[1] * rₙₘ[1, cont] + n̂[2] * rₙₘ[2, cont] + n̂[3] * rₙₘ[3, cont]
+                @inbounds βₙₘ[cont] * cis(-k₀ * dot_n_r)
+            end
         )
     end
-    
+
     return 2real(intensity)
 end
 
-
-function get_intensity_over_an_angle(
-    problem::NonLinearOptics{MeanField},
-    atoms_states::Vector,
-    θ::Float64,
-)
+function get_intensity_over_an_angle(problem::NonLinearOptics{MeanField}, atoms_states::Vector, θ::Float64)
     @debug "start : get intensity over an angle - NonLinearOptics{MeanField}"
 
     if is_integration_const_term_available(problem)
@@ -274,7 +226,7 @@ function get_intensity_over_an_angle(
 
     N = problem.atoms.N
     β = view(atoms_states, 1:N)
-    z = view(atoms_states, (N+1):2N)
+    z = view(atoms_states, (N + 1):(2N))
 
     βₙₘ = transpose(β * β') # I have to do "transpose" and NOT "adjoint = complex+tranpose"
     βₙₘ[diagind(βₙₘ)] .= (1 .+ z) ./ 2
@@ -304,10 +256,9 @@ function _get_meanfield_constant_term(atoms, Θ)
     cos_Θ = cos(Θ)
 
     Gₙₘ = Array{ComplexF64,2}(undef, N, N)
-    @sync for n = 1:N
-        Threads.@spawn for m = 1:N # we had to compute all terms, and not the upper part
-            @inbounds Gₙₘ[n, m] =
-                _constant_term_core_computation(xₙₘ, yₙₘ, zₙₘ, n, m, cos_Θ, k₀sinΘ)
+    @sync for n in 1:N
+        Threads.@spawn for m in 1:N # we had to compute all terms, and not the upper part
+            @inbounds Gₙₘ[n, m] = _constant_term_core_computation(xₙₘ, yₙₘ, zₙₘ, n, m, cos_Θ, k₀sinΘ)
         end
     end
 
@@ -344,9 +295,9 @@ function get_xyz_distances(r) # @memoize  --> creating warning, let's ignore it 
 
     r_shared = Array{Float64,2}(undef, dimensions, N)
     r_shared .= r
-    @sync for n = 1:N
+    @sync for n in 1:N
         r_n = view(r_shared, :, n)
-        Threads.@spawn for m = 1:N
+        Threads.@spawn for m in 1:N
             xₙₘ[n, m] = r_n[1] - r_shared[1, m]
             yₙₘ[n, m] = r_n[2] - r_shared[2, m]
             zₙₘ[n, m] = r_n[3] - r_shared[3, m]
