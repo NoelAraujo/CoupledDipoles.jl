@@ -13,7 +13,7 @@
         E = -(im / 2) * _core_LaserFunction(_spatial_matrix, E₀, laser)
     else
         E = zeros(ComplexF64, N)
-        Threads.@threads for n in 1:N
+        for n in 1:N # faster WITHOUT multi threading
             oneCoordinate = _spatial_matrix[:, n]
             @inbounds E[n] = -(im / 2) * _core_LaserFunction(oneCoordinate, E₀, laser)
         end

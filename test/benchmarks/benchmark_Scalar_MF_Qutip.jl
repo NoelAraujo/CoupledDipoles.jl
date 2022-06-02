@@ -1,18 +1,6 @@
 using CoupledDipoles, Revise, Plots, DelimitedFiles
 
 ### --- INITIAL CONDITIONS ARE CHANGED TO MATCH WITH QUTIP SAVED DATA ---
-function get_initial_condition(problem::LinearOptics{Scalar})
-    return zeros(ComplexF64, problem.atoms.N)
-end
-
-function get_initial_condition(problem::NonLinearOptics{MeanField})
-    β₀ = zeros(ComplexF64, problem.atoms.N)
-    z₀ = -ones(problem.atoms.N)
-    u₀ = vcat(β₀, z₀)
-    return u₀
-end
-
-### ------------ FIXED INPUTS ---------------------
 r = [
     -1.01015 -0.455099 0.543082
     -2.96935 -0.0781967 -0.00764304
@@ -32,8 +20,8 @@ laser = Laser(PlaneWave3D([0, 0, 1]), s, Δ);
 simulationScalar = LinearOptics(Scalar(), atoms, laser)
 simulationMeanField = NonLinearOptics(MeanField(), atoms, laser)
 
-u0_scalar = get_initial_condition(simulationScalar)
-u0_meanfield = get_initial_condition(simulationMeanField)
+u0_scalar = default_initial_condition(simulationScalar)
+u0_meanfield = default_initial_condition(simulationMeanField)
 tspan = (0.0, 100)
 
 aS = time_evolution(simulationScalar, u0_scalar, tspan);

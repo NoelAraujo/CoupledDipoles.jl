@@ -1,3 +1,25 @@
+"""
+    default_initial_condition(::Scalar) = zeros(ComplexF64, N)
+"""
+function default_initial_condition(problem::LinearOptics{Scalar})
+    return zeros(ComplexF64, problem.atoms.N) # I must use "zeros" and NOT an undef array - with trash data inside
+end
+"""
+    default_evolution_initial_condition(NonLinearOptics{MeanField})
+β₀ = zeros(ComplexF64, atoms.N)
+z₀ = 2β₀.*conj.(β₀) .- 1
+"""
+function default_initial_condition(problem::NonLinearOptics{MeanField})
+    β₀ = zeros(ComplexF64, problem.atoms.N)
+    z₀ = -ones(ComplexF64, problem.atoms.N)
+    u₀ = vcat(β₀, z₀)
+    return u₀
+end
+
+##########################################################
+"""
+    steady_state(problem)
+"""
 function steady_state(problem::LinearOptics{Scalar})
     @debug "start: get steady state"
 
@@ -25,6 +47,7 @@ function steady_state(problem::NonLinearOptics{MeanField})
     return steady_state.u[end]
 end
 
+##########################################################
 function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; kargs...) where {T<:Linear}
     ### use default G and Ωₙ
     G = copy(interaction_matrix(problem))
@@ -55,14 +78,41 @@ function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple, Ωₙ::Vec
     return solution
 end
 
-"""
-    default_evolution_initial_condition(::Scalar) = zeros(ComplexF64, N)
-"""
-function default_evolution_initial_condition(problem::LinearOptics{Scalar})
-    return zeros(ComplexF64, problem.atoms.N) # I must use "zeros" and NOT an undef array - with trash data inside
+function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)
+    @debug "start: time evolution - NonLinearOptics"
+    G = interaction_matrix(problem)
+
+    #= 
+        I don't sum over diagonal elements during time evolution
+     thus, to avoid an IF statement, I put a zero on diagonal 
+    =#
+    saveDiag = diagind(G)
+    G[diagind(G)] .= zero(eltype(G))
+
+    # laser_field returns `(-im/2)*Ω`, but I need only `Ω`
+    Ωₙ = laser_field(problem.laser, problem.atoms) / (-im / 2)
+    Wₙ = similar(Ωₙ)
+    G_βₙ = similar(Ωₙ)
+    temp1 = similar(Ωₙ)
+    temp2 = similar(Ωₙ)
+
+    parameters = view(G, :, :), view(Ωₙ, :), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ, temp1, temp2
+
+    ### calls for solver
+    problemFunction = get_evolution_function(problem)
+    prob = ODEProblem(problemFunction, u₀, tspan, parameters)
+    solution = DifferentialEquations.solve(prob, OwrenZen3(); reltol=1e-8, kargs...)
+
+    # !!!! restore diagonal !!!!
+    G[diagind(G)] .= saveDiag
+
+    @debug "end  : time evolution - NonLinearOptics"
+    return solution
 end
 
+##########################################################
 get_evolution_function(problem::LinearOptics{Scalar}) = Scalar!
+get_evolution_function(problem::NonLinearOptics{MeanField}) = MeanField!
 
 function Scalar!(du, u, p, t)
     G, Ωₙ = p
@@ -78,51 +128,6 @@ function Scalar!(du, u, p, t)
     return nothing
 end
 
-# ### --------------- MEAN FIELD ---------------
-function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)
-    @debug "start: time evolution - NonLinearOptics"
-    G = interaction_matrix(problem)
-
-    #= 
-        I don't sum over diagonal elements during time evolution
-     thus, to avoid an IF statement, I put a zero on diagonal 
-    =#
-    saveDiag = diagind(G)
-    G[diagind(G)] .= zero(eltype(G))
-
-    # laser_field returns `(-im/2)*Ω`, but I need only `Ω`
-    Ωₙ = laser_field(problem.laser, problem.atoms) / (-im / 2)
-    Wₙ = zeros(eltype(Ωₙ), size(Ωₙ))
-    G_βₙ = zeros(eltype(Ωₙ), size(Ωₙ))
-    temp1 = similar(Ωₙ)
-    temp2 = similar(Ωₙ)
-
-    parameters = view(G, :, :), view(Ωₙ, :), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ, temp1, temp2
-
-    ### calls for solver
-    problemFunction = get_evolution_function(problem)
-    prob = ODEProblem(problemFunction, u₀, tspan, parameters)
-    solution = DifferentialEquations.solve(prob, OwrenZen3(); abstol=1e-8, kargs...)
-
-    # !!!! restore diagonal !!!!
-    G[diagind(G)] .= saveDiag
-
-    @debug "end  : time evolution - NonLinearOptics"
-    return solution
-end
-get_evolution_function(problem::NonLinearOptics{MeanField}) = MeanField!
-
-"""
-    default_evolution_initial_condition(NonLinearOptics{MeanField})
-β₀ = zeros(ComplexF64, atoms.N)
-z₀ = 2β₀.*conj.(β₀) .- 1
-"""
-function default_initial_condition(problem::NonLinearOptics{MeanField})
-    β₀ = zeros(ComplexF64, problem.atoms.N)
-    z₀ = -ones(ComplexF64, problem.atoms.N)
-    u₀ = vcat(β₀, z₀)
-    return u₀
-end
 function MeanField!(du, u, p, t)
     # parameters
     G, Ωₙ, Wₙ, Δ, N, G_βₙ, temp1, temp2 = p
@@ -155,7 +160,6 @@ function MeanField!(du, u, p, t)
 
     return nothing
 end
-
 function MeanField!_v2(du, u, p, t)
     # parameters
     G, Ωₙ, Wₙ, Δ, N, G_βₙ, temp1, temp2 = p

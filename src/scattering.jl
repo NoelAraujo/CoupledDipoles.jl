@@ -155,7 +155,7 @@ end
 
 # ### --------------- MEAN FIELD ---------------
 function _OnePoint_Intensity(physic::MeanField, laser, R⃗, sensor, β, scattering_func)
-    Ω = laser_field(laser, sensor)
+    Ω = laser_field(laser, sensor)/(-0.5im)
 
     r = norm(sensor)
     n̂ = sensor / r
@@ -165,8 +165,8 @@ function _OnePoint_Intensity(physic::MeanField, laser, R⃗, sensor, β, scatter
     σ⁺ = conj.(σ⁻)
     σᶻ = β[(N + 1):end]
 
-    term1 = abs2(-im * Ω)
-    term2 = real(2Ω * (exp(-im * k₀ * r) / (im * k₀ * r)) * ThreadsX.sum(σ⁺[j] * cis(+k₀ * (n̂ ⋅ R⃗[:, j])) for j in 1:N))
+    term1 = abs2(Ω)/4
+    term2 = real(-im*Ω * (cis(- k₀ * r) / (im * k₀ * r)) * ThreadsX.sum(σ⁺[j] * cis(+k₀ * (n̂ ⋅ R⃗[:, j])) for j in 1:N))
     term3 = _term3(σ⁻, σ⁺, n̂, R⃗)
     term4 = ThreadsX.sum((1 + σᶻ[j]) / 2 for j in 1:N)
 
