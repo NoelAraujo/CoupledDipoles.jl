@@ -30,6 +30,7 @@ ThreadPools = "b189fb0b-2eb5-4ed4-bc0c-d34c51242431"
 ThreadsX = "ac1d9e8a-700a-412c-b207-f0111f4b6c0d"
 VectorizedStatistics = "3b853605-1c98-4422-8364-4bd93ee0529e"
 WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
+Weave = "44d3d7a6-8a23-5bf8-98c5-b353f8df5ec9"
 
 [compat]
 DifferentialEquations = "6.17"

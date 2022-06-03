@@ -185,7 +185,7 @@ end
     cont = 1
     for n in 1:N
         for m in (n + 1):N
-            βₙₘ[cont] = σ⁺[n] * σ⁻[m]
+            βₙₘ[cont] = σ⁻[n] * σ⁺[m]
             cont += 1
         end
     end
