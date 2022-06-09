@@ -9,7 +9,18 @@ abstract type ThreeD <: Dimension end
 struct Square <: TwoD end
 struct Circle <: TwoD end
 struct Cube <: ThreeD end
-struct Sphere <: ThreeD end
+struct Sphere <: ThreeD
+    isGaussian::Bool
+    
+    function Sphere(args...; kwargs...)
+        isGaussian = get(kwargs, :gaussian, false)
+        if isGaussian
+            return new(true)
+        else
+            return new(false)
+        end
+    end
+end
 struct Cylinder <: ThreeD end
 
 struct Atom{T<:Dimension}

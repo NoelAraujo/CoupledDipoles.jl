@@ -4,11 +4,10 @@ struct SensorType
 end
 
 function transmission(problem, β, scatt_func)
-
     θₘₐₓ = problem.atoms.N < 50 ? deg2rad(45) : deg2rad(15)
     # integral_domain = get(kwargs, :domain, ((0.0, 0.0), (θₘₐₓ, 2π)))
     integral_domain = ((0.0, 0.0), (θₘₐₓ, 2π))
-    
+
     (I_scattered, _e) = hcubature(integral_domain...) do x # , rtol=1e-12
         sensor = getSensor_on_Sphere(x, problem)
         scattering_intensity(problem, β, sensor, scatt_func)
@@ -22,7 +21,6 @@ function transmission(problem, β, scatt_func)
     T = I_scattered / I_laser
     return T
 end
-
 
 @inline function getSensor_on_Sphere(x, problem)
     θ, ϕ = x[1], x[2]

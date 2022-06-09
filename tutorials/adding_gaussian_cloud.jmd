@@ -1,0 +1,116 @@
+---
+title: Spherical Gaussian Cloud
+author: Noel Araujo Moreira
+date: 2022-06-08
+---
+
+We will modify the `Sphere` AbstractType to have the desired interface
+
+    using CoupledDipoles
+    N = 100
+    kR = 2
+    r_homogeneous = Atom(Sphere(), N, kR)
+    r_gaussian = Atom(Sphere(gaussian=true), N, kR)
+
+
+
+# Step 1: Change the `Sphere` struct
+
+We need `Sphere` to have a flag to indicate if the distribution will be Gaussian, otherwise, is Homogenous by default. To maintain the previous sintax, we also need to define new Constructors, one for `Sphere()` and other for `Sphere(gaussian=true)`. However, using default Julia sintax, we can create a single function with variable number of arguments
+
+(I added the following code into the file `structs.jl`)
+
+    struct Sphere <: ThreeD 
+        isGaussian::Bool
+
+        function Sphere(args... ; kwargs...)
+            isGaussian = get(kwargs, :gaussian, false)
+            if isGaussian
+                return new(true)
+            else
+                return new(false)
+            end
+        end
+    end
+
+
+# Step 2: Create atoms with Gaussian Distribution
+
+The package `Distributions` exports the method `MvNormal` (MultiVariable Normal Distribution), which is suitable to create spherical clouds in our simulation. It needs two parameteres, the mean, μ, and the standard deviation, σ . The cloud will be at the center of cartesian axes, then the mean μ will be fixed at zero. The standard deviation will be the radius of the cloud.
+
+(I added the following code into the file `atoms_sphere.jl`)
+
+    function ftn_AtomsOnSphere_Gaussian(; kwargs...)            
+        mu = [0.,0.,0.]
+        sigma = get(kwargs, :kR, 1.0)
+        new_atom = rand(MvNormal(mu,sigma))
+        
+        return new_atom
+    end
+(I added the following code into the file `CoupledDipoles.jl`) 
+
+    using Distributions: MvNormal
+
+For further discussion about Multivariable Distribution, check [here](https://discourse.julialang.org/t/how-do-i-get-an-almost-normal-normal-distribution/45863/8) we note that:
+
+
+# Step 3: Set the Atom driver to recognize the new function
+
+The driver `Atom` needs to verify if the cloud is gaussian, if so, change the default function to create atoms.
+
+(Still in the file `atoms_sphere.jl`, I added the code) 
+
+    if geometry.isGaussian
+        createFunction = ftn_AtomsOnSphere_Gaussian
+    else
+        createFunction = ftn_AtomsOnSphere
+    end
+    (...)
+    return Atom(Sphere(gaussian=geometry.isGaussian), r, N, Float64(kR))
+
+# Step 4: Compute the Optical Thickness b₀
+
+We assume the Gaussian Distribution to be Isotropic, then, our 3D computations will reduce into a 1D integral with respect to the absolute distance from the center of coordinate sysmte, denoted by $|r|$. Therefore, the normal distribution has a exponential decrease, such as a:
+
+$$\begin{equation}
+    \rho(\Vec{r}) = \rho_0 e^{-\frac{|\Vec{r}|^2}{2R^2}},
+\end{equation}$$
+
+where $R$ is the system size, already defined as the $\sigma$ in the second section. The numerical factor "2" comes from the original Normal Distribution definition. The constant factor $\rho_0$ needs to be determined using normalization over volume, that is, in all space, the density of atoms must sum up to the total number of atoms, *N*:
+
+$$\begin{align*} 
+ N &= \int_{0}^{\infty}\rho(\Vec{r})dV\\ 
+ &= \int_{0}^{\infty} \rho_0 e^{-\frac{|\Vec{r}|^2}{2R^2}} r^2drd\theta d\phi\\
+ &= 4\pi \rho_0\int_{0}^{\infty} e^{-\frac{|\Vec{r}|^2}{2R^2}} r^2dr\\
+ &= 4\pi \rho_0 R^3\sqrt{\frac{\pi}{2}}\\
+ N &= (2\pi)^{3/2} \rho_0 R^3\\
+ \rho_0 &= \frac{N}{(2\pi)^{3/2}R^3} \\
+ \end{align*}$$
+
+ We define an effective volume $V_e = 2\pi)^{3/2}R^3$, which fits inside the design patterns already estableshed for the package inner engines. Also, for the package to work, we have to provide the new `geometric factor` for gaussian distributions. For the reader to read an example, next we derive the expression for $b_0$ for the `Scalar` physics, with $\sigma_0=4\pi/k^2$, and $\rho_0$.
+
+$$\begin{align*}
+ b_0 &= \sigma_0 \times \int_{-\infty}^{+\infty} \rho(\Vec{r})dr\\ 
+ &= \sigma_0 \times \rho_0 \times \int_{-\infty}^{+\infty} e^{-\frac{|\Vec{r}|^2}{2R^2}} dr\\
+ &= \sigma_0 \times \rho_0 \times \sqrt{2\pi}R\\
+ &= \frac{4\pi}{k^2} \times \frac{N}{(2\pi)^{3/2}R^3} \times \sqrt{2\pi}R\\
+ b_0 &= \frac{2N}{k^2R^2}
+ \end{align*}$$
+
+From the third line, we identify the `geometric factor` factor as $\sqrt{2\pi}R$. If all this information, we edited the file `formulas.jl` and changed the code to:
+
+    function Volume_of(atoms::Atom{Sphere})
+        if atoms.shape.isGaussian
+            return (2pi)^(3 / 2) * atoms.sizes^3 # Check tutorials folder
+        else
+            return (4pi / 3) * atoms.sizes^3 # sizes == radius of Sphere
+        end
+    end
+    function geometric_integral(atoms::Atom{Sphere})
+        if atoms.shape.isGaussian
+            return sqrt(2pi) * atoms.sizes 
+        else
+            return 2 * atoms.sizes # diameter = 2*radius
+        end
+    end
+

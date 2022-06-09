@@ -27,14 +27,25 @@ Volume_of(atoms::Atom{Cylinder}) = atoms.sizes[:h] * π * atoms.sizes[:R]^2
 """
     Volume_of(atoms::Shape{Sphere})
 """
-Volume_of(atoms::Atom{Sphere}) = (4π / 3) * atoms.sizes^3 # sizes == radius of Sphere
-
+function Volume_of(atoms::Atom{Sphere})
+    if atoms.shape.isGaussian
+        return (2π)^(3 / 2) * atoms.sizes^3 # Check tutorials folder
+    else
+        return (4π / 3) * atoms.sizes^3 # sizes == radius of Sphere
+    end
+end
 #= 
 These "geometric_integral" values holds only for homogeneous distributions
 - They represent the light path acroos the cloud -
 For example, to cross a sphere, we need the diameter of the sphere (diameter = 2*radius)
 =#
-geometric_integral(atoms::Atom{Sphere}) = 2 * atoms.sizes # diameter = 2*radius
+function geometric_integral(atoms::Atom{Sphere})
+    if atoms.shape.isGaussian
+        return √(2π) * atoms.sizes # "√2π R" comes from an integral. Check tutorials folder
+    else
+        return 2 * atoms.sizes # diameter = 2*radius
+    end
+end
 geometric_integral(atoms::Atom{Cube}) = atoms.sizes # diameter = cube side = L
 
 #= 
