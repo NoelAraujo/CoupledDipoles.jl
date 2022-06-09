@@ -87,7 +87,6 @@ include("sensors.jl")
 export get_sensors_ring
 export get_sensors_sphereSurface
 
-include("dynamics.jl")
 include("linear/linear_dynamics.jl")
 include("nonlinear/nonlinear_dynamics.jl")
 export steady_state

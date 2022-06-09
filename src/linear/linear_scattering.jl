@@ -14,11 +14,12 @@ function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states
     complex_intensity = zeros(ComplexF64, N)
     total_intensity = 0.0
 
-    for k in 1:length(ϕ_range)
-        ϕ = ϕ_range[k]
-        Threads.@threads for j in 1:N
-            complex_intensity[j] = cis(-k₀ * (vr[1, j] * sin(θ) * cos(ϕ) + vr[2, j] * sin(θ) * sin(ϕ) + vr[3, j] * cos(θ))) * β[j]
-        end
+    rx = vr[1, :]
+    ry = vr[2, :]
+    rz = vr[3, :]
+
+    for ϕ ∈ ϕ_range
+        complex_intensity .= cis.(-k₀ .* (rx .* sin(θ) .* cos(ϕ) + ry .* sin(θ) * sin(ϕ) + rz.*cos(θ))) .* β
         total_intensity += abs2(sum(complex_intensity))
     end
     return total_intensity / length(ϕ_range)
