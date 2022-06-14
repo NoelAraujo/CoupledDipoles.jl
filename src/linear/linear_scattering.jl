@@ -3,26 +3,34 @@ function _OnePoint_Intensity(physic::Union{Scalar,Vectorial}, laser, atoms, sens
     E_scatt = scattering_func(atoms, β, sensor)
     return abs2(E_L + E_scatt)
 end
-
-function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ::Number)
+using QuadGK
+@views function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ::Number)
     N = problem.atoms.N
+    r = problem.atoms.r
     β = view(atoms_states, 1:N)
+    βp = conj.(β)
 
-    ϕ_range = range(0, 2π; length=30)
-    vr = view(problem.atoms.r, :, :)
+    x, y, z = r[1,:], r[2,:], r[3,:]
+    intensity = zero(ComplexF64)
+    for j=1:N
+        for jp=1:N
+            xjj = x[j] - x[jp]
+            yjj = y[j] - y[jp]
+            zjj = z[j] - z[jp]
 
-    complex_intensity = zeros(ComplexF64, N)
-    total_intensity = 0.0
-
-    rx = vr[1, :]
-    ry = vr[2, :]
-    rz = vr[3, :]
-
-    for ϕ ∈ ϕ_range
-        complex_intensity .= cis.(-k₀ .* (rx .* sin(θ) .* cos(ϕ) + ry .* sin(θ) * sin(ϕ) + rz.*cos(θ))) .* β
-        total_intensity += abs2(sum(complex_intensity))
+            intensity += myKernel2(β[j], βp[jp], xjj, yjj, zjj, θ)
+        end
     end
-    return total_intensity / length(ϕ_range)
+    return real(intensity)
+ 
+    return real(total_intensity)
+end
+function myKernel2(beta_j, beta_jp, xjj, yjj, zjj, θ)
+    k₀sinθ = abs(k₀*sin(θ))
+    k₀cosθ = k₀*cos(θ)
+
+    v = beta_j*beta_jp*exp(-im*zjj*k₀cosθ)*besselj(0,k₀sinθ*sqrt(xjj^2+yjj^2))
+    return v
 end
 
 function get_intensity_over_an_angle_shared(problem::LinearOptics{Scalar}, β::AbstractVector, θ::Number, r_shared)

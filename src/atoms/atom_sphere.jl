@@ -28,13 +28,23 @@ function Atom(geometry::Sphere, r::Matrix, kR::Union{Real,Integer})
     return Atom(Sphere(), r, N, Float64(kR))
 end
 
+"""
+    expected 'kwargs': kR
+based upon: https://datagenetics.com/blog/january32020/index.html
+"""
 function ftn_AtomsOnSphere(; kwargs...)
     kR = kwargs[:kR]
     new_atom = zeros(3)
-    new_atom[1] = 2π * rand() # azimuth
-    new_atom[2] = asin(2 * rand() - 1) # elevation
-    new_atom[3] = kR * (rand()^(1 ./ 3.0)) # radii
-    new_atom[:] = sph2cart(new_atom)
+    U = rand()^(1 ./ 3.0)
+    x = (2rand() - 1)
+    y = (2rand() - 1)
+    z = (2rand() - 1)
+    mag = sqrt(x^2 + y^2 + z^2)
+    
+    new_atom[1] = kR*U*x/mag
+    new_atom[2] = kR*U*y/mag
+    new_atom[3] = kR*U*z/mag
+    
     return new_atom
 end
 function ftn_AtomsOnSphere_Gaussian(; kwargs...)
