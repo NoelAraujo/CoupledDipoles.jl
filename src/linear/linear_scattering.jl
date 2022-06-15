@@ -46,3 +46,52 @@ end
 
 end
 
+@views function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ_range::AbstractVector)
+    N = problem.atoms.N
+    r = problem.atoms.r
+    xₙ, yₙ, zₙ = r[1,:], r[2,:], r[3,:]
+
+    βₙ = view(atoms_states, 1:N)
+    βₘ = conj.(βₙ)
+    
+    number_configurations = ((N^2) ÷ 2 - N ÷ 2)
+
+    xₙₘ = Array{Float64}(undef, number_configurations)
+    yₙₘ, zₙₘ = similar(xₙₘ), similar(xₙₘ)
+    count = 1
+    for m in 1:N    
+        for n in (m+1):N
+            xₙₘ[count] = xₙ[n] - xₙ[m]
+            yₙₘ[count] = yₙ[n] - yₙ[m]
+            zₙₘ[count] = zₙ[n] - zₙ[m]
+            count += 1
+        end
+    end
+
+    βₙₘ = Array{ComplexF64}(undef, number_configurations)
+    count = 1
+    for m in 1:N
+        b_m = βₘ[m]
+        for n in (m+1):N
+            b_n = βₙ[n]
+            βₙₘ[count] = b_n*b_m
+            count += 1
+        end
+    end
+
+    intensities = zeros(length(θ_range))
+    for (idx_θ, θ) in enumerate(θ_range)
+        k₀sinθ = abs(k₀*sin(θ))
+        k₀cosθ = k₀*cos(θ)
+
+        _intensity = ThreadsX.mapreduce(+, 1:number_configurations) do ii
+            βₙₘ[ii]*exp(-im*zₙₘ[ii]*k₀cosθ)*besselj(0,k₀sinθ*sqrt(xₙₘ[ii]^2+yₙₘ[ii]^2))
+        end
+        _intensity += sum(abs2, βₙ)/2
+
+        intensities[idx_θ] = 2real(_intensity)
+    end
+    
+    return intensities
+end
+
