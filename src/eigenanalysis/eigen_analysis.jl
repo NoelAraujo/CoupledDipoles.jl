@@ -25,14 +25,13 @@ return ωₙ, Γₙ
 """
 function get_spectrum(problem; forceComputation=false)
     @debug "start: get spectrum"
-    ωₙ, Γₙ = zeros(problem.atoms.N), zeros(problem.atoms.N)
-
+    
     if is_spectrum_NOT_available(problem) || forceComputation
         H = interaction_matrix(problem)
         spectrum = eigen(H)
 
-        problem.spectrum[:λ] = spectrum.values
-        problem.spectrum[:ψ] = spectrum.vectors
+        problem.spectrum["λ"] = spectrum.values
+        problem.spectrum["ψ"] = spectrum.vectors
         make_spectrum_available(problem)
 
         ωₙ, Γₙ = imag.(spectrum.values), -real.(spectrum.values)
@@ -41,7 +40,7 @@ function get_spectrum(problem; forceComputation=false)
             Γₙ = abs.(Γₙ)
         end
     else
-        ωₙ, Γₙ = imag.(problem.spectrum[:λ]), -real.(problem.spectrum[:λ])
+        ωₙ, Γₙ = imag.(problem.spectrum["λ"]), -real.(problem.spectrum["λ"])
     end
 
     @debug "end  : get spectrum"
@@ -49,22 +48,22 @@ function get_spectrum(problem; forceComputation=false)
 end
 
 function is_spectrum_NOT_available(problem)
-    if problem.spectrum[:isSpectrumAvailable]
+    if  haskey(problem.spectrum, "isSpectrumAvailable")
         return false
     else
         return true
     end
 end
 function make_spectrum_available(problem)
-    return problem.spectrum[:isSpectrumAvailable] = true
+    return problem.spectrum["isSpectrumAvailable"] = true
 end
 
 function get_ψ(problem::LinearOptics, n::Integer)
-    ψ = view(problem.spectrum[:ψ], :, n)
+    ψ = view(problem.spectrum["ψ"], :, n)
     return ψ
 end
 function get_ψ²(problem::LinearOptics, n::Integer)
-    ψ = problem.spectrum[:ψ][:, n]
+    ψ = problem.spectrum["ψ"][:, n]
     return abs2.(ψ)
 end
 

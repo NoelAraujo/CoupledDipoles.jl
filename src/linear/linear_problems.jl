@@ -2,7 +2,7 @@ function LinearOptics(physic::Union{Scalar,Vectorial}, atoms, laser)
     @debug "start: LinearOptics - $( typeof(physic) )"
 
     kernelFunction = get_kernelFunction(physic, atoms)
-    spectrum = Dict(:λ => Array{ComplexF64}(undef, atoms.N), :ψ => Array{ComplexF64}(undef, atoms.N, atoms.N), :isSpectrumAvailable => false)
+    spectrum = Dict()
     data = Dict()
 
     @debug "end  : LinearOptics - $( typeof(physic) )"
