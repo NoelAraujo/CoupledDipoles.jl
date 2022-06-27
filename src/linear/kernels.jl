@@ -21,16 +21,16 @@ end
 function interaction_matrix(problem::NonLinearOptics{MeanField})
     @debug "start: interaction_matrix"
 
-    if haskey(problem.data, :G)
-        return problem.data[:G]
-    end
+    # if haskey(problem.data, :G)
+    #     return problem.data[:G]
+    # end
 
     temp_scalar_problem = LinearOptics(Scalar(), problem.atoms, problem.laser)
     G = get_empty_matrix(temp_scalar_problem.physic, temp_scalar_problem.atoms)
     temp_scalar_problem.kernelFunction(temp_scalar_problem.atoms, problem.laser, G)
 
     temp_scalar_problem = 1
-    problem.data[:G] = G
+    # problem.data[:G] = G
     @debug "end  : interaction_matrix"
     return G
 end
