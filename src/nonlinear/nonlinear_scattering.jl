@@ -1,4 +1,39 @@
-function _OnePoint_Intensity(physic::MeanField, laser, R⃗, sensor, β, scattering_func)
+@views function _OnePoint_Intensity(physic::MeanField, laser, R⃗, sensor, β, scattering_func)
+    N = size(R⃗, 2)
+
+    r = norm(sensor)
+    n = sensor ./ r
+
+    σ⁻ = β[1:N]
+    σᶻ = β[(N + 1):end]
+    R = R⃗
+
+    Ω = laser_field(laser, sensor) / (-0.5im)
+    # y = -Γ / 2 * (cis(k₀ * r) / (im * k₀ * r)) * sum(σ⁻[j] * cis(-k₀ * (n ⋅ R[:, j])) for j in 1:N)
+
+    y = zero(ComplexF64)
+    dot_nR = zero(Float64)
+    for j in 1:N
+        dot_nR *= 0.0
+        oneAtom = R[:, j]
+        for i in eachindex(oneAtom)
+        @inbounds    dot_nR += n[i]*R[i, j]
+        end
+        @inbounds y += σ⁻[j] * cis(-k₀ * (dot_nR))
+    end
+    y *= -Γ / 2 * (cis(k₀ * r) / (im * k₀ * r))
+
+    E = Ω + y
+    # intensity_oneSensor = conj(E) * E + (Γ^2) * (1 / (2 * k₀ * r)^2) * (-sum(σ⁻ .* conj.(σ⁻)) + sum(1 .+ σᶻ) / 2)
+
+    intensity_oneSensor = conj(E) * E
+    for j in 1:N
+        intensity_oneSensor += (1 / (2 * k₀ * r)^2) * (-(σ⁻[j] * conj(σ⁻[j])) + (1 + σᶻ[j]) / 2)
+    end
+    return real(intensity_oneSensor)
+end
+
+function _OnePoint_Intensity_legacy(physic::MeanField, laser, R⃗, sensor, β, scattering_func)
     Ω = laser_field(laser, sensor) / (-0.5im)
 
     r = norm(sensor)
@@ -15,7 +50,6 @@ function _OnePoint_Intensity(physic::MeanField, laser, R⃗, sensor, β, scatter
     term4 = ThreadsX.sum((1 + σᶻ[j]) / 2 for j in 1:N)
 
     intensity_oneSensor = term1 + (Γ / 2) * term2 + (Γ / (2k₀ * r))^2 * (term3 + term4)
-
     return real(intensity_oneSensor)
 end
 """

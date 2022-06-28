@@ -43,8 +43,8 @@ end
 - atomic_states: β for Scalar Model, ou [β,z] for Mean Field Model
 - sensor: measurement position
 
-Returns a Complex Value of the Eletric Field: -(Γ/2) * (exp(ikr) / ikr) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ) 
-     
+Returns a Complex Value of the Eletric Field: -(Γ/2) * (exp(ikr) / ikr) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)
+
 - r : distance sensor to origin (r = norm(sensor))
 - n̂ : norm of sensor ( n̂ = sensor / norm(sensor) )
 - R⃗ⱼ : atom j
