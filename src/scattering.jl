@@ -72,7 +72,7 @@ end
 
     Computes the Total Electric Field (Laser Pump + Scattering), then returns the Intensity
 """
-@views function scattering_intensity(problem, atomic_states, measurement_positions, scattering_func::Function)
+@views function scattering_intensity(problem, atomic_states, measurement_positions, scattering_func::Function; useThreads=true)
     _laser = problem.laser
     _r = problem.atoms.r
     _physics = problem.physic
@@ -87,8 +87,14 @@ end
         return _OnePoint_Intensity(_physics, _laser, _r, _sensors, _states, _func)
     else
         scat_int = Array{Float64}(undef, n_sensors)
-        for i in 1:n_sensors #Threads.@threads
-            scat_int[i] = _OnePoint_Intensity(_physics, _laser, _r, view(_sensors, :, i), _states, _func)
+        if useThreads
+            Threads.@threads for i in 1:n_sensors
+                scat_int[i] = _OnePoint_Intensity(_physics, _laser, _r, view(_sensors, :, i), _states, _func)
+            end
+        else
+            for i in 1:n_sensors
+                scat_int[i] = _OnePoint_Intensity(_physics, _laser, _r, view(_sensors, :, i), _states, _func)
+            end
         end
         return scat_int
     end
