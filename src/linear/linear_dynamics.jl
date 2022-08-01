@@ -65,8 +65,6 @@ function Scalar!(du, u, p, t)
         "du[:] = G*u + Ωₙ"
     But using inplace operation
     =#
-    mul!(du, G, u)
-    du .-= Ωₙ
-
+    du .= muladd(G, u, Ωₙ)
     return nothing
 end

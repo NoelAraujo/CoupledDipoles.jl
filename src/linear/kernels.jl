@@ -38,16 +38,16 @@ end
 """
     green_scalar!(atoms, laser, G)
 
-Computes:  
-    @. G = -(Γ/2)*exp(1im*k₀ * R_jk) / (1im * k₀ * R_jk)  
+Computes:
+    @. G = -(Γ/2)*exp(1im*k₀ * R_jk) / (1im * k₀ * R_jk)
     G[diagind(G)] .= 1im * laser.Δ - Γ/2
 """
 function green_scalar!(atoms, laser, G)
     @debug "start: green_scalar!"
 
-    G[:] = get_pairwise_matrix(atoms.r) # R_jk
+    get_pairwise_matrix!(atoms.r, G) # R_jk
 
-    Threads.@threads for j in eachindex(G) # 
+    Threads.@threads for j in eachindex(G)
         @inbounds G[j] = -(Γ / 2) * cis(k₀ * G[j]) / (1im * k₀ * G[j])
     end
     G[diagind(G)] .= 1im * laser.Δ - Γ / 2
@@ -97,7 +97,7 @@ function green_vectorial!(atoms, laser, G)
         B = []
         for (β_idx, β) in enumerate(β_range)
             term1 = im * I(N) .* δ(α, β)
-            # term2 = (3/2)*exp.(im*Rjn)./Rjn  ## Defined outside      
+            # term2 = (3/2)*exp.(im*Rjn)./Rjn  ## Defined outside
             term3 = P_Rjn .* δ(α, β)
             term4 = Q_Rjn_over_Rjn_squared .* (array_XYZ_jn[α_idx] .* array_XYZ_jn[β_idx])
 

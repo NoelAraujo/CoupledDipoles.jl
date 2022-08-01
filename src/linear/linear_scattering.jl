@@ -17,7 +17,7 @@ end
     xₙₘ = Array{Float64}(undef, number_configurations)
     yₙₘ, zₙₘ = similar(xₙₘ), similar(xₙₘ)
     count = 1
-    for m in 1:N    
+    for m in 1:N
         rm = r[:,m]
         for n in (m+1):N
             xₙₘ[count] = r[1,n] - rm[1]
@@ -37,9 +37,9 @@ end
             count += 1
         end
     end
-    
+
     total_intensity = ThreadsX.mapreduce(+, 1:number_configurations) do ii
-        βₙₘ[ii]*exp(-im*zₙₘ[ii]*k₀cosθ)*besselj(0,k₀sinθ*sqrt(xₙₘ[ii]^2+yₙₘ[ii]^2))
+        βₙₘ[ii]*exp(-im*zₙₘ[ii]*k₀cosθ)*Bessels.besselj0(k₀sinθ*sqrt(xₙₘ[ii]^2+yₙₘ[ii]^2))
     end
     total_intensity += sum(abs2, βₙ)/2
     return 2real(total_intensity)
@@ -53,13 +53,13 @@ end
 
     βₙ = view(atoms_states, 1:N)
     βₘ = conj.(βₙ)
-    
+
     number_configurations = ((N^2) ÷ 2 - N ÷ 2)
 
     xₙₘ = Array{Float64}(undef, number_configurations)
     yₙₘ, zₙₘ = similar(xₙₘ), similar(xₙₘ)
     count = 1
-    for m in 1:N    
+    for m in 1:N
         for n in (m+1):N
             xₙₘ[count] = xₙ[n] - xₙ[m]
             yₙₘ[count] = yₙ[n] - yₙ[m]
@@ -85,13 +85,13 @@ end
         k₀cosθ = k₀*cos(θ)
 
         _intensity = ThreadsX.mapreduce(+, 1:number_configurations) do ii
-            βₙₘ[ii]*exp(-im*zₙₘ[ii]*k₀cosθ)*besselj(0,k₀sinθ*sqrt(xₙₘ[ii]^2+yₙₘ[ii]^2))
+            βₙₘ[ii]*exp(-im*zₙₘ[ii]*k₀cosθ)*Bessels.besselj0(k₀sinθ*sqrt(xₙₘ[ii]^2+yₙₘ[ii]^2))
         end
         _intensity += sum(abs2, βₙ)/2
 
         intensities[idx_θ] = 2real(_intensity)
     end
-    
+
     return intensities
 end
 

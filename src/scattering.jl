@@ -86,9 +86,9 @@ end
     if n_sensors == 1
         return _OnePoint_Intensity(_physics, _laser, _r, _sensors, _states, _func)
     else
-        scat_int = zeros(n_sensors)
-        Threads.@threads for i in 1:n_sensors #
-            scat_int[i] = _OnePoint_Intensity(_physics, _laser, _r, _sensors[:, i], _states, _func)
+        scat_int = Array{Float64}(undef, n_sensors)
+        for i in 1:n_sensors #Threads.@threads
+            scat_int[i] = _OnePoint_Intensity(_physics, _laser, _r, view(_sensors, :, i), _states, _func)
         end
         return scat_int
     end

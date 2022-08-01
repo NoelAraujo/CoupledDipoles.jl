@@ -17,6 +17,7 @@ using HCubature
 using MKL
 
 using Distributions: MvNormal
+using Bessels
 
 const k₀ = 1
 const Γ = 1

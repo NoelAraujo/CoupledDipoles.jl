@@ -25,9 +25,9 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;
     @debug "start: time evolution - NonLinearOptics"
     G = interaction_matrix(problem)
 
-    #= 
+    #=
         I don't sum over diagonal elements during time evolution
-     thus, to avoid an IF statement, I put a zero on diagonal 
+     thus, to avoid an IF statement, I put a zero on diagonal
     =#
     saveDiag = diagind(G)
     G[diagind(G)] .= zero(eltype(G))

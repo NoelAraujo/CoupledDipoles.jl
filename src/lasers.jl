@@ -3,7 +3,7 @@
 
     Computes (im/2)*Ω.(points), where Ω is the laser (spatial distribution + parameters)
 """
-@views function laser_field(laser, spatial_coordinates)
+function laser_field(laser, spatial_coordinates)
     N = _get_number_elements(spatial_coordinates)
     _core_LaserFunction = _get_core_LaserFunction(laser)
 
@@ -13,9 +13,8 @@
         E = -(im / 2) * _core_LaserFunction(_spatial_matrix, E₀, laser)
     else
         E = zeros(ComplexF64, N)
-        for n in 1:N # faster WITHOUT multi threading
-            oneCoordinate = _spatial_matrix[:, n]
-            @inbounds E[n] = -(im / 2) * _core_LaserFunction(oneCoordinate, E₀, laser)
+        for n in 1:N # faster WITHOUT multi threading, and WITH the 'view' inside the call function
+            @inbounds E[n] = -(im / 2) * _core_LaserFunction(view(_spatial_matrix, :, n), E₀, laser)
         end
     end
     return E
