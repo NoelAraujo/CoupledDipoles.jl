@@ -12,7 +12,7 @@ using ThreadsX
 using Printf
 using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
-using SpecialFunctions
+# using SpecialFunctions, WGLMakie, Weave, Plots, Printf, LaTeXStrings
 using HCubature
 using MKL
 
