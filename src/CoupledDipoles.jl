@@ -3,7 +3,8 @@ module CoupledDipoles
 using LinearAlgebra
 using Distances
 
-using DifferentialEquations
+# using DifferentialEquations
+using OrdinaryDiffEq
 using Logging: global_logger
 using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
@@ -12,11 +13,12 @@ using ThreadsX
 using Printf
 using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
-# using SpecialFunctions, WGLMakie, Weave, Plots, Printf, LaTeXStrings
+# using SpecialFunctions, WGLMakie, Weave, Plots,  LaTeXStrings
 using HCubature
 using MKL
 
 using Distributions: MvNormal
+# Pkg.develop(url="https://github.com/JuliaMath/Bessels.jl")
 using Bessels
 
 const k₀ = 1

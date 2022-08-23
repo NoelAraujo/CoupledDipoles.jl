@@ -44,7 +44,7 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;
     ### calls for solver
     problemFunction = get_evolution_function(problem)
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
-    solution = DifferentialEquations.solve(prob, OwrenZen3(); reltol=1e-8, kargs...)
+    solution = OrdinaryDiffEq.solve(prob, OwrenZen3(); reltol=1e-8, kargs...)
 
     # !!!! restore diagonal !!!!
     G[diagind(G)] .= saveDiag

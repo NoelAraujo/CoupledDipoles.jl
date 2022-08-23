@@ -49,7 +49,7 @@ function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple, Ωₙ::Vec
     ### calls for solver
     problemFunction = get_evolution_function(problem)
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
-    solution = DifferentialEquations.solve(prob, VCABM(); dt=1e-10, abstol=1e-10, reltol=1e-10, kargs...)
+    solution = OrdinaryDiffEq.solve(prob, VCABM(); dt=1e-10, abstol=1e-10, reltol=1e-10, kargs...)
 
     @debug "end  : time evolution - LinearOptics"
     return solution
