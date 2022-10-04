@@ -1,15 +1,12 @@
 """
     Atom(T <: ThreeD, ::Int64, ::Union{Real, Integer})
 """
-function Atom(geometry::Sphere, N::Int64, kR::Union{Real,Integer})
+function Atom(geometry::Sphere, N::Int64, kR::Union{Real,Integer}; kwargs...)
     @debug "start: Shape - Sphere"
 
     dimensions = 3
     ρ = 3N / (4π * kR^3)
-    rₘᵢₙ = get_rₘᵢₙ(ρ)
-    if rₘᵢₙ ≥ kR / 10
-        rₘᵢₙ = kR / 100
-    end
+    rₘᵢₙ = float(get(kwargs, :r_min, get_rₘᵢₙ(ρ)))
 
     if geometry.isGaussian
         createFunction = ftn_AtomsOnSphere_Gaussian

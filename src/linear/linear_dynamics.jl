@@ -44,7 +44,7 @@ function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple, Ωₙ::Vec
     @debug "start: time evolution - LinearOptics"
 
     ### parameters == constant vector and matrices
-    parameters = view(G, :, :), view(Ωₙ, :)
+    parameters = get_evolution_params(problem, G, Ωₙ)
 
     ### calls for solver
     problemFunction = get_evolution_function(problem)
@@ -56,6 +56,7 @@ function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple, Ωₙ::Vec
 end
 
 get_evolution_function(problem::LinearOptics{Scalar}) = Scalar!
+get_evolution_params(problem::LinearOptics{Scalar}, G, Ωₙ) = view(G, :, :), view(Ωₙ, :)
 
 function Scalar!(du, u, p, t)
     G, Ωₙ = p
