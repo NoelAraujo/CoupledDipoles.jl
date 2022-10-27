@@ -25,7 +25,7 @@ return ωₙ, Γₙ
 """
 function get_spectrum(problem; forceComputation=false)
     @debug "start: get spectrum"
-    
+
     if is_spectrum_NOT_available(problem) || forceComputation
         H = interaction_matrix(problem)
         spectrum = eigen(H)
@@ -101,12 +101,13 @@ end
 
 function get_spatial_profile_single_mode(problem, mode_index::Integer)
     r = problem.atoms.r
+    get_spectrum(problem) # compute diagonzalizatio if not available
     try
         ψ²ₙ = get_ψ²(problem, mode_index)
         r_cm = get_coordinates_of_center_of_mass(r, ψ²ₙ)
 
         # Specific for the problem (ones needs to define this function)
-        DCM = get_Distances_from_r_to_CM(r, r_cm)
+        DCM = [norm(rj - r_cm) for rj in eachcol(r)]# get_Distances_from_r_to_CM
 
         sort_spatial_profile!(DCM, ψ²ₙ)
         return DCM, ψ²ₙ
@@ -153,8 +154,8 @@ function classify_modes(problem; forceComputation=false)
     ωₙ, Γₙ = get_spectrum(problem; forceComputation=forceComputation)
     ξₙ, R¹ₙ = get_localization_length(problem; forceComputation=forceComputation)
 
-    localized_modes = findall((Γₙ .< Γ) .* (R¹ₙ .≥ R1_threshold))
-    sub_radiant_modes = findall((Γₙ .< Γ) .* (R¹ₙ .< R1_threshold))
+    localized_modes = findall((Γₙ .< Γ) .* (R¹ₙ .≥ R1_THRESHOLD))
+    sub_radiant_modes = findall((Γₙ .< Γ) .* (R¹ₙ .< R1_THRESHOLD))
     super_radiant_modes = findall(Γₙ .> Γ)
     return (loc=localized_modes, sub=sub_radiant_modes, super=super_radiant_modes)
 end

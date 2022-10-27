@@ -1,7 +1,7 @@
 name = "CoupledDipoles"
 uuid = "1aa92a3a-72ac-4ef3-9973-aaf9b373e3c1"
 authors = ["Noel Araujo"]
-version = "0.1.22"
+version = "0.1.24"
 
 [deps]
 Bessels = "0e736298-9ec6-45e8-9647-e4fc86a2fe38"
@@ -18,11 +18,12 @@ OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 PackageCompiler = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
 TerminalLoggers = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
 ThreadsX = "ac1d9e8a-700a-412c-b207-f0111f4b6c0d"
 
 [compat]
-julia = "1.7"
+julia = "1.8"
 
 [extras]
 CPUSummary = "2a0fbf3d-bb9c-48f3-b0a9-814d99fd7ab9"

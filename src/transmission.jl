@@ -38,8 +38,8 @@ end
 end
 
 #=
-    The value of "farField_factor*size(atoms)" is necessary to avoid
-    transmission above 100% for small number of particles - numerical erros 
+    The value of "FARFIELD_FACTOR*size(atoms)" is necessary to avoid
+    transmission above 100% for small number of particles - numerical erros
     goes to zero, and we get invalid results, if I allow the Far Field
     be to far, i induce such mistakes.
 
@@ -48,7 +48,7 @@ end
 =#
 @inline function how_far_is_FarField(atoms)
     if atoms.N < 50
-        return farField_factor * size(atoms)
+        return FARFIELD_FACTOR * size(atoms)
     else
         return 5.01 * (size(atoms)^2)
     end

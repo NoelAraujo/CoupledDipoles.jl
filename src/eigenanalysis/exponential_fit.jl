@@ -27,7 +27,7 @@ function get_coeffs_L2(x_use, y_use)
 end
 function is_R1_localized(R1)
     # is an arbitrary decision to say that a mode is  "localized" if R1 > "somthing"
-    if R1 > R1_threshold
+    if R1 > R1_THRESHOLD
         return true
     else
         return false
@@ -37,7 +37,7 @@ end
 """
     x_use, y_use = select_points(DCM::Vector, ψ²::Vector)
 
-computes how many points since the center of mass are important based upon the `probability_threshold` (constant defined as 0.9999)
+computes how many points since the center of mass are important based upon the `PROBABILITY_THRESHOLD` (constant defined as 0.9999)
 """
 function select_points(DCM::Vector, ψ²::Vector)
     if length(ψ²) < 10
@@ -45,7 +45,7 @@ function select_points(DCM::Vector, ψ²::Vector)
     end
 
     cumulative_probability = cumsum(ψ²)
-    threshold = sum(cumulative_probability .< probability_threshold)
+    threshold = sum(cumulative_probability .< PROBABILITY_THRESHOLD)
 
     x_use = DCM[1:threshold]
     y_use = ψ²[1:threshold]

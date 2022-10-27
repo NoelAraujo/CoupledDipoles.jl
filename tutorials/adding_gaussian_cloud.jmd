@@ -20,7 +20,7 @@ We need `Sphere` to have a flag to indicate if the distribution will be Gaussian
 
 (I added the following code into the file `structs.jl`)
 
-    struct Sphere <: ThreeD 
+    struct Sphere <: ThreeD
         isGaussian::Bool
 
         function Sphere(args... ; kwargs...)
@@ -40,14 +40,14 @@ The package `Distributions` exports the method `MvNormal` (MultiVariable Normal 
 
 (I added the following code into the file `atoms_sphere.jl`)
 
-    function ftn_AtomsOnSphere_Gaussian(; kwargs...)            
+    function ftn_AtomsOnSphere_Gaussian(; kwargs...)
         mu = [0.,0.,0.]
         sigma = get(kwargs, :kR, 1.0)
         new_atom = rand(MvNormal(mu,sigma))
-        
+
         return new_atom
     end
-(I added the following code into the file `CoupledDipoles.jl`) 
+(I added the following code into the file `CoupledDipoles.jl`)
 
     using Distributions: MvNormal
 
@@ -58,7 +58,7 @@ For further discussion about Multivariable Distribution, check [here](https://di
 
 The driver `Atom` needs to verify if the cloud is gaussian, if so, change the default function to create atoms.
 
-(Still in the file `atoms_sphere.jl`, I added the code) 
+(Still in the file `atoms_sphere.jl`, I added the code)
 
     if geometry.isGaussian
         createFunction = ftn_AtomsOnSphere_Gaussian
@@ -78,8 +78,8 @@ $$\begin{equation}
 
 where $R$ is the system size, already defined as the $\sigma$ in the second section. The numerical factor "2" comes from the original Normal Distribution definition. The constant factor $\rho_0$ needs to be determined using normalization over volume, that is, in all space, the density of atoms must sum up to the total number of atoms, *N*:
 
-$$\begin{align*} 
- N &= \int_{0}^{\infty}\rho(\Vec{r})dV\\ 
+$$\begin{align*}
+ N &= \int_{0}^{\infty}\rho(\Vec{r})dV\\
  &= \int_{0}^{\infty} \rho_0 e^{-\frac{|\Vec{r}|^2}{2R^2}} r^2drd\theta d\phi\\
  &= 4\pi \rho_0\int_{0}^{\infty} e^{-\frac{|\Vec{r}|^2}{2R^2}} r^2dr\\
  &= 4\pi \rho_0 R^3\sqrt{\frac{\pi}{2}}\\
@@ -90,7 +90,7 @@ $$\begin{align*}
  We define an effective volume $V_e = 2\pi)^{3/2}R^3$, which fits inside the design patterns already estableshed for the package inner engines. Also, for the package to work, we have to provide the new `geometric factor` for gaussian distributions. For the reader to read an example, next we derive the expression for $b_0$ for the `Scalar` physics, with $\sigma_0=4\pi/k^2$, and $\rho_0$.
 
 $$\begin{align*}
- b_0 &= \sigma_0 \times \int_{-\infty}^{+\infty} \rho(\Vec{r})dr\\ 
+ b_0 &= \sigma_0 \times \int_{-\infty}^{+\infty} \rho(\Vec{r})dr\\
  &= \sigma_0 \times \rho_0 \times \int_{-\infty}^{+\infty} e^{-\frac{|\Vec{r}|^2}{2R^2}} dr\\
  &= \sigma_0 \times \rho_0 \times \sqrt{2\pi}R\\
  &= \frac{4\pi}{k^2} \times \frac{N}{(2\pi)^{3/2}R^3} \times \sqrt{2\pi}R\\
@@ -108,7 +108,7 @@ From the third line, we identify the `geometric factor` factor as $\sqrt{2\pi}R$
     end
     function geometric_integral(atoms::Atom{Sphere})
         if atoms.shape.isGaussian
-            return sqrt(2pi) * atoms.sizes 
+            return sqrt(2pi) * atoms.sizes
         else
             return 2 * atoms.sizes # diameter = 2*radius
         end

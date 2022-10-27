@@ -37,11 +37,11 @@ function ftn_AtomsOnSphere(; kwargs...)
     y = (2rand() - 1)
     z = (2rand() - 1)
     mag = sqrt(x^2 + y^2 + z^2)
-    
+
     new_atom[1] = kR*U*x/mag
     new_atom[2] = kR*U*y/mag
     new_atom[3] = kR*U*z/mag
-    
+
     return new_atom
 end
 function ftn_AtomsOnSphere_Gaussian(; kwargs...)

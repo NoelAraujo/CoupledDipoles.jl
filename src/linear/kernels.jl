@@ -64,52 +64,46 @@ check bencmark file for details
 function green_vectorial!(atoms, laser, G)
     @debug "start: green_vectorial!"
 
-    δ(x, y) = Int(==(x, y))
     N = atoms.N
     Δ = laser.Δ
 
     Xt, Yt, Zt = atoms.r[1, :], atoms.r[2, :], atoms.r[3, :]
 
-    Xjn = Xt * ones(1, N) - ones(N, 1) * Xt'
-    Yjn = Yt * ones(1, N) - ones(N, 1) * Yt'
-    Zjn = Zt * ones(1, N) - ones(N, 1) * Zt'
+    Xjm = Xt * ones(1, N) - ones(N, 1) * Xt'
+    Yjm = Yt * ones(1, N) - ones(N, 1) * Yt'
+    Zjm = Zt * ones(1, N) - ones(N, 1) * Zt'
+    Rjm = sqrt.(Xjm .^ 2 + Zjm .^ 2 + Yjm .^ 2)
 
-    array_XYZ_jn = [Xjn, Yjn, Zjn]
-    Rjn = sqrt.(Xjn .^ 2 + Zjn .^ 2 + Yjn .^ 2)
+    Xjm = view(Xjm./Rjm, :, :)
+    Yjm = view(Yjm./Rjm, :, :)
+    Zjm = view(Zjm./Rjm, :, :)
 
-    P(x) = 1 - 1 / x + 1 / x^2
-    Q(x) = -1 + 3 / x - 3 / x^2
+    temp1 = (3cis.(k₀*Rjm))./(2im*k₀.*Rjm)
+    temp2 = ( im./(k₀.*Rjm) - 1.0./(k₀.*Rjm).^2)
+    onesTemp = fill(one(eltype(G)) ,N,N)
 
-    α_range = β_range = [-1, +1, 0]
+    ## fill matriz by collumns, because Julia matrices are column-major
+    ## G[:, 1:N] = [Gxx; Gyx; Gzx]
+    G[1:N,         1:N] .= temp1.*( (onesTemp - Xjm.*Xjm) .+ (onesTemp - 3.0.*Xjm.*Xjm).*temp2)
+    G[(N+1):(2N),  1:N] .= temp1.*( ( - Yjm.*Xjm) .+ ( - 3.0.*Yjm.*Xjm).*temp2)
+    G[(2N+1):(3N), 1:N] .= temp1.*( ( - Zjm.*Xjm) .+ ( - 3.0.*Zjm.*Xjm).*temp2)
 
-    term2 = (3 / 2) * exp.(im * k₀ * Rjn) ./ (k₀ * Rjn)
-    term2[findall(isnan.(term2))] .= 0
-    term2[findall(isinf.(term2))] .= 0
+    ## G[:, (N+1):(2N)] = [Gxy; Gyy; Gzy]
+    G[1:N,         (N+1):(2N)] .= temp1.*( ( - Xjm.*Yjm) .+ ( - 3.0.*Xjm.*Yjm).*temp2)
+    G[(N+1):(2N),  (N+1):(2N)] .= temp1.*( (onesTemp - Yjm.*Yjm) .+ (onesTemp - 3.0.*Yjm.*Yjm).*temp2)
+    G[(2N+1):(3N), (N+1):(2N)] .= temp1.*( ( - Zjm.*Yjm) .+ ( - 3.0.*Zjm.*Yjm).*temp2)
 
-    P_Rjn = P.(im * k₀ * Rjn)
-    P_Rjn[findall(isnan.(P_Rjn))] .= 0
+    ## G[:, (2N+1):(3N)] = [Gxz; Gyz; Gzz]
+    G[1:N,        (2N+1):(3N)]  .= temp1.*( ( - Xjm.*Zjm) .+ ( - 3.0.*Xjm.*Zjm).*temp2)
+    G[(N+1):(2N),  (2N+1):(3N)] .= temp1.*( ( - Yjm.*Zjm) .+ ( - 3.0.*Yjm.*Zjm).*temp2)
+    G[(2N+1):(3N), (2N+1):(3N)] .= temp1.*( (onesTemp - Zjm.*Zjm) .+ (onesTemp - 3.0.*Zjm.*Zjm).*temp2)
 
-    Q_Rjn_over_Rjn_squared = Q.(im * k₀ * Rjn) ./ (k₀ * Rjn) .^ 2
-    Q_Rjn_over_Rjn_squared[findall(isnan.(Q_Rjn_over_Rjn_squared))] .= 0
+    # DO NOT CHANGE THE ORDER OF THE NEXT TWO LINES
+    G .= -(Γ/2).*G
+    G[findall( isnan.(G) )] .= im*Δ - Γ/3
 
-    A = []
-    for (α_idx, α) in enumerate(α_range)
-        B = []
-        for (β_idx, β) in enumerate(β_range)
-            term1 = im * I(N) .* δ(α, β)
-            # term2 = (3/2)*exp.(im*Rjn)./Rjn  ## Defined outside
-            term3 = P_Rjn .* δ(α, β)
-            term4 = Q_Rjn_over_Rjn_squared .* (array_XYZ_jn[α_idx] .* array_XYZ_jn[β_idx])
-
-            K = term1 + term2 .* (term3 .+ term4)
-            push!(B, K)
-        end
-        push!(A, vcat(B[1:length(β_range)]...))
-    end
-
-    G[:] = (-Γ / 2) * hcat(A[1:length(α_range)]...) #join all matrices
-    G .= -im * G # For my code to work, I need this imaginary number. Credits to Sheila
-    G[diagind(G)] .= (-Γ / 2 + 1im * Δ)
+    # force clean variables
+    Xjm = Yjm = Zjm = temp1 = temp2 = onesTemp = 1
 
     @debug "end  : green_vectorial!"
     return nothing

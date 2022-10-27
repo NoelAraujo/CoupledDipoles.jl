@@ -23,9 +23,9 @@ using Bessels
 
 const k₀ = 1
 const Γ = 1
-const probability_threshold = 0.9999
-const R1_threshold = 0.5
-const farField_factor = 100
+const PROBABILITY_THRESHOLD = 0.9999
+const R1_THRESHOLD = 0.5
+const FARFIELD_FACTOR = 100
 
 include("structs.jl")
 include("atoms/atom_cube.jl")
@@ -98,5 +98,29 @@ export time_evolution, default_initial_condition, get_evolution_function
 include("transmission.jl")
 export transmission, how_far_is_FarField
 export _create_sphere_sensor, _create_plane_sensor
+
+import SnoopPrecompile
+SnoopPrecompile.@precompile_all_calls begin
+    N = 40
+    kL = 32.4
+    w₀, s, Δ = 4π, 1e-5, 0.3
+
+    atoms = Atom(Sphere(gaussian=true), N, kL; r_min=0.0)
+    laser = Laser(Gaussian3D(w₀), s, Δ)
+
+    simulation = LinearOptics(Scalar(), atoms, laser)
+    βₙ = steady_state(simulation)
+    G = interaction_matrix(simulation)
+    ωₙ, Γₙ = get_spectrum(simulation)
+
+    simulation = LinearOptics(Vectorial(), atoms, laser)
+    G = interaction_matrix(simulation)
+
+    simulation = NonLinearOptics(MeanField(), atoms, laser)
+    u₀ = default_initial_condition(simulation)
+    tspan = (0, 15.0)
+    βₜ = time_evolution(simulation, u₀, tspan)
+
+end
 
 end
