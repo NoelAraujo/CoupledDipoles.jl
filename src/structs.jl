@@ -59,16 +59,14 @@ struct Gaussian3D <: Gaussian
     end
 end
 
-struct Laser{T<:Pump}
+mutable struct Laser{T<:Pump}
     pump::T
     s::Float64
     Δ::Float64
+    direction::AbstractArray
+    polarization::AbstractArray
 end
-struct Lasers{T<:Pump}
-    pump::Vector{T}
-    s::Vector{Float64}
-    Δ::Vector{Float64}
-end
+
 
 abstract type Physics end
 abstract type Linear <: Physics end

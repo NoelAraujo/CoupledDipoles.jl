@@ -3,7 +3,7 @@
 
     Computes (im/2)*Ω.(points), where Ω is the laser (spatial distribution + parameters)
 """
-function laser_field(laser, spatial_coordinates)
+function legacy_laser_field(laser, spatial_coordinates)
     N = _get_number_elements(spatial_coordinates)
     _core_LaserFunction = _get_core_LaserFunction(laser)
 

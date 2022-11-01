@@ -10,9 +10,9 @@ addprocs(3)
 # addprocs(4, exeflags=`--threads 3`, enable_threaded_blas=true)
 
 # machine3 = [("pc3@192.168.15.7",5)]
-# addprocs(machine3; 
-#     multiplex=true, 
-#     exeflags=`--threads 2`, 
+# addprocs(machine3;
+#     multiplex=true,
+#     exeflags=`--threads 2`,
 #     enable_threaded_blas=true, dir="/home/pc3")
 
 # @everywhere push!(LOAD_PATH, pwd())
@@ -77,7 +77,7 @@ for (iρ, ρλ³) in enumerate(ρλ³_range)
 
         variances[iρ, iΔ] = var(all_intensities_over_mean)
     end
-    # heatmap(Δ_range, ρλ³_range, variances, 
+    # heatmap(Δ_range, ρλ³_range, variances,
     #     c=:jet, xlabel="Δ/Γ", ylabel="ρλ³",
     #     title="s=$(s), kL=$(kL)"
     # ) |> display
@@ -93,6 +93,6 @@ variances = load("src/heatmap_variances.jld2", "variances")
 
 using Plots
 
-#Δ_range, ρλ³_range, 
+#Δ_range, ρλ³_range,
 heatmap(variances; c=:jet, xlabel="Δ/Γ", ylabel="ρλ³", title="")
 # savefig("florent_middle_resolution.png")

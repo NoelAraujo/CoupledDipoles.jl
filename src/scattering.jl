@@ -101,3 +101,88 @@ end
 end
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+##---------------------
+function scattered_electric_field(problem, atomic_states, sensor_positions; regime=:far_field)
+    states = prepare_input_state(problem, atomic_states)
+    measurement_positions = prepare_input_position(problem, sensor_positions)
+    single_point_field = default_field_function(regime)
+
+    _electric_fields = ThreadsX.map(eachcol(measurement_positions)) do sensor
+        single_point_field(problem, states, sensor)
+    end
+    electric_fields::Matrix{ComplexF64} = hcat(_electric_fields...)
+
+    return electric_fields
+
+end
+
+
+function default_field_function(regime)
+    if regime == :far_field
+        return field_in_far_field
+    elseif regime == :near_field
+        return field_in_near_field
+    else
+        @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
+    end
+end
+function field_in_far_field(problem, states, sensor)
+    return laser_field(problem, sensor) +  scattering_far_field(problem, states, sensor)
+end
+function field_in_near_field(problem, states, sensor)
+    return laser_field(problem, sensor) +  scattering_near_field(problem, states, sensor)
+end
+
+
+
+
+
+function prepare_input_state(problem::LinearOptics{Scalar}, atomic_states::AbstractVector)
+    n_states = length(atomic_states)
+    if     n_states == problem.atoms.N# if is a vector, return it as a view to reduce memory access
+        return view(atomic_states, :, :)
+    else
+        @error "Atomic States are Invalid. Use an Array with the same length as the Number of Atoms."
+    end
+end
+function prepare_input_state(problem::LinearOptics{Vectorial}, atomic_states::AbstractVecOrMat)
+    ## TO DO
+    return atomic_states
+end
+function prepare_input_state(problem::NonLinearOptics{MeanField}, atomic_states::AbstractVector)
+    ## TO DO
+    return atomic_states
+end
+
+
+
+function prepare_input_position(problem, sensor_positions::AbstractVector)
+    n_axes_components = length(sensor_positions)
+    system_dimension = get_dimension(problem.atoms)
+    if     n_axes_components == system_dimension
+        return view( Array(Matrix(sensor_positions')'), :, :) ## convert array into a matrix of single coluumn
+    else
+        @error "Your `Measurement Position Vector`  does not match the dimensionality of the system."
+    end
+end
+function prepare_input_position(problem, sensor_positions::AbstractMatrix)
+    dimensions, n_sensors = size(sensor_positions)
+    system_dimension = get_dimension(problem.atoms)
+    if     dimensions == system_dimension
+        return view(sensor_positions, :, :)
+    else
+        @error "Your `Measurement Position Matrix`  does not match the dimensionality of the system."
+    end
+end

@@ -12,7 +12,7 @@ function steady_state(problem::LinearOptics{Scalar})
     @debug "start: get steady state"
 
     G = interaction_matrix(problem)
-    Ωₙ = laser_field(problem.laser, problem.atoms)
+    Ωₙ = laser_field(problem, problem.atoms.r)
     if problem.atoms.N > 1
         βₛ = -(G \ Ωₙ)
     else
@@ -25,10 +25,31 @@ function steady_state(problem::LinearOptics{Scalar})
     return βₛ
 end
 
+
+
+function steady_state(problem::LinearOptics{Vectorial})
+    @debug "start: get steady state"
+
+    G = interaction_matrix(problem)
+    Ωₙ = laser_field(problem, problem.atoms.r)
+    ## Ωₙ_eff  = [all X - all Y - all Z]
+    Ωₙ_eff = vcat(view(Ωₙ,1,:), view(Ωₙ,3,:), view(Ωₙ,3,:))
+    if problem.atoms.N > 1
+        βₛ = -(G \ Ωₙ_eff)
+    else
+        # The negative sign was NOT forgotten
+        # after some math, I verified that it does not exist
+        βₛ = Ωₙ / G[1]
+    end
+
+    @debug "end  : get steady state"
+    return reshape(βₛ, 3, problem.atoms.N)
+end
+
 function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; kargs...) where {T<:Linear}
     ### use default G and Ωₙ
     G = copy(interaction_matrix(problem))
-    Ωₙ = laser_field(problem.laser, problem.atoms)
+    Ωₙ = laser_field(problem, problem.atoms)
     solution = time_evolution(problem, u₀, tspan, Ωₙ, G; kargs...)
 
     return solution

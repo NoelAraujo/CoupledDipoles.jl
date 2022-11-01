@@ -34,7 +34,7 @@ function Volume_of(atoms::Atom{Sphere})
         return (4π / 3) * atoms.sizes^3 # sizes == radius of Sphere
     end
 end
-#= 
+#=
 These "geometric_integral" values holds only for homogeneous distributions
 - They represent the light path acroos the cloud -
 For example, to cross a sphere, we need the diameter of the sphere (diameter = 2*radius)
@@ -48,7 +48,7 @@ function geometric_integral(atoms::Atom{Sphere})
 end
 geometric_integral(atoms::Atom{Cube}) = atoms.sizes # diameter = cube side = L
 
-#= 
+#=
 (usually) we want to know the physics in the laser direction, that is, at z-direction,
 thus, we want to know the light path across the height.
 =#
@@ -59,7 +59,7 @@ end
 
 """
     sph2cart([θ, ϕ, r])
-    
+
     θ = "elevation" or "Polar" = projection on Z-axis (in radians)
     ϕ = azimuth = projection on XY-plane (in radians)
     r = radius
