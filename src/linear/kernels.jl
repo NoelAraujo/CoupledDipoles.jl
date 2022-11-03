@@ -56,11 +56,50 @@ function green_scalar!(atoms, laser, G)
     return nothing
 end
 
-"""
-    green_vectorial!(atoms, laser, G)
+@parallel_indices (x,y) function Rjm_parallel!(Rjm, Xjm, Yjm, Zjm)
+        Rjm[x,y] = sqrt(Xjm[x,y]^ 2 + Zjm[x,y]^ 2 + Yjm[x,y]^ 2)
+    return nothing
+end
+@parallel_indices (x,y) function temp1_parallel!(temp1, Rjm)
+        temp1[x,y] = (3cis(k₀*Rjm[x,y]))/(2im*k₀*Rjm[x,y])
+    return nothing
+end
+@parallel_indices (x,y) function temp2_parallel!(temp2, Rjm)
+        temp2[x,y] = ( im/(k₀*Rjm[x,y]) - 1.0/(k₀*Rjm[x,y])^2)
+    return nothing
+end
 
-check bencmark file for details
-"""
+@parallel_indices (x,y) function Gx_parallel!(Gxx, Gyx, Gzx, temp1, Xjm, Yjm, Zjm, temp2)
+       Gxx[x,y] = temp1[x,y]*( (1 - Xjm[x,y]*Xjm[x,y]) + (1 - 3.0*Xjm[x,y]*Xjm[x,y])*temp2[x,y])
+       Gyx[x,y] = temp1[x,y]*( ( - Yjm[x,y]*Xjm[x,y]) + ( - 3.0*Yjm[x,y]*Xjm[x,y])*temp2[x,y])
+       Gzx[x,y] = temp1[x,y]*( ( - Zjm[x,y]*Xjm[x,y]) + ( - 3.0*Zjm[x,y]*Xjm[x,y])*temp2[x,y])
+    return nothing
+end
+
+@parallel_indices (x,y) function Gy_parallel!(Gxy, Gyy, Gzy, temp1, Xjm, Yjm, Zjm, temp2)
+    Gxy[x,y] = temp1[x,y]*( ( - Xjm[x,y]*Yjm[x,y]) + ( - 3.0*Xjm[x,y]*Yjm[x,y])*temp2[x,y])
+    Gyy[x,y] = temp1[x,y]*( (1 - Yjm[x,y]*Yjm[x,y]) + (1 - 3.0.*Yjm[x,y]*Yjm[x,y])*temp2[x,y])
+    Gzy[x,y] = temp1[x,y]*( ( - Zjm[x,y]*Yjm[x,y]) + ( - 3.0.*Zjm[x,y]*Yjm[x,y])*temp2[x,y])
+    return nothing
+end
+
+@parallel_indices (x,y) function Gz_parallel!(Gxz, Gyz, Gzz, temp1, Xjm, Yjm, Zjm, temp2)
+     Gxz[x,y] = temp1[x,y]*( ( - Xjm[x,y]*Zjm[x,y]) + ( - 3.0*Xjm[x,y]*Zjm[x,y])*temp2[x,y])
+     Gyz[x,y] = temp1[x,y]*( ( - Yjm[x,y]*Zjm[x,y]) + ( - 3.0*Yjm[x,y]*Zjm[x,y])*temp2[x,y])
+     Gzz[x,y] = temp1[x,y]*( (1 - Zjm[x,y]*Zjm[x,y]) + (1 - 3.0*Zjm[x,y]*Zjm[x,y])*temp2[x,y])
+     return nothing
+end
+
+
+@parallel_indices (x,y) function G_diagonals!(G, Δ)
+    G[x,y] = -(Γ/2).*G[x,y]
+    if isnan(G[x,y])
+        G[x,y] = im*Δ - Γ/3
+    end
+     return nothing
+end
+
+
 function green_vectorial!(atoms, laser, G)
     @debug "start: green_vectorial!"
 
@@ -68,46 +107,60 @@ function green_vectorial!(atoms, laser, G)
     Δ = laser.Δ
 
     Xt, Yt, Zt = atoms.r[1, :], atoms.r[2, :], atoms.r[3, :]
+    Xjm = Array{Float64,2}(undef, N, N)
 
-    Xjm = Xt * ones(1, N) - ones(N, 1) * Xt'
-    Yjm = Yt * ones(1, N) - ones(N, 1) * Yt'
-    Zjm = Zt * ones(1, N) - ones(N, 1) * Zt'
-    Rjm = sqrt.(Xjm .^ 2 + Zjm .^ 2 + Yjm .^ 2)
+    Xjm = Distances.pairwise(Euclidean(), Xt', Xt'; dims=2)
+    Yjm = Distances.pairwise(Euclidean(), Yt', Yt'; dims=2)
+    Zjm = Distances.pairwise(Euclidean(), Zt', Zt'; dims=2)
+
+    Rjm = Array{Float64,2}(undef, N, N)
+    @parallel Rjm_parallel!(Rjm, Xjm, Yjm, Zjm)
 
     Xjm = view(Xjm./Rjm, :, :)
     Yjm = view(Yjm./Rjm, :, :)
     Zjm = view(Zjm./Rjm, :, :)
-    
-    temp1 = map(CartesianIndices((1:N, 1:N))) do j
-        (3cis(k₀*Rjm[j]))/(2im*k₀*Rjm[j])
-    end
-    temp2 = map(CartesianIndices((1:N, 1:N))) do j
-        ( im/(k₀*Rjm[j]) - 1.0/(k₀*Rjm[j])^2)
-    end
-    onesTemp = fill(one(eltype(G)) ,N,N)
+
+
+    temp1 = Array{ComplexF64,2}(undef, N, N)
+    temp2 = Array{ComplexF64,2}(undef, N, N)
+    @parallel temp1_parallel!(temp1, Rjm)
+    @parallel temp2_parallel!(temp2, Rjm)
+
 
     ## fill matriz by collumns, because Julia matrices are column-major
     ## G[:, 1:N] = [Gxx; Gyx; Gzx]
-    @inbounds @. G[1:N,         1:N] = temp1*( (onesTemp - Xjm*Xjm) + (onesTemp - 3.0*Xjm*Xjm)*temp2)
-    @inbounds @. G[(N+1):(2N),  1:N] = temp1*( ( - Yjm*Xjm) + ( - 3.0*Yjm*Xjm)*temp2)
-    @inbounds @. G[(2N+1):(3N), 1:N] = temp1*( ( - Zjm*Xjm) + ( - 3.0*Zjm*Xjm)*temp2)
+    Gxx, Gyx, Gzx = Array{ComplexF64,2}(undef, N, N), Array{ComplexF64,2}(undef, N, N), Array{ComplexF64,2}(undef, N, N)
+    @parallel Gx_parallel!(Gxx, Gyx, Gzx, temp1, Xjm, Yjm, Zjm, temp2)
+
+    @inbounds @. G[1:N,         1:N] = copy(Gxx)
+    @inbounds @. G[(N+1):(2N),  1:N] = copy(Gyx)
+    @inbounds @. G[(2N+1):(3N), 1:N] = copy(Gzx)
+
+
 
     ## G[:, (N+1):(2N)] = [Gxy; Gyy; Gzy]
-    @inbounds @. G[1:N,         (N+1):(2N)] = temp1*( ( - Xjm.*Yjm) + ( - 3.0*Xjm*Yjm)*temp2)
-    @inbounds @. G[(N+1):(2N),  (N+1):(2N)] = temp1*( (onesTemp - Yjm*Yjm) + (onesTemp - 3.0.*Yjm*Yjm)*temp2)
-    @inbounds @. G[(2N+1):(3N), (N+1):(2N)] = temp1*( ( - Zjm.*Yjm) + ( - 3.0.*Zjm*Yjm)*temp2)
+    Gxy, Gyy, Gzy = Gxx, Gyx, Gzx
+    @parallel Gy_parallel!(Gxx, Gyx, Gzy, temp1, Xjm, Yjm, Zjm, temp2)
+
+    @inbounds @. G[1:N,         (N+1):(2N)] = copy(Gxy)
+    @inbounds @. G[(N+1):(2N),  (N+1):(2N)] = copy(Gyy)
+    @inbounds @. G[(2N+1):(3N), (N+1):(2N)] = copy(Gzy)
+
 
     ## G[:, (2N+1):(3N)] = [Gxz; Gyz; Gzz]
-    @inbounds @. G[1:N,        (2N+1):(3N)]  = temp1*( ( - Xjm*Zjm) + ( - 3.0*Xjm*Zjm)*temp2)
-    @inbounds @. G[(N+1):(2N),  (2N+1):(3N)] = temp1*( ( - Yjm*Zjm) + ( - 3.0*Yjm*Zjm)*temp2)
-    @inbounds @. G[(2N+1):(3N), (2N+1):(3N)] = temp1*( (onesTemp - Zjm*Zjm) + (onesTemp - 3.0*Zjm*Zjm)*temp2)
+    Gxz, Gyz, Gzz = Gxx, Gyx, Gzx
+    @parallel Gz_parallel!(Gxz, Gyz, Gzz, temp1, Xjm, Yjm, Zjm, temp2)
+
+    @inbounds @. G[1:N,        (2N+1):(3N)]  = copy(Gxz)
+    @inbounds @. G[(N+1):(2N),  (2N+1):(3N)] = copy(Gyz)
+    @inbounds @. G[(2N+1):(3N), (2N+1):(3N)] = copy(Gzz)
+
 
     # DO NOT CHANGE THE ORDER OF THE NEXT TWO LINES
-    G .= -(Γ/2).*G
-    G[findall( isnan.(G) )] .= im*Δ - Γ/3
+    @parallel G_diagonals!(G, Δ)
 
     # force clean variables
-    Xjm = Yjm = Zjm = temp1 = temp2 = onesTemp = 1
+    Xjm = Yjm = Zjm = temp1 = temp2 = 1
 
     @debug "end  : green_vectorial!"
     return nothing
