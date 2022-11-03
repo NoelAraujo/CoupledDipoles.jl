@@ -77,26 +77,30 @@ function green_vectorial!(atoms, laser, G)
     Xjm = view(Xjm./Rjm, :, :)
     Yjm = view(Yjm./Rjm, :, :)
     Zjm = view(Zjm./Rjm, :, :)
-
-    temp1 = (3cis.(k₀*Rjm))./(2im*k₀.*Rjm)
-    temp2 = ( im./(k₀.*Rjm) - 1.0./(k₀.*Rjm).^2)
+    
+    temp1 = map(CartesianIndices((1:N, 1:N))) do j
+        (3cis(k₀*Rjm[j]))/(2im*k₀*Rjm[j])
+    end
+    temp2 = map(CartesianIndices((1:N, 1:N))) do j
+        ( im/(k₀*Rjm[j]) - 1.0/(k₀*Rjm[j])^2)
+    end
     onesTemp = fill(one(eltype(G)) ,N,N)
 
     ## fill matriz by collumns, because Julia matrices are column-major
     ## G[:, 1:N] = [Gxx; Gyx; Gzx]
-    G[1:N,         1:N] .= temp1.*( (onesTemp - Xjm.*Xjm) .+ (onesTemp - 3.0.*Xjm.*Xjm).*temp2)
-    G[(N+1):(2N),  1:N] .= temp1.*( ( - Yjm.*Xjm) .+ ( - 3.0.*Yjm.*Xjm).*temp2)
-    G[(2N+1):(3N), 1:N] .= temp1.*( ( - Zjm.*Xjm) .+ ( - 3.0.*Zjm.*Xjm).*temp2)
+    @inbounds @. G[1:N,         1:N] = temp1*( (onesTemp - Xjm*Xjm) + (onesTemp - 3.0*Xjm*Xjm)*temp2)
+    @inbounds @. G[(N+1):(2N),  1:N] = temp1*( ( - Yjm*Xjm) + ( - 3.0*Yjm*Xjm)*temp2)
+    @inbounds @. G[(2N+1):(3N), 1:N] = temp1*( ( - Zjm*Xjm) + ( - 3.0*Zjm*Xjm)*temp2)
 
     ## G[:, (N+1):(2N)] = [Gxy; Gyy; Gzy]
-    G[1:N,         (N+1):(2N)] .= temp1.*( ( - Xjm.*Yjm) .+ ( - 3.0.*Xjm.*Yjm).*temp2)
-    G[(N+1):(2N),  (N+1):(2N)] .= temp1.*( (onesTemp - Yjm.*Yjm) .+ (onesTemp - 3.0.*Yjm.*Yjm).*temp2)
-    G[(2N+1):(3N), (N+1):(2N)] .= temp1.*( ( - Zjm.*Yjm) .+ ( - 3.0.*Zjm.*Yjm).*temp2)
+    @inbounds @. G[1:N,         (N+1):(2N)] = temp1*( ( - Xjm.*Yjm) + ( - 3.0*Xjm*Yjm)*temp2)
+    @inbounds @. G[(N+1):(2N),  (N+1):(2N)] = temp1*( (onesTemp - Yjm*Yjm) + (onesTemp - 3.0.*Yjm*Yjm)*temp2)
+    @inbounds @. G[(2N+1):(3N), (N+1):(2N)] = temp1*( ( - Zjm.*Yjm) + ( - 3.0.*Zjm*Yjm)*temp2)
 
     ## G[:, (2N+1):(3N)] = [Gxz; Gyz; Gzz]
-    G[1:N,        (2N+1):(3N)]  .= temp1.*( ( - Xjm.*Zjm) .+ ( - 3.0.*Xjm.*Zjm).*temp2)
-    G[(N+1):(2N),  (2N+1):(3N)] .= temp1.*( ( - Yjm.*Zjm) .+ ( - 3.0.*Yjm.*Zjm).*temp2)
-    G[(2N+1):(3N), (2N+1):(3N)] .= temp1.*( (onesTemp - Zjm.*Zjm) .+ (onesTemp - 3.0.*Zjm.*Zjm).*temp2)
+    @inbounds @. G[1:N,        (2N+1):(3N)]  = temp1*( ( - Xjm*Zjm) + ( - 3.0*Xjm*Zjm)*temp2)
+    @inbounds @. G[(N+1):(2N),  (2N+1):(3N)] = temp1*( ( - Yjm*Zjm) + ( - 3.0*Yjm*Zjm)*temp2)
+    @inbounds @. G[(2N+1):(3N), (2N+1):(3N)] = temp1*( (onesTemp - Zjm*Zjm) + (onesTemp - 3.0*Zjm*Zjm)*temp2)
 
     # DO NOT CHANGE THE ORDER OF THE NEXT TWO LINES
     G .= -(Γ/2).*G

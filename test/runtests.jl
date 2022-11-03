@@ -21,7 +21,16 @@ using Test
         G_expected = fill(im*1.5 - 1/3, 3, 3)
         @test all(G .≈ G_expected)
     end
-
+    @testset "Vectorial Kernel Matrix 3D" begin
+        r_jm = [-3, √3, -2]
+        G = CoupledDipoles._vectorial_3D_green_kernel(r_jm)
+        k₀ = CoupledDipoles.k₀
+        G_expected = (3cis(4k₀)/(8k₀*im))*(
+            (1 + im/(4k₀) - 1/(16k₀^2)).*[1 0 0; 0 1 0; 0 0 1] +
+            (-1 - 3im/(4k₀) + 3/(16k₀^2)).*[9 -3√3 6; -3√3 3 -2√3; 6 -2√3 4]./16
+        )
+        @test all(G .≈ G_expected)
+    end
 
     @testset "Green Matrix 2 Atoms" begin
         r1 = [0,-1,0]
@@ -142,4 +151,44 @@ using Test
         @test all(G .≈ G_ans)
     end
 
+    @testset "Vectorial Polarization" begin
+        w₀, s, Δ = 4π, 1e-5, 0.3
+        laser = Laser(Gaussian3D(w₀), s, Δ; direction = [0,1,1], polarization=[1,0,0]) # OK
+        @test laser.pump.w₀ == w₀
+        @test laser.s == s
+        @test laser.Δ == Δ
+        @test laser.direction == [0,1,1]
+        @test laser.polarization == [1,0,0]
+    end
+    @testset "Laser Over Points" begin
+        N = 3; r = rand(3, N)
+        w₀, s, Δ = 4π, 1e-5, 0.3
+
+        atoms = Atom(Cube(), r, 1.5)
+        laser = Laser(Gaussian3D(w₀), s, Δ)
+        simulation = LinearOptics(    Scalar(),    atoms, laser)
+
+        sensor = [-2, 4, 6]
+        @test laser_field(laser, sensor) ≈ -0.00039247244655043063 - 0.001076983762079716im
+        @test laser_field(simulation, sensor) ≈ -0.00039247244655043063 - 0.001076983762079716im
+
+        sensors = [ 9  3  2   3  10;
+                    7  5  4  10   4;
+                    2  8  1   7   4]
+        @test all(laser_field(laser, sensors) .≈ [  0.0005216514121245397 + 0.00023591355008183723im
+                                                     0.0010458875891933728 + 6.97963856486247e-5im
+                                                     0.0009596470108866166 - 0.0006312805503626626im
+                                                     0.0004163359149677086 - 0.0005053621630288653im
+                                                    -0.0004680700476923194 + 0.0004154301036283652im])
+        @test all(laser_field(laser, sensors) .≈ laser_field(simulation, sensors))
+
+
+
+        laser = Laser(PlaneWave3D([0,0,1]), s, Δ)
+        simulation = LinearOptics(    Scalar(),    atoms, laser)
+
+        sensor = [-2, 4, 6]
+        @test laser_field(laser, sensor) ≈ -0.0003643132375818668 - 0.0012519088884270365im
+        @test laser_field(simulation, sensor) ≈ -0.0003643132375818668 - 0.0012519088884270365im
+    end
 end
