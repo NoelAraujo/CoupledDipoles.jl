@@ -15,7 +15,7 @@ using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
 # using SpecialFunctions, WGLMakie, Weave, Plots,  LaTeXStrings
 using HCubature
-using MKL
+# using MKL
 using ParallelStencil
 @init_parallel_stencil(Threads, Float64, 2);
 
