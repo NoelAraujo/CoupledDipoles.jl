@@ -1,6 +1,9 @@
 function LinearOptics(physic::Scalar, atoms, laser)
     @debug "start: LinearOptics - $( typeof(physic) )"
 
+    if !all(laser.polarization .==  0)
+        laser.polarization = [0,0,0]
+    end
     kernelFunction = get_kernelFunction(physic, atoms)
     spectrum = Dict()
     data = Dict()
@@ -38,6 +41,10 @@ end
 
 function turn_off!(laser::U) where U<: Pump
     laser.s = zero(eltype(laser.s))
+end
+function turn_laser_off!(problem)
+    problem.laser.s = zero(eltype(problem.laser.s))
+    nothing
 end
 # get_kernelFunction(physics::Scalar,    dimension::Atom{<:TwoD}) = sin
 # get_kernelFunction(physics::Vectorial, dimension::Atom{<:TwoD}) = cos

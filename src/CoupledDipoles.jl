@@ -53,6 +53,7 @@ export NonLinearOptics, MeanField, BBGKY
 
 include("linear/linear_problems.jl")
 include("nonlinear/nonlinear_problems.jl")
+export turn_laser_off!, turn_off!
 
 include("atoms/atoms.jl")
 export cube_inputs, sphere_inputs, cylinder_inputs

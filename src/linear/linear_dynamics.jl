@@ -46,7 +46,15 @@ function steady_state(problem::LinearOptics{Vectorial})
     return reshape(βₛ, 3, problem.atoms.N)
 end
 
-function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; kargs...) where {T<:Linear}
+function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple;kargs...) where {T<:Linear}
+    ### if time is big, and laser is swithc-off, the 'FORMAL SOLUTION' of the ODE problem is much faster
+    if problem.laser.s ≈ 0
+        time_interval = get(kargs, :saveat, range(tspan[1], tspan[2], length=20))
+        states = time_evolution_laser_off(problem, u₀, time_interval)
+        solution = (t=time_interval, u=states)
+        return solution
+    end
+
     ### use default G and Ωₙ
     G = copy(interaction_matrix(problem))
     Ωₙ = laser_field(problem, problem.atoms)
@@ -89,4 +97,43 @@ function Scalar!(du, u, p, t)
     =#
     du .= muladd(G, u, Ωₙ)
     return nothing
+end
+
+
+## right now, DifferentialEquaions is faster
+### TO DO:
+## needs optimization with 'laser_contribution' term
+## needs to discover the regime where is good to use (best N? best time interval? best number time steps?)
+function time_evolution_laser_on(problem, initial_state::AbstractVector, time_interval::AbstractVector)
+    N = problem.atoms.N
+    G = interaction_matrix(problem)
+    Λ, P =  eigen(G)
+    Pinv = inv(P)
+    Ωₙ = laser_field(problem, problem.atoms)
+
+    z = ThreadsX.map(time_interval) do t
+
+        laser_contribution = map(1:N) do j
+            (integral_per_atom, _e) = hcubature([0], [t]) do τ
+                exp(τ[1])*(Pinv[j,:]⋅Ωₙ)
+            end
+            integral_per_atom
+        end
+
+        P*Diagonal(exp.(t*Λ))*Pinv*initial_state + P*Diagonal(exp.(t*Λ))*laser_contribution
+    end
+    return z
+end
+
+### NOT INTENDED TO BE EXPOSED
+function time_evolution_laser_off(problem, initial_state::AbstractVector, time_interval::AbstractVector)
+    N = problem.atoms.N
+    G = interaction_matrix(problem)
+    Λ, P =  eigen(G)
+    Pinv = inv(P)
+
+    z = ThreadsX.map(time_interval) do t
+        P*Diagonal(exp.(t*Λ))*Pinv*initial_state
+    end
+    return z
 end
