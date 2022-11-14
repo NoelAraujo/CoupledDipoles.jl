@@ -10,6 +10,11 @@ function default_initial_condition(problem::NonLinearOptics{MeanField})
     return u₀
 end
 
+"""
+    steady_state(problem::NonLinearOptics{MeanField})
+
+For Non Linear Optics makes a time evolution to infinity (t=500Γ by default) and returns the state.
+"""
 function steady_state(problem::NonLinearOptics{MeanField})
     @debug "start: stedy state - NonLinearOptics"
 
