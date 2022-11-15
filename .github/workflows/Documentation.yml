@@ -1,12 +1,10 @@
 name: Documentation
-
 on:
   push:
     branches:
       - main # update to match your development branch (master, main, dev, trunk, ...)
     tags: '*'
   pull_request:
-
 jobs:
   build:
     permissions:
@@ -15,11 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
-      - uses: julia-actions/julia-docdeploy@v1
         with:
           version: '1.8'
       - name: Install dependencies
-        run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.add("Documenter"); Pkg.add(url="https://github.com/JuliaMath/Bessels.jl"); Pkg.instantiate()'
+        run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.add("Documenter"); Pkg.instantiate()'
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token

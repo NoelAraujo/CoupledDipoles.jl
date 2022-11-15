@@ -1,5 +1,6 @@
 # Inside make.jl
 push!(LOAD_PATH,"../src/")
+import Pkg; Pkg.add(url="https://github.com/JuliaMath/Bessels.jl")
 using CoupledDipoles
 using Documenter
 makedocs(
@@ -9,5 +10,5 @@ makedocs(
                 "Home" => "index.md"
                ])
 deploydocs(;
-    repo="github.com/NoelAraujo/CoupledDipoles.jl",
+    repo="github.com/NoelAraujo/CoupledDipoles.jl.git",
 )
