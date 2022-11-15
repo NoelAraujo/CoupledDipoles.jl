@@ -3,10 +3,25 @@
 *A Package In Development*
 
 ## **Installation**
-This package uses `Bessel`, because is faster than `SpecialFunctions`, but it is an unregistred dependence. **MAYBE you had to install it manually before anything.**
+
+On the REPL type
+```julia
+pkg> add https://github.com/NoelAraujo/CoupledDipoles.jl
+
+julia> using CoupledDipoles
+
+pkg> test CoupledDipoles
+```
+
+
+
+This package uses `Bessel`, because is faster than `SpecialFunctions`, but **MAYBE you had to install it manually.**
 
 ```julia
-import Pkg; Pkg.add(url="https://github.com/JuliaMath/Bessels.jl")
+import Pkg;
+
+Pkg.add(url="https://github.com/JuliaMath/Bessels.jl")
+Pkg.add(url="https://github.com/NoelAraujo/CoupledDipoles.jl")
 ```
 
 

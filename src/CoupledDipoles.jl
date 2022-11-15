@@ -13,14 +13,12 @@ using ThreadsX
 using Printf
 using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
-# using SpecialFunctions, WGLMakie, Weave, Plots,  LaTeXStrings
 using HCubature
-# using MKL
+# using MKL ## in some servers I can download this package
 using ParallelStencil
 @init_parallel_stencil(Threads, Float64, 2);
 
 using Distributions: MvNormal
-# Pkg.develop(url="https://github.com/JuliaMath/Bessels.jl")
 using Bessels
 
 const k₀ = 1
