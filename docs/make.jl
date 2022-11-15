@@ -6,8 +6,10 @@ using Documenter
 makedocs(
          sitename = "CoupledDipoles.jl",
          modules  = [CoupledDipoles],
+         authors = "Noel Araujo Moreira",
          pages=[
-                "Home" => "index.md"
+                "Home" => "index.md",
+                "Steady State" => "src/steady_state.md",
                ])
 deploydocs(;
     repo="github.com/NoelAraujo/CoupledDipoles.jl.git",

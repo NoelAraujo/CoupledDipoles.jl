@@ -38,7 +38,7 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;
     G[diagind(G)] .= zero(eltype(G))
 
     # laser_field returns `(-im/2)*Ω`, but I need only `Ω`
-    Ωₙ = legacy_laser_field(problem.laser, problem.atoms) / (-im / 2)
+    Ωₙ = laser_field(problem.laser, problem.atoms) / (-im / 2)
     Wₙ = similar(Ωₙ)
     G_βₙ = similar(Ωₙ)
     temp1 = similar(Ωₙ)

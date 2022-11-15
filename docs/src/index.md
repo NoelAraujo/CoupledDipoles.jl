@@ -1,10 +1,15 @@
 # CoupledDipoles.jl
 
-*A PhD Package Result.*
+*A Package In Development*
 
-## This is one header
-- This is a test
-## Another header
-```@docs
-steady_state
+## **Installation**
+This package uses `Bessel`, because is faster than `SpecialFunctions`, but it is an unregistred dependence. **MAYBE you had to install it manually before anything.**
+
+```julia
+import Pkg; Pkg.add(url="https://github.com/JuliaMath/Bessels.jl")
+```
+
+
+## Manual Outline
+```@contents
 ```

@@ -167,6 +167,7 @@ using Test
         atoms = Atom(Cube(), r, 1.5)
         laser = Laser(Gaussian3D(w₀), s, Δ)
         simulation = LinearOptics(    Scalar(),    atoms, laser)
+        @test laser_field(laser, atoms) ≈ laser_field(laser, copy(atoms.r))
 
         sensor = [-2, 4, 6]
         @test laser_field(laser, sensor) ≈ -0.00039247244655043063 - 0.001076983762079716im
