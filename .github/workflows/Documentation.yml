@@ -15,12 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
+      - uses: julia-actions/julia-docdeploy@v1
         with:
           version: '1.8'
       - name: Install dependencies
         run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.add("Documenter"); Pkg.add(url="https://github.com/JuliaMath/Bessels.jl"); Pkg.instantiate()'
       - name: Build and deploy
-      - uses: julia-actions/julia-docdeploy@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
