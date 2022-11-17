@@ -129,25 +129,28 @@ end
 function time_evolution_laser_on(
     problem,
     initial_state::AbstractVector,
-    time_interval::AbstractVector,
+    time_interval::AbstractVector;
+    useBigFloat=false
 )
     N = problem.atoms.N
     G = interaction_matrix(problem)
-    Λ, P = eigen(G)
-    Pinv = inv(P)
     Ωₙ = laser_field(problem, problem.atoms)
 
+    Λ, P = eigen(G)
+    Pinv = inv(P)
+    Λinv = inv(Diagonal(Λ))
+    PinvΩₙ = Pinv*Ωₙ
+
+    if useBigFloat
+        Λ = BigFloat.(real.(Λ)) + BigFloat.(imag.(Λ))*im
+        Pinv = BigFloat.(real.(Pinv)) + BigFloat.(imag.(Pinv))*im
+        Λinv = BigFloat.(real.(Λinv)) + BigFloat.(imag.(Λinv))*im
+        PinvΩₙ = BigFloat.(real.(PinvΩₙ)) + BigFloat.(imag.(PinvΩₙ))*im
+    end
     z = ThreadsX.map(time_interval) do t
-
-        laser_contribution = map(1:N) do j
-            (integral_per_atom, _e) = hcubature([0], [t]) do τ
-                exp(τ[1]) * (Pinv[j, :] ⋅ Ωₙ)
-            end
-            integral_per_atom
-        end
-
-        P * Diagonal(exp.(t * Λ)) * Pinv * initial_state +
-        P * Diagonal(exp.(t * Λ)) * laser_contribution
+        term1 = (P * Diagonal(exp.(+t * Λ)) * Pinv)*initial_state
+        term2 = P * Diagonal(exp.(+t * Λ)) * (  Λinv*(Diagonal(exp.(-t * Λ)) - I )*PinvΩₙ    )
+        term1 + term2
     end
     return z
 end
@@ -158,7 +161,6 @@ function time_evolution_laser_off(
     initial_state::AbstractVector,
     time_interval::AbstractVector,
 )
-    N = problem.atoms.N
     G = interaction_matrix(problem)
     Λ, P = eigen(G)
     Pinv = inv(P)
