@@ -8,7 +8,7 @@ using CoupledDipoles
 r =[1 2 0;
     1 0 1.0]
 atoms = Atom(Cube(), Array(transpose(r)), 10)
-laser = Laser(PlaneWave3D([0,0,1]), 1e-6, 1.0)
+laser = Laser(PlaneWave3D(), 1e-6, 1.0)
 problem = LinearOptics(Scalar(), atoms, laser)
 βₛₛ = steady_state(problem) # N-array
 
@@ -26,7 +26,7 @@ using CoupledDipoles
 r =[1 2 0;
     1 0 1.0]
 atoms = Atom(Cube(), Array(transpose(r)), 10)
-laser = Laser(PlaneWave3D([0,0,1]), 1e-6, 1.0)
+laser = Laser(PlaneWave3D(), 1e-6, 1.0)
 problem = NonLinearOptics(MeanField(), atoms, laser)
 βₛₛ = steady_state(problem) # 2N-array
 ```

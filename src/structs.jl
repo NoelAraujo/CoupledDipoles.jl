@@ -37,11 +37,9 @@ abstract type Pump end
 abstract type PlaneWave <: Pump end
 abstract type Gaussian <: Pump end
 
-struct PlaneWave2D <: PlaneWave
-    direction::Vector
+struct PlaneWave2D <: PlaneWave    
 end
 struct PlaneWave3D <: PlaneWave
-    direction::Vector
 end
 struct Gaussian2D <: Gaussian
     w₀::Float64

@@ -30,20 +30,32 @@ end
 
 
 ## PUMP FIELD
+"""
+    _scalar_laser_field(laser::Laser{PlaneWave3D}, sensor)
+
+Compute Plane Wave in Any Direction: exp( im* laser.direction ⋅ sensor )
+"""
 function _scalar_laser_field(laser::Laser{PlaneWave3D}, sensor)
-    direction = view(laser.pump.direction, :)
+    direction = view(laser.direction, :)
     Eᵢ = cis(+k₀ * (sensor[1] * direction[1] + sensor[2] * direction[2] + sensor[3] * direction[3]))
     return Eᵢ
 end
+
+"""
+    _scalar_laser_field(laser::Laser{Gaussian3D}, sensor)
+
+Compute Paraxial Gaussian Beam in Any Direction
+"""
 function _scalar_laser_field(laser::Laser{Gaussian3D}, sensor)
     w₀ = laser.pump.w₀
-    x, y, z = sensor[1], sensor[2], sensor[3]
+    k = laser.direction
 
-    ## This formula is stable for z==0
-    # Ref: Eq 3.11 from "CHAPTER 3. PROPAGATION AND FOCUSING OF OPTICAL FIELDS"
-    denominator_factor = 1 + 2im * z / (k₀ * w₀^2)
-    Eᵢ = cis(+k₀ * z)
-    Eᵢ = Eᵢ * exp(-(x^2 + y^2) / (denominator_factor * w₀^2))
+    k_dot_r = dot(sensor, k)
+    distance_from_axes = (abs2(norm(sensor)) - abs2( dot(sensor, k) )/abs2(norm(k)))
+    denominator_factor = 1 + 2im * k_dot_r / (k₀ * w₀^2)
+
+    Eᵢ = cis(+k₀ * k_dot_r)
+    Eᵢ = Eᵢ * exp(- distance_from_axes / (denominator_factor * w₀^2))
     Eᵢ = Eᵢ / denominator_factor
     return Eᵢ
 end

@@ -14,7 +14,7 @@ atoms = Atom(Cube(), Array(transpose(r)), 10);
 
 Δ = -2.0
 s = 0.0022
-laser = Laser(PlaneWave3D([0, 0, 1]), s, Δ);
+laser = Laser(PlaneWave3D(), s, Δ);
 
 ### ------------ CREATE PROBLEM AND EVOLVE ---------------------
 simulationScalar = LinearOptics(Scalar(), atoms, laser)

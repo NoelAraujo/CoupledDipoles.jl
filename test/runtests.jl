@@ -7,7 +7,7 @@ using Test
         atoms = Atom(Cube(), singleAtom, 1)
 
         s, Δ = 1e-6, 1.5
-        laser = Laser(PlaneWave3D([0,0,1]), s, Δ)
+        laser = Laser(PlaneWave3D(), s, Δ; direction=[0,0,1])
 
         ## Scalar case
         problem = LinearOptics(Scalar(), atoms, laser)
@@ -39,7 +39,7 @@ using Test
         atoms = Atom(Cube(), Array(r), 1)
         Γ = CoupledDipoles.Γ
         s, Δ = 1e-6, 1.0
-        laser = Laser(PlaneWave3D([0,0,1]), s, Δ)
+        laser = Laser(PlaneWave3D(), s, Δ; direction=[0,0,1])
 
         ## Scalar case
         problem = LinearOptics(Scalar(), atoms, laser)
@@ -110,7 +110,7 @@ using Test
         r =[1 2 0;
             1 0 1.0]
         atoms = Atom(Cube(), Array(transpose(r)), 10)
-        laser = Laser(PlaneWave3D([0,0,1]), 1e-6, 1.0)
+        laser = Laser(PlaneWave3D(), 1e-6, 1.0)
         problem = LinearOptics(Scalar(), atoms, laser)
         ωₙ, Γₙ = get_spectrum(problem)
 
@@ -129,7 +129,7 @@ using Test
                 1 1 1;
             -1 1 0.5]
         atoms = Atom(Cube(), Array(transpose(r)), 10)
-        laser = Laser(PlaneWave3D([0,0,1]), 1e-6, 0.0)
+        laser = Laser(PlaneWave3D(), 1e-6, 0.0; direction=[0,0,1])
         problem = LinearOptics(Scalar(), atoms, laser)
         ωₙ, Γₙ = get_spectrum(problem)
 
@@ -185,7 +185,7 @@ using Test
 
 
 
-        laser = Laser(PlaneWave3D([0,0,1]), s, Δ)
+        laser = Laser(PlaneWave3D(), s, Δ)
         simulation = LinearOptics(    Scalar(),    atoms, laser)
 
         sensor = [-2, 4, 6]
