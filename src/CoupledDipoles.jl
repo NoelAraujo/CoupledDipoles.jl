@@ -87,7 +87,7 @@ include("scattering.jl")
 include("linear/linear_scattering.jl")
 include("nonlinear/nonlinear_scattering.jl")
 export scattering_intensity, scattering_fuction
-export get_intensity_over_an_angle
+export get_intensity_over_an_angle, get_intensity_over_an_angle_fast
 export get_intensity_over_an_angle_legacy
 
 include("sensors.jl")
@@ -102,6 +102,10 @@ export time_evolution, default_initial_condition, get_evolution_function
 include("transmission.jl")
 export transmission, how_far_is_FarField
 export _create_sphere_sensor, _create_plane_sensor
+
+include("applications/cbs.jl")
+export CBS_scalar
+
 
 import SnoopPrecompile
 SnoopPrecompile.@precompile_all_calls begin
