@@ -7,16 +7,25 @@ end
 """
 function laser_field(problem::LinearOptics{Scalar}, sensor::AbstractVector)
     Ω₀ = raby_frequency(problem.laser)
-    return (-im/2)*Ω₀*_scalar_laser_field(problem.laser, sensor)
+    return Matrix(transpose([(-im/2)*Ω₀*_scalar_laser_field(problem.laser, sensor)]))
 end
 function laser_field(problem::LinearOptics{Scalar}, sensors::AbstractMatrix)
     Ω₀ = raby_frequency(problem.laser)
-    return map(eachcol(sensors)) do sensor
-                (-im/2)*Ω₀*_scalar_laser_field(problem.laser, sensor)
-           end
+
+    _laser_electric_fields = ThreadsX.map(eachcol(sensors)) do sensor
+            (-im/2)*Ω₀*_scalar_laser_field(problem.laser, sensor)
+    end
+    laser_electric_fields::Matrix{ComplexF64} = hcat(_laser_electric_fields...)
+    return laser_electric_fields
 end
 
-
+## Matrix case happens for single sensor field
+function _get_intensity(problem::LinearOptics{Scalar}, field::AbstractMatrix)
+    return vec(abs2.(field))
+end
+function _get_intensity(problem::LinearOptics{Scalar}, fields::AbstractVector)
+    return abs2.(fields)
+end
 
 
 """
@@ -77,15 +86,15 @@ function _scattering_far_field(atoms::Atom{T}, β, sensor)  where T <: TwoD
 end
 function _scattering_far_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
     atoms = atoms.r
-    n̂ = sensor / norm(sensor)
+    sensor_norm = norm(sensor)
+    n̂ = sensor / sensor_norm
 
     E_scatt = mapreduce(+, pairs(eachcol(atoms))) do x
         j, atom = x
-        cis(-k₀ * n̂[1] * atom[1] + n̂[2] * atom[2] + n̂[3] * atom[3]) * β[j]
+        cis(-k₀ * (n̂[1] * atom[1] + n̂[2] * atom[2] + n̂[3] * atom[3])) * β[j]
     end
 
-    ikr = im * k₀ * norm(sensor)
-    E_scatt = -(Γ / 2) * E_scatt * exp(ikr) / ikr
+    E_scatt = -(Γ / 2) * (cis(k₀ * sensor_norm) / sensor_norm) * E_scatt
     return E_scatt
 end
 
@@ -109,9 +118,10 @@ function _scalar_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: Th
 
     E_scatt = mapreduce(+, pairs(eachcol(atoms))) do x
         j, atom = x
-        d_SensorAtom = sqrt((sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2)
-        cis(k₀ * d_SensorAtom) * (β[j] / d_SensorAtom)
+        d_SensorAtom = k₀*sqrt((sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2)
+        β[j] * ( cis(k₀ * d_SensorAtom) / d_SensorAtom)
     end
+    # FAR FIELD has a negative sign, because the far field approximation created the negative sign
     E_scatt = +(Γ / 2) * im * E_scatt
     return E_scatt
 end
@@ -120,9 +130,3 @@ end
 
 
 
-## INTENSITY
-function scattered_intensity(problem::LinearOptics{Scalar}, atomic_states, sensor_positions; regime=:far_field)
-    fields = scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
-    intesities = abs2.(fields)
-    return intesities
-end

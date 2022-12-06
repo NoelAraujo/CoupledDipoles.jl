@@ -12,20 +12,37 @@ using Test
         ## Scalar case
         problem = LinearOptics(Scalar(), atoms, laser)
         G = interaction_matrix(problem)
-        G_expected = im*1.5 - 1/2
+        G_expected = [im*1.5 - 1/2]
         @test all(G .≈ G_expected)
 
         ## Vectorial case
         problem = LinearOptics(Vectorial(), atoms, laser)
         G = interaction_matrix(problem)
-        G_expected = fill(im*1.5 - 1/3, 3, 3)
+        G_expected = fill(im*1.5 - 1/2, 3, 3)
         @test all(G .≈ G_expected)
+
+
+        r = [1, 0.5, -1]
+        Δ = 0
+        Γ = 1
+
+        s, Δ = 1e-4, 0.0
+        laser = Laser(PlaneWave3D(), s, Δ)
+
+        Ω₀ = CoupledDipoles.raby_frequency(laser)
+        β_expected = -(0.5*im*Ω₀*cis(r[3]))/(Γ/2)
+
+        singleAtom = Atom(Cube(), Array(Matrix(r')'), 1)
+        problem = LinearOptics(Scalar(), singleAtom, laser)
+        β_scalar = steady_state(problem)
+
+        @test β_expected ≈ β_scalar[1][1]
     end
     @testset "Vectorial Kernel Matrix 3D" begin
         r_jm = [-3, √3, -2]
         G = CoupledDipoles._vectorial_3D_green_kernel(r_jm)
         k₀ = CoupledDipoles.k₀
-        G_expected = (3cis(4k₀)/(8k₀*im))*(
+        G_expected = -(3cis(4k₀)/(16k₀*im))*(
             (1 + im/(4k₀) - 1/(16k₀^2)).*[1 0 0; 0 1 0; 0 0 1] +
             (-1 - 3im/(4k₀) + 3/(16k₀^2)).*[9 -3√3 6; -3√3 3 -2√3; 6 -2√3 4]./16
         )
@@ -191,5 +208,37 @@ using Test
         sensor = [-2, 4, 6]
         @test laser_field(laser, sensor) ≈ -0.0003643132375818668 - 0.0012519088884270365im
         @test laser_field(simulation, sensor) ≈ -0.0003643132375818668 - 0.0012519088884270365im
+    end
+    @testset "Vectorial Scattering - Single Atom" begin
+        atoms = Atom(Cube(), Matrix([1.0 1.0 1.0]'), 1.0)
+        sensor = Matrix([-1000 -1000 -500]')
+        β = [3, 4im, 5.0]
+        E_μ = CoupledDipoles._vectorial_scattering_far_field(atoms, β, sensor)
+
+        R = norm(sensor)
+        n = sensor./R
+        nx, ny, nz = n[1], n[2], n[3]
+        C = cis(-nx - ny - nz)
+        E_x_expected = -(im/(4π))*(cis(R)/(R*im))*C*((1 - nx^2)*3 + -nx*ny*4im - nx*nz*5)
+        E_y_expected = -(im/(4π))*(cis(R)/(R*im))*C*( -ny*nx*3 + (1 -ny^2)*4im - ny*nz*5)
+        E_z_expected = -(im/(4π))*(cis(R)/(R*im))*C*( -nz*nx*3 - nz*ny*4im + (1 - nz^2)*5)
+        @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
+
+
+
+
+        sensor = Matrix([100 -1000 0]')
+        β = [1, -2im, 15.0]
+        E_μ = CoupledDipoles._vectorial_scattering_far_field(atoms, β, sensor)
+
+        R = norm(sensor)
+        n = sensor./R
+        nx, ny, nz = n[1], n[2], n[3]
+        C = cis(-nx - ny)
+        E_x_expected = -(im/(4π))*(cis(R)/(R*im))*C*((1 - nx^2) + nx*ny*2im - nx*nz*15)
+        E_y_expected = -(im/(4π))*(cis(R)/(R*im))*C*( -ny*nx - (1 -ny^2)*2im - ny*nz*15)
+        E_z_expected = -(im/(4π))*(cis(R)/(R*im))*C*( -nz*nx + nz*ny*2im + (1 - nz^2)*15)
+
+        @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
     end
 end

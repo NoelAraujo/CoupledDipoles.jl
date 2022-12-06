@@ -9,7 +9,7 @@ function get_atoms(dimensions, N, rₘᵢₙ; kwargs...)
     get_single_atom = kwargs[:createFunction]
     r_single = get_single_atom(; kwargs...)
     if N == 1
-        return r_single
+        return Array(Matrix(r_single')')
     end
     r = Array{eltype(rₘᵢₙ)}(undef, dimensions, N)
     r[:, 1] .= r_single

@@ -114,10 +114,30 @@ end
 
 
 ##---------------------
+function laser_intensity(problem, sensor)
+    field = laser_field(problem, sensor)
+    return _get_intensity(problem, field)
+end
+
+
+
+
+
+
+"""
+    scattered_electric_field(problem, atomic_states, sensor_positions; regime=:far_field)
+
+"""
 function scattered_electric_field(problem, atomic_states, sensor_positions; regime=:far_field)
     states = prepare_input_state(problem, atomic_states)
     measurement_positions = prepare_input_position(problem, sensor_positions)
-    single_point_field = default_field_function(regime)
+    if regime == :far_field
+        single_point_field = scattering_far_field
+    elseif regime == :near_field
+        single_point_field = scattering_near_field
+    else
+        @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
+    end
 
     _electric_fields = ThreadsX.map(eachcol(measurement_positions)) do sensor
         single_point_field(problem, states, sensor)
@@ -128,28 +148,19 @@ function scattered_electric_field(problem, atomic_states, sensor_positions; regi
 
 end
 
-
-function default_field_function(regime)
-    if regime == :far_field
-        return field_in_far_field
-    elseif regime == :near_field
-        return field_in_near_field
-    else
-        @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
-    end
-end
-function field_in_far_field(problem, states, sensor)
-    return laser_field(problem, sensor) +  scattering_far_field(problem, states, sensor)
-end
-function field_in_near_field(problem, states, sensor)
-    return laser_field(problem, sensor) +  scattering_near_field(problem, states, sensor)
+function laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime=:far_field)
+    laserField = laser_field(problem, sensor_positions)
+    scatteredField = scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
+    total_field = laserField + scatteredField
+    return total_field
 end
 
 
 
 
 
-function prepare_input_state(problem::LinearOptics{Scalar}, atomic_states::AbstractVector)
+
+function prepare_input_state(problem::LinearOptics{Scalar}, atomic_states::AbstractVecOrMat)
     n_states = length(atomic_states)
     if     n_states == problem.atoms.N# if is a vector, return it as a view to reduce memory access
         return view(atomic_states, :, :)
@@ -185,4 +196,20 @@ function prepare_input_position(problem, sensor_positions::AbstractMatrix)
     else
         @error "Your `Measurement Position Matrix`  does not match the dimensionality of the system."
     end
+end
+
+
+
+
+## INTENSITY
+function scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field)
+    fields = scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
+    intesities = _get_intensity(problem, fields)
+    return intesities
+end
+
+function laser_and_scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field)
+    total_field = laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
+    intesities = _get_intensity(problem, total_field)
+    return intesities
 end

@@ -3,19 +3,19 @@ struct SensorType
     domain::Tuple
 end
 
-function transmission(problem, β, scatt_func)
-    θₘₐₓ = problem.atoms.N < 50 ? deg2rad(45) : deg2rad(15)
+function transmission(problem, β; regime=:near_field)
+    θₘₐₓ = problem.atoms.N < 50 ? deg2rad(75) : deg2rad(75)
     # integral_domain = get(kwargs, :domain, ((0.0, 0.0), (θₘₐₓ, 2π)))
     integral_domain = ((0.0, 0.0), (θₘₐₓ, 2π))
 
     (I_scattered, _e) = hcubature(integral_domain...) do x # , rtol=1e-12
         sensor = getSensor_on_Sphere(x, problem)
-        scattering_intensity(problem, β, sensor, scatt_func)
+        laser_and_scattered_intensity(problem, β, sensor; regime=regime)
     end
 
     (I_laser, _e) = hcubature(integral_domain...) do x # , rtol=1e-12
         sensor = getSensor_on_Sphere(x, problem)
-        laser_intensity(problem.laser, sensor)
+        laser_intensity(problem, sensor)
     end
 
     T = I_scattered / I_laser
@@ -50,6 +50,6 @@ end
     if atoms.N < 50
         return FARFIELD_FACTOR * size(atoms)
     else
-        return 5.01 * (size(atoms)^2)
+        return 2.01 * (size(atoms)^2)
     end
 end

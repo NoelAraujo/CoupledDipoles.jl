@@ -1,0 +1,126 @@
+---
+title: Integration Over $\phi$
+author: Noel Araujo Moreira
+date: 2022-06-14
+---
+
+# Main Formulas
+Given pairwise distance of all atoms $\vec{r}_j-\vec{r}_{j'} = (x_j-x_{j'}, y_j-y_{j'}, z_j-z_{j'})$, a direction in space $\hat{r}=(sin\theta cos\phi, sin \theta sin \phi, cos \theta)$, and excitation $\beta_j$, Michelle Araujo in her PhD thesis - equation (1.33) - states that:
+
+$I(r,\theta, \phi) = \frac{1}{r^2}\sum_j\sum_{j'} \beta_j\beta^\dagger_{j'}e^{-ik_0(x_{jj'}sin\theta cos\phi+ y_{jj'}sin\theta sin\phi+z_{jj'}cos\theta)  }.$
+
+If one needs to eliminate the dependence with $\phi$, we need to use special functions, in particular the Bessel Function $J_0$:
+
+$I(r,\theta) = \frac{1}{r^2}\sum_j\sum_{j'} \beta_j\beta^\dagger_{j'}e^{-ik_0 z_{jj'}cos\theta }J_0(k_0|sin \theta|\sqrt{x_{jj'}^2 + y_{jj'}^2}).$
+
+The next part of the text is devoted to estimate the accuracy of both formulas.
+
+## Sum $\phi$ by brute force
+We will make $I(r,\theta) = \sum_\phi I(r,\theta, \phi)$ with different techniques, just summing values or applying numerical quadrature. First, let's crete the initial values.
+
+```julia
+using CoupledDipoles
+using Random; Random.seed!(999)
+const k0 = 1
+
+N, b0 = 200, 1
+kR = sqrt(2N/b0)
+atoms = Atom(Sphere(gaussian=true), N, kR)
+
+s, Δ = 1e-6, 0.5
+laser = Laser(PlaneWave3D(), s, Δ)
+
+problem = LinearOptics(Scalar(), atoms, laser)
+beta_j = steady_state(problem)
+
+θ = deg2rad(90);
+```
+
+Next, we define our base functions for a single value of $\theta$ and $\phi$
+```julia
+function intensity_theta_phi(beta_j, r, θ, ϕ)
+    N = length(beta_j)
+    beta_jp = conj.(beta_j)
+
+    x, y, z = r[1,:], r[2,:], r[3,:]
+    intensity = zero(ComplexF64)
+    for j=1:N
+        for jp=1:N
+            xjj = x[j] - x[jp]
+            yjj = y[j] - y[jp]
+            zjj = z[j] - z[jp]
+
+            intensity += myKernel(beta_j[j], beta_jp[jp], xjj, yjj, zjj, θ,ϕ)
+        end
+    end
+    return real(intensity)
+end
+
+function myKernel(beta_j, beta_jp, xjj, yjj, zjj, θ, ϕ)
+    term1 = xjj*sin(θ)*cos(ϕ)
+    term2 = yjj*sin(θ)*sin(ϕ)
+    term3 = zjj*cos(θ)
+    return beta_j*beta_jp*exp(-im*k0*(term1+ term2+term3))
+end
+nothing
+```
+
+Now, we test the accuracy of two different integration methods
+
+```julia
+function integrate_v1(beta_j, r, θ)
+    intensity = zero(Float64)
+    for ϕ in range(0, 2pi, length=360)
+        intensity += intensity_theta_phi(beta_j, r, θ, ϕ)
+    end
+    return intensity./360
+end
+using QuadGK
+function integrate_v2(beta_j, r, θ)
+    intensity, err = quadgk(0, 2π, rtol=1e-8) do ϕ
+        intensity_theta_phi(beta_j, r, θ, ϕ)
+    end
+    return intensity/(2pi)
+end
+
+```
+
+## Sum via Special Function
+
+```julia
+using Bessels
+function integrate_v3(beta_j, r, θ)
+    N = length(beta_j)
+    beta_jp = conj.(beta_j)
+
+    x, y, z = r[1,:], r[2,:], r[3,:]
+    intensity = zero(ComplexF64)
+    for j=1:N
+        for jp=1:N
+            xjj = x[j] - x[jp]
+            yjj = y[j] - y[jp]
+            zjj = z[j] - z[jp]
+
+            intensity += myKernel2(beta_j[j], beta_jp[jp], xjj, yjj, zjj, θ)
+        end
+    end
+    return real(intensity)
+end
+function myKernel2(beta_j, beta_jp, xjj, yjj, zjj, θ)
+    k0sinθ = abs(k0*sin(θ))
+    k0cosθ = k0*cos(θ)
+
+    v = beta_j*beta_jp*exp(-im*zjj*k0cosθ)*Bessels.besselj0(k0sinθ*sqrt(xjj^2+yjj^2))
+    return v
+end
+
+round(integrate_v1(beta_j, atoms.r, θ), digits=8)
+round(integrate_v2(beta_j, atoms.r, θ), digits=8);
+round(integrate_v3(beta_j, atoms.r, θ), digits=8);
+
+@time sol_v1 = round(integrate_v1(beta_j, atoms.r, θ), digits=8)
+@time sol_v2 = round(integrate_v2(beta_j, atoms.r, θ), digits=8);
+@time sol_v3 = round(integrate_v3(beta_j, atoms.r, θ), digits=8);
+
+@show sol_v1, sol_v2, sol_v3;
+```

@@ -37,7 +37,7 @@ abstract type Pump end
 abstract type PlaneWave <: Pump end
 abstract type Gaussian <: Pump end
 
-struct PlaneWave2D <: PlaneWave    
+struct PlaneWave2D <: PlaneWave
 end
 struct PlaneWave3D <: PlaneWave
 end
@@ -57,7 +57,7 @@ struct Gaussian3D <: Gaussian
     end
 end
 
-mutable struct Laser{T<:Pump}
+mutable struct Laser{T}
     pump::T
     s::Float64
     Δ::Float64

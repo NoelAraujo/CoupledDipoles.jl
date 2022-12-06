@@ -45,6 +45,12 @@ Computes:
 function green_scalar!(atoms, laser, G)
     @debug "start: green_scalar!"
 
+    N = atoms.N
+    if N == 1
+        fill!(G, im*laser.Δ - Γ/2)
+        return nothing
+    end
+
     get_pairwise_matrix!(atoms.r, G) # R_jk
 
     Threads.@threads for j in eachindex(G)
@@ -61,7 +67,7 @@ end
     return nothing
 end
 @parallel_indices (x,y) function temp1_parallel!(temp1, Rjm)
-        temp1[x,y] = (3cis(k₀*Rjm[x,y]))/(2im*k₀*Rjm[x,y])
+        temp1[x,y] = (3cis(k₀*Rjm[x,y]))/(2*k₀*Rjm[x,y])
     return nothing
 end
 @parallel_indices (x,y) function temp2_parallel!(temp2, Rjm)
@@ -94,7 +100,7 @@ end
 @parallel_indices (x,y) function G_diagonals!(G, Δ)
     G[x,y] = -(Γ/2).*G[x,y]
     if isnan(G[x,y])
-        G[x,y] = im*Δ - Γ/3
+        G[x,y] = im*Δ - Γ/2
     end
      return nothing
 end
@@ -105,6 +111,10 @@ function green_vectorial!(atoms, laser, G)
 
     N = atoms.N
     Δ = laser.Δ
+    if N==1
+        fill!(G, im*Δ - Γ/2)
+        return nothing
+    end
 
     Xt, Yt, Zt = atoms.r[1, :], atoms.r[2, :], atoms.r[3, :]
     Xjm = Array{Float64,2}(undef, N, N)

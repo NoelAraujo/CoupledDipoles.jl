@@ -24,10 +24,10 @@ function find_min_transmission(N, ρ, laser_increase_range, Δ_range, scatt_func
             Δ = Δ_range[idx]
 
             _laser = Laser(Gaussian3D(w₀), s, Δ)
-            _problem = LinearOptics(Scalar(), new_cloud, _laser)
+            # _problem = LinearOptics(Scalar(), new_cloud, _laser)
+            _problem = LinearOptics(Vectorial(), new_cloud, _laser)
             _βₙ = steady_state(_problem)
-
-            Ts[l_idx, idx] = transmission(_problem, _βₙ, scatt_func)
+            Ts[l_idx, idx] = transmission(_problem, _βₙ, scatt_func)[1]
             ProgressMeter.next!(p)
         end
     end
@@ -35,7 +35,7 @@ function find_min_transmission(N, ρ, laser_increase_range, Δ_range, scatt_func
     return Ts
 end
 
-N = 500
+N = 150
 ρ = 0.4
 laser_increase_range = [2.0, 2.25, 2.5, 3.0]
 Δ_range = range(-100, 100; length=20)

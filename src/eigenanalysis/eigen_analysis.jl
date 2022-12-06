@@ -6,8 +6,8 @@ function get_IPRs(problem)
     IPRs = zeros(n_modes)
     Threads.@threads for n in 1:n_modes
         Ψ² = get_ψ²(problem, n)
-        Ψ⁴ = Ψ² .^ 2
-        IPRs[n] = sum(Ψ⁴) / sum(Ψ²)
+        Ψ⁴ = abs2.(Ψ²)
+        IPRs[n] = sum(Ψ⁴) / sum(Ψ²)^2
     end
     return IPRs
 end

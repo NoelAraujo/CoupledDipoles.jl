@@ -12,14 +12,15 @@ Solve `x=G\\Ω`, with default `interaction_matrix` and `laser_field`.
 """
 function steady_state(problem::LinearOptics{Scalar})
     G = interaction_matrix(problem)
-    Ωₙ = laser_field(problem, problem.atoms.r)
     if problem.atoms.N > 1
+        Ωₙ = vec(laser_field(problem, problem.atoms.r))
         βₛ = -(G \ Ωₙ)
     else
-        # The negative sign was NOT forgotten
-        # after some math, I verified that it does not exist
-        βₛ = Ωₙ / G[1]
+        # the conversion from matrix to vector, avoids an extra function to deal single atom
+        Ωₙ = laser_field(problem, vec(problem.atoms.r))
+        βₛ =   [-(Ωₙ / G[1])]   # I need a vector for single element
     end
+    return βₛ
 end
 
 
@@ -36,9 +37,7 @@ function steady_state(problem::LinearOptics{Vectorial})
     if problem.atoms.N > 1
         βₛ = -(G \ Ωₙ_eff)
     else
-        # The negative sign was NOT forgotten
-        # after some math, I verified that it does not exist
-        βₛ = Ωₙ / G[1]
+        βₛ = -(Ωₙ / G[1])
     end
     return reshape(βₛ, 3, problem.atoms.N)
 end

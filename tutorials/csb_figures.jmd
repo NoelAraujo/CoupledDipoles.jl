@@ -1,0 +1,96 @@
+---
+title: CBS Benchmark
+author: Noel Araujo Moreira
+date: 2022-06-20
+---
+
+This tutorial goal is reproduce the Coherent Back Scattering profile, in particular de Far-Field Intensity vs $\theta$ similar to Figure 5 of [Rouabah et al, 2014](https://arxiv.org/abs/1401.5704v1).
+
+**Important Note:** The simulation takes average over a large number of atomic configurations, which is time consuming. Therefore, the results will be loaded from a file, and not computed during the `Weaver.jl` execution. Neverthelss, the code to produce the results will be available, because this is the main purpose of this `.jmd` tutorial.
+
+
+# Intensity for an angle $\theta$
+
+The intensity in any point in space, in spherical coordinates, depends on $(\vec{r}, \theta, \phi)$. In the far-field regime, the vector $\vec{r}$ looses its relevance, and we are concerned with its direction $\hat{n} = \vec{r}/|\vec{r}|$. Also, given the azimutal symmetry of the problem, one can takes an average over $\phi$ and the only parameter left to study the system is the elevation angle $\theta$. The proof for the expression for intensity is computed elsewhere, and reads as:
+
+$I(\theta) = \sum_j\sum_{j'} \beta_j\beta^\dagger_{j'}e^{-ik_0 z_{jj'}cos\theta }J_0(k_0|sin \theta|\sqrt{x_{jj'}^2 + y_{jj'}^2}).$
+
+Where $(x_{jj'}, y_{jj'}, z_{jj'})$ are the pairwise atomic distances of all atoms, and $J_0$ is the Bessel Function of first kind and zero-th order.
+
+> **Note:** To be precise, exists a prefactor $1/|\vec{r}|$ before the double sum. I'm omiting it because we will take a new normalization of the values, which will essentially erase this factor.
+
+During simulation, the function `get_intensity_over_an_angle(problem, atoms_states, θ)` was specially optimized for lower memory consumption and make use of multithreading. Next, we create some a single atomic configuration, find its steady state, and compute the intensity.
+
+```julia
+using CoupledDipoles, Random, Plots, LaTeXStrings
+
+simulation_seed = 20 # day at which i wrote the tutorial
+Random.seed!(simulation_seed)
+
+N, b0 = 200, 1
+kR = sqrt(2N/b0)
+s, Δ = 1e-6, 0.5
+θ_range = range(-pi/2, 3pi/2, length=100)
+
+atoms = Atom(Sphere(gaussian=true), N, kR)
+laser = Laser(PlaneWave3D(), s, Δ)
+problem = LinearOptics(Scalar(), atoms, laser)
+
+β = steady_state(problem)
+singleCurve = get_intensity_over_an_angle(problem, β, θ_range)
+
+
+plot(θ_range, N.*singleCurve, lw=3, label="", yscale=:log10, size=(500,300))
+xlabel!(L"\theta [rad]")
+ylabel!(L"N \cdot I(\theta)")
+lens!([9pi/10, 11pi/10], [0.001, 0.1], inset = (1, bbox(0.5, 0.0, 0.4, 0.4)))
+```
+
+
+# Making Repetitions
+The previous result did not show anything interesting at $θ = \pi$. Meaniunfull results will rise with an ensemble of atomic clouds, and its average. The solution is quite straightforward, we create a function that produces a single curve, and call it many times.
+
+```julia
+using CoupledDipoles, Random, Plots, LaTeXStrings
+
+function create_singleCuve(simulation_seed)
+    Random.seed!(simulation_seed)
+
+    N, b0 = 200, 1
+    kR = sqrt(2N/b0)
+    s, Δ = 1e-6, 0.5
+    θ_range = range(-pi/2, 3pi/2, length=100)
+
+    atoms = Atom(Sphere(gaussian=true), N, kR)
+    laser = Laser(PlaneWave3D(), s, Δ)
+    problem = LinearOptics(Scalar(), atoms, laser)
+
+    β = steady_state(problem)
+    singleCurve = get_intensity_over_an_angle(problem, β, θ_range)
+    return singleCurve
+end
+
+function makeFinalCurve(maxRep = 2)
+    finalCurve = []
+
+    @time for rep in 1:maxRep
+        _simulation_seed = 20 + rep
+        push!(finalCurve, create_singleCuve(_simulation_seed))
+    end
+    finalCurve = sum(finalCurve)./maxRep
+    return finalCurve
+end
+
+## One should run the code:
+#plot(θ_range, N.*makeFinalCurve(1000), lw=3, label="", yscale=:log10)
+
+using JLD2
+fileName = "/home/notebook/Documents/CoupledDipoles.jl/tutorials/CBS_maxRep-1000.jld2"
+saved_data = load(fileName, "saved_data")
+
+plot(θ_range, saved_data, lw=3, label="", yscale=:log10, size=(500,300))
+xlabel!(L"\theta [rad]")
+ylabel!(L"N \cdot I(\theta)")
+lens!([8pi/10, 12pi/10], [0.015, 0.025], inset = (1, bbox(0.5, 0.0, 0.4, 0.4)))
+
+```
