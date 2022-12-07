@@ -67,7 +67,7 @@ end
     return nothing
 end
 @parallel_indices (x,y) function temp1_parallel!(temp1, Rjm)
-        temp1[x,y] = (3cis(k₀*Rjm[x,y]))/(2*k₀*Rjm[x,y])
+        temp1[x,y] = im*(Γ/2)*(3cis(k₀*Rjm[x,y]))/(2*k₀*Rjm[x,y])
     return nothing
 end
 @parallel_indices (x,y) function temp2_parallel!(temp2, Rjm)
@@ -97,15 +97,22 @@ end
 end
 
 
-@parallel_indices (x,y) function G_diagonals!(G, Δ)
-    G[x,y] = -(Γ/2).*G[x,y]
+@parallel_indices (x,y) function G_removeNaN!(G, Δ)
     if isnan(G[x,y])
-        G[x,y] = im*Δ - Γ/2
+        G[x,y] = 0.0im
     end
      return nothing
 end
 
+function my_pairwise(a, b=a)
+    na = length(a)
+    r = Array{eltype(a)}(undef, na, na)
 
+    @inbounds for (j, bj) in enumerate(b), (i, ai) in enumerate(a)
+        r[i, j] = ai - bj
+    end
+    return r
+end
 function green_vectorial!(atoms, laser, G)
     @debug "start: green_vectorial!"
 
@@ -117,11 +124,9 @@ function green_vectorial!(atoms, laser, G)
     end
 
     Xt, Yt, Zt = atoms.r[1, :], atoms.r[2, :], atoms.r[3, :]
-    Xjm = Array{Float64,2}(undef, N, N)
-
-    Xjm = Distances.pairwise(Euclidean(), Xt', Xt'; dims=2)
-    Yjm = Distances.pairwise(Euclidean(), Yt', Yt'; dims=2)
-    Zjm = Distances.pairwise(Euclidean(), Zt', Zt'; dims=2)
+    Xjm = my_pairwise(Xt)
+    Yjm = my_pairwise(Yt)
+    Zjm = my_pairwise(Zt)
 
     Rjm = Array{Float64,2}(undef, N, N)
     @parallel Rjm_parallel!(Rjm, Xjm, Yjm, Zjm)
@@ -166,8 +171,8 @@ function green_vectorial!(atoms, laser, G)
     @inbounds @. G[(2N+1):(3N), (2N+1):(3N)] = copy(Gzz)
 
 
-    # DO NOT CHANGE THE ORDER OF THE NEXT TWO LINES
-    @parallel G_diagonals!(G, Δ)
+    G[diagind(G)] .= im*Δ - Γ/2 # diagonals have the single atom solution
+    @parallel G_removeNaN!(G, Δ)
 
     # force clean variables
     Xjm = Yjm = Zjm = temp1 = temp2 = 1

@@ -2,10 +2,6 @@ using CoupledDipoles
 using Plots, ProgressMeter
 using Revise
 
-using Logging: global_logger
-using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
-
 # cloud settings
 N = 75
 ρ = 0.5
@@ -21,35 +17,35 @@ s = 1e-5
 Δ_range = range(-50, 50; length=30)
 T = zeros(length(Δ_range))
 let
-p = Progress(length(Δ_range); showspeed=true)
-Threads.@threads for idx in 1:length(Δ_range)
-    Δ = Δ_range[idx]
+    p = Progress(length(Δ_range); showspeed=true)
+    Threads.@threads for idx in 1:length(Δ_range)
+        Δ = Δ_range[idx]
 
-    _laser = Laser(Gaussian3D(w₀), s, Δ)
-    # _problem = LinearOptics(Scalar(), cloud, _laser)
-    _problem = LinearOptics(Vectorial(), cloud, _laser)
-    _βₙ = steady_state(_problem)
+        _laser = Laser(Gaussian3D(w₀), s, Δ; polarization=[1,im,0]./√2)
+        # _problem = LinearOptics(Scalar(), cloud, _laser)
+        _problem = LinearOptics(Vectorial(), cloud, _laser)
+        _βₙ = steady_state(_problem)
 
-    # _problem = NonLinearOptics(MeanField(), cloud, _laser)
-    # _βₙ = steady_state(_problem)
+        # _problem = NonLinearOptics(MeanField(), cloud, _laser)
+        # _βₙ = steady_state(_problem)
 
-    T[idx] = transmission(_problem, _βₙ)[1]
-    ProgressMeter.next!(p)
-end
+        T[idx] = transmission(_problem, _βₙ)[1]
+        ProgressMeter.next!(p)
+    end
 
-plot(
-    Δ_range,
-    T;
-    label="",
-    ylims = (0, 2),
-    size=(800, 400),
-    lw=3,
-    legend=:bottomright,
-)
-hline!([1]; linestyle=:dash, c=:black, label="")
-xlabel!("Δ")
-ylabel!("Transmission")
-display(title!("Cylinder : N=$(N), ρ=$(round(ρ,digits=3)), R=$(round(R,digits=2)), w₀=$(round(w₀,digits=2)), λ=$(round(2π,digits=2))"))
+    plot(
+        Δ_range,
+        T;
+        label="",
+        ylims = (0, 2),
+        size=(800, 400),
+        lw=3,
+        legend=:bottomright,
+    )
+    hline!([1]; linestyle=:dash, c=:black, label="")
+    xlabel!("Δ")
+    ylabel!("Transmission")
+    display(title!("Cylinder : N=$(N), ρ=$(round(ρ,digits=3)), R=$(round(R,digits=2)), w₀=$(round(w₀,digits=2)), λ=$(round(2π,digits=2))"))
 end
 #=
     The code below is to visualize the intensity over the space in the Far Field limit.

@@ -33,13 +33,21 @@ function steady_state(problem::LinearOptics{Vectorial})
     G = interaction_matrix(problem)
     Ωₙ = laser_field(problem, problem.atoms.r)
     ## Ωₙ_eff  = [all X - all Y - all Z]
-    Ωₙ_eff = vcat(view(Ωₙ, 1, :), view(Ωₙ, 3, :), view(Ωₙ, 3, :))
+    Ωₙ_eff = vcat(view(Ωₙ, 1, :), view(Ωₙ, 2, :), view(Ωₙ, 3, :))
     if problem.atoms.N > 1
-        βₛ = -(G \ Ωₙ_eff)
+        βₛ = (G \ Ωₙ_eff)
     else
         βₛ = -(Ωₙ / G[1])
     end
-    return reshape(βₛ, 3, problem.atoms.N)
+    # transpose and NOT transpose conjugated
+    # because i am just changing the array format to create
+    # an effetive result
+    N = problem.atoms.N
+    βₛ_x = transpose(βₛ[1:N])
+    βₛ_y = transpose(βₛ[N+1:2N])
+    βₛ_z = transpose(βₛ[2N+1:3N])
+    βₛ_eff = vcat(βₛ_x, βₛ_y, βₛ_z)
+    return βₛ_eff
 end
 
 function time_evolution(

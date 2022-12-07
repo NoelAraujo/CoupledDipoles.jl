@@ -83,7 +83,7 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
     return nothing
 end
 function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
-    r = atoms.r
+    r = @views atoms.r
     N = atoms.N
 
     E_x = zero(eltype(β))
@@ -103,31 +103,9 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
         for η=1:3
             E_z += G[3,η]*βⱼ[η]
         end
-
-
-
-        # Xoj, Yoj, Zoj = sensor[1] - rⱼ[1], sensor[2] - rⱼ[2], sensor[3] - rⱼ[3]
-        # Roj = k₀*sqrt( Xoj^2 + Yoj^2 + Zoj^2 )
-        # c1 = 3*cis(Roj)/(2im*Roj^3)
-        # c2 = 1im/(Roj) - 1/(Roj)^2
-        # E_x = E_x + c1*(
-        #      ( (Roj^2 - Xoj^2) + (Roj^2 - 3*Xoj^2)*c2)*βⱼ[1]
-        #     +( ( - Xoj*Yoj) + ( - 3*Xoj*Yoj)*c2)*βⱼ[2]
-        #     +( ( - Xoj*Zoj) + ( - 3*Xoj*Zoj)*c2)*βⱼ[3]
-        #     )
-        # E_y = E_y + c1*(
-        #      ( ( - Yoj*Xoj) + ( - 3*Yoj*Xoj)*c2)*βⱼ[1]
-        #     +( (Roj^2 - Yoj^2) + (Roj^2 - 3*Xoj^2)*c2)*βⱼ[2]
-        #     +( ( - Xoj*Zoj) + ( - 3*Yoj*Zoj)*c2)*βⱼ[3]
-        #     )
-        # E_z = E_z + c1*(
-        #     ( ( - Zoj*Xoj) + ( - 3*Zoj*Xoj)*c2)*βⱼ[1]
-        #     +( ( - Zoj*Yoj) + ( - 3*Zoj*Yoj)*c2)*βⱼ[2]
-        #     +( (Roj^2 - Zoj^2) + (Roj^2 - 3*Zoj^2)*c2)*βⱼ[3]
-        # )
     end
 
-    return [E_x, E_y, E_z]
+    return -im*(Γ/2)*[E_x, E_y, E_z]
 end
 function _vectorial_3D_green_kernel(r_jm::Vector)
     G = Array{Complex{eltype(r_jm)}}(undef, 3,3)
@@ -149,8 +127,8 @@ function _vectorial_3D_green_kernel!(r_jm::Vector, G::Matrix)
     G = term1*(term2*I(3) + term3*term4)
     =#
 
-    P = (3/2)*(cis(r)/(im*r))*(1 + im/r - 1/r2)
-    Q = (3/2)*(cis(r)/(im*r))*(-1 - 3im/r + 3/r2)/r2
+    P = (3/2)*(cis(r)/r)*(1 + im/r - 1/r2)
+    Q = (3/2)*(cis(r)/r)*(-1 - 3im/r + 3/r2)/r2
 
     x, y, z = r_jm[1], r_jm[2], r_jm[3]
     G[1] = P+Q*x^2
