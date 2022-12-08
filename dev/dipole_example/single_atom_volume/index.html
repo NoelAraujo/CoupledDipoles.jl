@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Single Atom · CoupledDipoles.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">CoupledDipoles.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../steady_state/">Steady State</a></li><li class="is-active"><a class="tocitem" href>Single Atom</a><ul class="internal"><li><a class="tocitem" href="#Single-Atom"><span>Single Atom</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Single Atom</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Single Atom</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/NoelAraujo/CoupledDipoles.jl/blob/main/docs/src/dipole_example/single_atom_volume.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h2 id="Single-Atom"><a class="docs-heading-anchor" href="#Single-Atom">Single Atom</a><a id="Single-Atom-1"></a><a class="docs-heading-anchor-permalink" href="#Single-Atom" title="Permalink"></a></h2><p>The special case of a single atom is the radiation pattern of a dipole, defined in electromagnetism books.</p><p>To create a single atom system, set <span>$N=1$</span> and any other function should function accordingly. Note that all functions will return a <code>Matrix</code> of 1 element. This was an intentional decision to make internal functions interoperate effectively - if all inputs were a matrix, there was no ambiguity about the number of particles.</p><p>We need to use the <code>Vectorial</code> model to best visualize the radiation pattern. The code below is a minimal working example for checking the radiation pattern through a volume slice. The laser will be pointing in the negative x-direction, to make the visualization clearer.</p><pre><code class="language-julia hljs">using CoupledDipoles, Random
+
+# cloud settings
+N = 1
+kR = 10
+
+# laser settings
+w₀ = 4π
+s = 1e-5
+Δ = 0.0
+
+Random.seed!(2044)
+single_atom =Atom(CoupledDipoles.Cylinder(), N, kR, kR)
+laser = Laser(Gaussian3D(w₀), s, Δ; direction=[-1,0,0], polarization=[0,0,1])
+problem = LinearOptics(Vectorial(), single_atom, laser)
+βₙ = steady_state(problem)</code></pre><p>We had to apply <code>:near_field</code> regime manually to compute the intensity, because the default regime is <code>:far_field</code>. To evaulate the intensity in a certain spatial domain, we  use a list comprehension.</p><pre><code class="language-julia hljs">x = LinRange(-100, 100, 100)
+y = LinRange(-100, 100, 100)
+z = LinRange(-100, 100, 100)
+
+## this plot only works for near field regime
+_vol = [laser_and_scattered_intensity(problem, βₙ, Matrix([X Y Z]&#39;);regime=:near_field)[1] for X ∈ x, Y ∈ y, Z ∈ z]
+laserOn = log10.(_vol)
+
+_vol = [scattered_intensity(problem, βₙ, Matrix([X Y Z]&#39;);regime=:near_field)[1] for X ∈ x, Y ∈ y, Z ∈ z]
+laserOff = log10.(_vol)</code></pre><p>The package <code>Makie</code> is not a dependence of <code>CoupledDipoles</code>. Please, install it.</p><p>In the following, the figures represents the radiation in space for single atom and the color range was choosen <em>ad hoc</em> to higlight the expected dipole radiation pattern.</p><pre><code class="language-julia hljs">using ColorSchemes
+using WGLMakie
+WGLMakie.activate!()
+
+## Example 1
+let
+    fig = Figure(resolution = (800, 600))
+    ax_on = Axis3(fig[1, 1], title = &quot;Dipole Radiation&quot;, aspect=:data)
+
+    on_plt = volumeslices!(ax_on, x, y, z, laserOff,
+        colormap=cgrad( ColorSchemes.linear_kryw_0_100_c71_n256, rev=false),
+        colorrange=(-11, -9)
+        )
+    on_plt[:update_yz][](100)
+    on_plt[:update_xz][](50)
+    on_plt[:update_xy][](1)
+
+    # save(&quot;dipole_radiation.png&quot;, fig, resolution = (800, 600))
+    fig
+end</code></pre><p><img src="../dipole_radiation.png" alt="Dipole Radiation"/></p><pre><code class="language-julia hljs">## Example 2
+let
+    fig = Figure(resolution = (900, 800), background_color=:transparent)
+    ax_on = Axis3(fig[1, 1], title = &quot;Laser On&quot;, aspect=:data)
+    ax_off = Axis3(fig[1, 2], title = &quot;Laser Off&quot;, aspect=:data)
+
+    on_plt = volumeslices!(ax_on, x, y, z, laserOn,
+        colormap=cgrad( ColorSchemes.linear_kryw_0_100_c71_n256, rev=false),
+        colorrange=(-11, -9)
+        )
+    on_plt[:update_yz][](100)
+    on_plt[:update_xz][](50)
+    on_plt[:update_xy][](1)
+
+    off_plt = volumeslices!(ax_off, x, y, z, laserOff,
+        colormap=cgrad( ColorSchemes.linear_kryw_0_100_c71_n256, rev=false),
+        colorrange=(-11, -9)
+        )
+    off_plt[:update_yz][](100)
+    off_plt[:update_xz][](50)
+    off_plt[:update_xy][](1)
+
+    cbar = Colorbar(fig, off_plt; label=&quot;log10( Intensity )&quot;, flipaxis=false,  vertical = false, width = Relative(4/5),ticks=WilkinsonTicks(3))
+    fig[2, :] = cbar
+
+    # save(&quot;on_off_radiation.png&quot;, fig, resolution = (800, 600))
+    fig
+end</code></pre><p><img src="../on_off_radiation.png" alt="Laser On and Off"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../steady_state/">« Steady State</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Thursday 8 December 2022 03:35">Thursday 8 December 2022</span>. Using Julia version 1.8.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
