@@ -13,7 +13,7 @@ function laser_field(problem::LinearOptics{Scalar}, sensors::AbstractMatrix)
     Ω₀ = raby_frequency(problem.laser)
 
     _laser_electric_fields = ThreadsX.map(eachcol(sensors)) do sensor
-            (-im/2)*Ω₀*_scalar_laser_field(problem.laser, sensor)
+            LASER_FACTOR*Ω₀*_scalar_laser_field(problem.laser, sensor)
     end
     laser_electric_fields::Matrix{ComplexF64} = hcat(_laser_electric_fields...)
     return laser_electric_fields

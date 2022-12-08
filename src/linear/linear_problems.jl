@@ -1,28 +1,28 @@
 function LinearOptics(physic::Scalar, atoms, laser)
     @debug "start: LinearOptics - $( typeof(physic) )"
-
-    if !all(laser.polarization .==  0)
-        laser.polarization = [0,0,0]
+    laser_copy = deepcopy(laser) # i don't want change the original laser
+    if !all(laser_copy.polarization .==  0)
+        laser_copy.polarization = [0,0,0]
     end
     kernelFunction = get_kernelFunction(physic, atoms)
     spectrum = Dict()
     data = Dict()
 
     @debug "end  : LinearOptics - $( typeof(physic) )"
-    return LinearOptics(physic, atoms, laser, kernelFunction, spectrum, data)
+    return LinearOptics(physic, atoms, laser_copy, kernelFunction, spectrum, data)
 end
 function LinearOptics(physic::Vectorial, atoms, laser)
     @debug "start: LinearOptics - $( typeof(physic) )"
-
-    if all(laser.polarization .==  0)
-        laser.polarization = [1,0,0]
+    laser_copy = deepcopy(laser)
+    if all(laser_copy.polarization .==  0)
+        laser_copy.polarization = [1,0,0]
     end
     kernelFunction = get_kernelFunction(physic, atoms)
     spectrum = Dict()
     data = Dict()
 
     @debug "end  : LinearOptics - $( typeof(physic) )"
-    return LinearOptics(physic, atoms, laser, kernelFunction, spectrum, data)
+    return LinearOptics(physic, atoms, laser_copy, kernelFunction, spectrum, data)
 end
 
 

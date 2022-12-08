@@ -10,7 +10,7 @@ end
 function laser_field(problem::LinearOptics{Vectorial}, sensor::AbstractVector)
     Ω₀ = raby_frequency(problem.laser)
     polarization = problem.laser.polarization
-    return (-im/2)*Ω₀*_vectorial_laser_field(problem.laser, polarization, sensor)
+    return LASER_FACTOR*Ω₀*_vectorial_laser_field(problem.laser, polarization, sensor)
  end
 
  function laser_field(problem::LinearOptics{Vectorial}, sensors::AbstractMatrix)
@@ -18,7 +18,7 @@ function laser_field(problem::LinearOptics{Vectorial}, sensor::AbstractVector)
     polarization = problem.laser.polarization
 
     _laser_electric_fields = ThreadsX.map(eachcol(sensors)) do sensor
-        (-im/2)*Ω₀*_vectorial_laser_field(problem.laser, polarization, sensor)
+        LASER_FACTOR*Ω₀*_vectorial_laser_field(problem.laser, polarization, sensor)
     end
     laser_electric_fields::Matrix{ComplexF64} = hcat(_laser_electric_fields...)
     return laser_electric_fields
@@ -61,16 +61,16 @@ function _vectorial_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: 
     r = atoms.r
     N = size(r,2)
     n_hat = sensor./norm(sensor)
-    E = zeros(Complex{eltype(r)}, 3)
+    E_scatt = zeros(Complex{eltype(r)}, 3)
     for μ = 1:3
         for j=1:N, η=1:3
             term1 = (float(μ==η) - n_hat[μ]*n_hat[η]')
             term2 = exp(-im*dot(n_hat, view(r,:,j)  ))
             term3 = β[η, j]
-            E[μ] += term1*term2*term3
+            E_scatt[μ] += term1*term2*term3
         end
     end
-    return -(1/4π)*(exp(im*norm(sensor))/norm(sensor))*E
+    return -im*(3Γ/4)*(exp(im*norm(sensor))/norm(sensor))*E_scatt
 end
 
 
@@ -116,16 +116,6 @@ end
 function _vectorial_3D_green_kernel!(r_jm::Vector, G::Matrix)
     r = k₀*norm(r_jm)
     r2 = r^2
-
-    #= ----- Equivalent code, but slower -----
-
-    term1 = (3/2)cis(r)/(r)
-    term2 = 1 + im/r - 1/r2
-    term3 = -1 - 3im/r + 3/r2
-    term4 = reshape(kron(r_jm, r_jm), 3, 3)./r2
-
-    G = term1*(term2*I(3) + term3*term4)
-    =#
 
     P = (3/2)*(cis(r)/r)*(1 + im/r - 1/r2)
     Q = (3/2)*(cis(r)/r)*(-1 - 3im/r + 3/r2)/r2

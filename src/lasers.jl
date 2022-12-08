@@ -6,20 +6,20 @@
 function laser_field(laser::Laser{T}, sensor::AbstractVector) where T <: Pump
     Ω₀ = raby_frequency(laser)
     if laser.polarization == [0,0,0]
-        return (-im/2)*Ω₀*_scalar_laser_field(laser, sensor)
+        return [LASER_FACTOR*Ω₀*_scalar_laser_field(laser, sensor);;]
     else
-        return (-im/2)*Ω₀*_vectorial_laser_field(laser, laser.polarization, sensor)
+        return LASER_FACTOR*Ω₀*_vectorial_laser_field(laser, laser.polarization, sensor)
     end
 end
 function laser_field(laser::Laser{T}, sensors::AbstractMatrix) where T <: Pump
     Ω₀ = raby_frequency(laser)
     if laser.polarization == [0,0,0]
         return map(eachcol(sensors)) do sensor
-                    (-im/2)*Ω₀*_scalar_laser_field(laser, sensor)
+                    LASER_FACTOR*Ω₀*_scalar_laser_field(laser, sensor)
                 end
     else
         return map(eachcol(sensors)) do sensor
-                    (-im/2)*Ω₀*_vectorial_laser_field(laser, laser.polarization, sensor)
+                    LASER_FACTOR*Ω₀*_vectorial_laser_field(laser, laser.polarization, sensor)
                 end
     end
 end

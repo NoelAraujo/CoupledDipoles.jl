@@ -6,11 +6,13 @@
 
 On the REPL type
 ```julia
-pkg> add https://github.com/NoelAraujo/CoupledDipoles.jl
+import Pkg
+Pkg.add(url="https://github.com/NoelAraujo/CoupledDipoles.jl")
+
 
 julia> using CoupledDipoles
 
-pkg> test CoupledDipoles
+# pkg> test CoupledDipoles
 ```
 
 

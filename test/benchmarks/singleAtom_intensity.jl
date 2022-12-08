@@ -95,20 +95,15 @@ using WGLMakie
 WGLMakie.activate!()
 
 
-x = LinRange(-100, 50, 150)
-y = LinRange(-50, 50, 100)
-z = LinRange(-50, 50, 100)
-
+x = LinRange(-100, 100, 100)
+y = LinRange(-100, 100, 100)
+z = LinRange(-100, 100, 100)
 
 sca_vol = [log10(scattered_intensity(sca_problem, sca_βₙ, Matrix([X Y Z]');regime=:near_field)[1]) for X ∈ x, Y ∈ y, Z ∈ z]
-# sca_vol = (maximum(sca_vol) .- sca_vol)./(maximum(sca_vol)-minimum(sca_vol))
-
 vec_vol = [log10(scattered_intensity(vec_problem, vec_βₙ, Matrix([X Y Z]');regime=:near_field)[1]) for X ∈ x, Y ∈ y, Z ∈ z]
-# vec_vol = (maximum(vec_vol) .- vec_vol)./(maximum(vec_vol)-minimum(vec_vol))
 
 
-
-myColorRange = (-12, -8)
+myColorRange = (-11, -9)
 myColorRange = extrema(sca_vol)
 
 let
@@ -118,22 +113,22 @@ let
     vec_ax = Axis3(fig[1, 2], title = "Vectorial", aspect=:data)
 
     sca_plt = volumeslices!(sca_ax, x, y, z, sca_vol,
-        # colormap=cgrad( ColorSchemes.BuPu_9, rev=true),
-        colormap = cgrad( ColorSchemes.ocean, rev=false),
+        colormap=cgrad( ColorSchemes.linear_kryw_0_100_c71_n256, rev=false),
+        # colormap = cgrad( ColorSchemes.ocean, rev=false),
         colorrange=myColorRange
         )
-    sca_plt[:update_yz][](150)
-    sca_plt[:update_xz][](100)
-    sca_plt[:update_xy][](50)
+    sca_plt[:update_yz][](100)
+    sca_plt[:update_xz][](50)
+    sca_plt[:update_xy][](1)
 
     vec_plt = volumeslices!(vec_ax, x, y, z, vec_vol,
-        # colormap=cgrad( ColorSchemes.linear_kryw_0_100_c71_n256, rev=false),
-        colormap=cgrad( ColorSchemes.ocean, rev=false),
+        colormap=cgrad( ColorSchemes.linear_kryw_0_100_c71_n256, rev=false),
+        # colormap=cgrad( ColorSchemes.ocean, rev=false),
         colorrange=myColorRange
         )
-    vec_plt[:update_yz][](150)
-    vec_plt[:update_xz][](100)
-    vec_plt[:update_xy][](50)
+    vec_plt[:update_yz][](100)
+    vec_plt[:update_xz][](50)
+    vec_plt[:update_xy][](1)
     # zoom!(ax.scene, cameracontrols(ax.scene), 0.65)
 
     sca_cbar = Colorbar(fig, sca_plt; label="log10( Intensity )", flipaxis=false,  vertical = false, width = Relative(4/5),ticks=WilkinsonTicks(3))
@@ -157,7 +152,7 @@ let
     sca_plt[:update_xy][](1)
 
     vec_plt = volumeslices!(vec_ax, x, y, z, vec_vol,
-        colormap=cgrad( ColorSchemes.linear_kryw_0_100_c71_n256, rev=true),
+        colormap=cgrad( ColorSchemes.linear_kryw_0_100_c71_n256, rev=false),
         colorrange=myColorRange
         )
     vec_plt[:update_yz][](100)

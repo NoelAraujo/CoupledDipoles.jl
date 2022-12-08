@@ -26,6 +26,7 @@ const Γ = 1
 const PROBABILITY_THRESHOLD = 0.9999
 const R1_THRESHOLD = 0.5
 const FARFIELD_FACTOR = 100
+const LASER_FACTOR = -im/2
 
 include("structs.jl")
 include("atoms/atom_cube.jl")
@@ -66,7 +67,7 @@ include("lasers.jl")
 include("linear/scalar_pump_scattering.jl")
 include("linear/vectorial_pump_scattering.jl")
 export scattered_electric_field, scattered_intensity, laser_and_scattered_intensity
-export laser_field, apply_laser_over_oneAtom
+export laser_field, apply_laser_over_oneAtom, laser_angles
 export apply_laser_over_sensors, apply_laser_over_oneSensor
 
 include("eigenanalysis/eigen_analysis.jl")

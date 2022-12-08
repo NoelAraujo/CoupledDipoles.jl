@@ -42,7 +42,7 @@ using Test
         r_jm = [-3, √3, -2]
         G = CoupledDipoles._vectorial_3D_green_kernel(r_jm)
         k₀ = CoupledDipoles.k₀
-        G_expected = -(3cis(4k₀)/(16k₀*im))*(
+        G_expected = (3cis(4k₀)/(8k₀))*(
             (1 + im/(4k₀) - 1/(16k₀^2)).*[1 0 0; 0 1 0; 0 0 1] +
             (-1 - 3im/(4k₀) + 3/(16k₀^2)).*[9 -3√3 6; -3√3 3 -2√3; 6 -2√3 4]./16
         )
@@ -75,16 +75,16 @@ using Test
         G = interaction_matrix(problem)
 
         G_expected = zeros(ComplexF64, 6, 6)
-        # r_11
-        G_expected[1,1] = im*1.0 - 1/3
-        G_expected[1,3] = im*1.0 - 1/3
-        G_expected[1,5] = im*1.0 - 1/3
-        G_expected[3,1] = im*1.0 - 1/3
-        G_expected[3,3] = im*1.0 - 1/3
-        G_expected[3,5] = im*1.0 - 1/3
-        G_expected[5,1] = im*1.0 - 1/3
-        G_expected[5,3] = im*1.0 - 1/3
-        G_expected[5,5] = im*1.0 - 1/3
+        # r_12
+        G_expected[1,1] = im*1.0 - 1/2
+        G_expected[1,3] = 0.0
+        G_expected[1,5] = 0.0
+        G_expected[3,1] = 0.0
+        G_expected[3,3] = im*1.0 - 1/2
+        G_expected[3,5] = 0.0
+        G_expected[5,1] = 0.0
+        G_expected[5,3] = 0.0
+        G_expected[5,5] = im*1.0 - 1/2
 
         # r_12
         G_expected[1,2] = -(Γ / 2) *(3cis(√13))/(2im√13)*( 4/13 - (14/13)*(im/√13 - 1/13))
@@ -109,15 +109,15 @@ using Test
         G_expected[6,5] = -(Γ / 2) *(3cis(√13))/(2im√13)*(    1 +        1*(im/√13 - 1/13))
 
         # r_22
-        G_expected[2,2] = im*1.0 - 1/3
-        G_expected[2,4] = im*1.0 - 1/3
-        G_expected[2,6] = im*1.0 - 1/3
-        G_expected[4,2] = im*1.0 - 1/3
-        G_expected[4,4] = im*1.0 - 1/3
-        G_expected[4,6] = im*1.0 - 1/3
-        G_expected[6,2] = im*1.0 - 1/3
-        G_expected[6,4] = im*1.0 - 1/3
-        G_expected[6,6] = im*1.0 - 1/3
+        G_expected[2,2] = im*1.0 - 1/2
+        G_expected[2,4] = 0.0
+        G_expected[2,6] = 0.0
+        G_expected[4,2] = 0.0
+        G_expected[4,4] = im*1.0 - 1/2
+        G_expected[4,6] = 0.0
+        G_expected[6,2] = 0.0
+        G_expected[6,4] = 0.0
+        G_expected[6,6] = im*1.0 - 1/2
 
         @test all(G .≈ G_expected)
     end
@@ -187,8 +187,9 @@ using Test
         @test laser_field(laser, atoms) ≈ laser_field(laser, copy(atoms.r))
 
         sensor = [-2, 4, 6]
-        @test laser_field(laser, sensor) ≈ -0.00039247244655043063 - 0.001076983762079716im
-        @test laser_field(simulation, sensor) ≈ -0.00039247244655043063 - 0.001076983762079716im
+        println(laser_field(laser, sensor))
+        @test laser_field(laser, sensor)[1][1] ≈ -0.00039247244655043063 - 0.001076983762079716im
+        @test laser_field(simulation, sensor)[1][1] ≈ -0.00039247244655043063 - 0.001076983762079716im
 
         sensors = [ 9  3  2   3  10;
                     7  5  4  10   4;
@@ -198,7 +199,7 @@ using Test
                                                      0.0009596470108866166 - 0.0006312805503626626im
                                                      0.0004163359149677086 - 0.0005053621630288653im
                                                     -0.0004680700476923194 + 0.0004154301036283652im])
-        @test all(laser_field(laser, sensors) .≈ laser_field(simulation, sensors))
+        @test all(laser_field(laser, sensors)[1] .≈ laser_field(simulation, sensors)[1])
 
 
 
@@ -206,10 +207,11 @@ using Test
         simulation = LinearOptics(    Scalar(),    atoms, laser)
 
         sensor = [-2, 4, 6]
-        @test laser_field(laser, sensor) ≈ -0.0003643132375818668 - 0.0012519088884270365im
-        @test laser_field(simulation, sensor) ≈ -0.0003643132375818668 - 0.0012519088884270365im
+        @test laser_field(laser, sensor)[1] ≈ -0.0003643132375818668 - 0.0012519088884270365im
+        @test laser_field(simulation, sensor)[1] ≈ -0.0003643132375818668 - 0.0012519088884270365im
     end
     @testset "Vectorial Scattering - Single Atom" begin
+        using LinearAlgebra
         atoms = Atom(Cube(), Matrix([1.0 1.0 1.0]'), 1.0)
         sensor = Matrix([-1000 -1000 -500]')
         β = [3, 4im, 5.0]
@@ -219,9 +221,9 @@ using Test
         n = sensor./R
         nx, ny, nz = n[1], n[2], n[3]
         C = cis(-nx - ny - nz)
-        E_x_expected = -(im/(4π))*(cis(R)/(R*im))*C*((1 - nx^2)*3 + -nx*ny*4im - nx*nz*5)
-        E_y_expected = -(im/(4π))*(cis(R)/(R*im))*C*( -ny*nx*3 + (1 -ny^2)*4im - ny*nz*5)
-        E_z_expected = -(im/(4π))*(cis(R)/(R*im))*C*( -nz*nx*3 - nz*ny*4im + (1 - nz^2)*5)
+        E_x_expected = -(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2)*3 + -nx*ny*4im - nx*nz*5)
+        E_y_expected = -(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx*3 + (1 -ny^2)*4im - ny*nz*5)
+        E_z_expected = -(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx*3 - nz*ny*4im + (1 - nz^2)*5)
         @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
 
 
@@ -235,10 +237,16 @@ using Test
         n = sensor./R
         nx, ny, nz = n[1], n[2], n[3]
         C = cis(-nx - ny)
-        E_x_expected = -(im/(4π))*(cis(R)/(R*im))*C*((1 - nx^2) + nx*ny*2im - nx*nz*15)
-        E_y_expected = -(im/(4π))*(cis(R)/(R*im))*C*( -ny*nx - (1 -ny^2)*2im - ny*nz*15)
-        E_z_expected = -(im/(4π))*(cis(R)/(R*im))*C*( -nz*nx + nz*ny*2im + (1 - nz^2)*15)
+        E_x_expected = -(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2) + nx*ny*2im - nx*nz*15)
+        E_y_expected = -(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx - (1 -ny^2)*2im - ny*nz*15)
+        E_z_expected = -(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx + nz*ny*2im + (1 - nz^2)*15)
 
         @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
+    end
+
+    @testset "angles directions" begin
+        @test all(rad2deg.(laser_angles([1,1,0])) .≈ (90, 45))
+        @test all(rad2deg.(laser_angles([0,0,+1])) .≈ (0, 0))
+        @test all(rad2deg.(laser_angles([1,0,1])) .≈ (45, 0))
     end
 end

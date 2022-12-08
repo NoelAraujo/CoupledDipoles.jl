@@ -9,6 +9,7 @@ makedocs(
          pages=[
                 "Home" => "index.md",
                 "Steady State" => "steady_state.md",
+                "Single Atom" => "dipole_example/single_atom_volume.md",
                ])
 deploydocs(;
     repo="github.com/NoelAraujo/CoupledDipoles.jl.git",

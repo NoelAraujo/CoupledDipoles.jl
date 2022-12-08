@@ -84,3 +84,14 @@ function cart2sph(cartesian_coordinate)
     r = sqrt(x^2 + y^2 + z^2)
     return [θ, ϕ, r]
 end
+
+
+function laser_angles(direction::AbstractVector)
+    θ = acos( direction[3]/norm(direction) )
+    if (direction[2]^2 + direction[1]^2) ≠ 0
+        ϕ = acos(direction[1]/sqrt(direction[2]^2 + direction[1]^2))
+    else
+        ϕ = 0.0
+    end
+    return θ, ϕ
+end

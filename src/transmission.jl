@@ -4,8 +4,11 @@ struct SensorType
 end
 
 function transmission(problem, β; regime=:near_field)
+    if problem.laser.direction ≉ [0,0,1]
+        @error "`transmission`  only works for lasers pointing into z-direction."
+    end
+
     θₘₐₓ = problem.atoms.N < 50 ? deg2rad(45) : deg2rad(25)
-    # integral_domain = get(kwargs, :domain, ((0.0, 0.0), (θₘₐₓ, 2π)))
     integral_domain = ((0.0, 0.0), (θₘₐₓ, 2π))
 
     (I_scattered, _e) = hcubature(integral_domain...) do x # , rtol=1e-12
