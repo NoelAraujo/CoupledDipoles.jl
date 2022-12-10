@@ -37,8 +37,8 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;
     saveDiag = diagind(G)
     G[diagind(G)] .= zero(eltype(G))
 
-    # laser_field returns `(-im/2)*Ω`, but I need only `Ω`
-    Ωₙ = laser_field(problem.laser, problem.atoms) / (-im / 2)
+    # `laser_field = (-im/2)*Ω`, but I need only `Ω`
+    Ωₙ = laser_field(problem.laser, problem.atoms) / LASER_FACTOR
     Wₙ = similar(Ωₙ)
     G_βₙ = similar(Ωₙ)
     temp1 = similar(Ωₙ)
@@ -84,10 +84,11 @@ function MeanField!(du, u, p, t)
 
     mul!(G_βₙ, G, βₙ) # == G_βₙ = G*βₙ
     # Wₙ .= Ωₙ / 2 .+ im * (G_βₙ - diagG .* βₙ) # if I don't clean the diagonal in callee function
-    Wₙ .= Ωₙ / 2 .+ im * G_βₙ
-    temp1 .= (im * Δ - Γ / 2) * βₙ .+ im * Wₙ .* zₙ
-    temp2 .= -Γ * (1 .+ zₙ) - 4 * imag.(βₙ .* conj.(Wₙ))
-    du[:] .= vcat(temp1, temp2)
+    @. Wₙ = Ωₙ / 2 + im * G_βₙ
+    @. temp1 = (im * Δ - Γ / 2) * βₙ + im * Wₙ * zₙ
+    @. temp2 = -Γ * (1 + zₙ) - 4 * imag(βₙ * conj(Wₙ))
+    du[1:N] .= temp1
+    du[N+1:end] .= temp2
 
     return nothing
 end

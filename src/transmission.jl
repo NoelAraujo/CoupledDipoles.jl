@@ -22,7 +22,7 @@ function transmission(problem, β; regime=:near_field)
     end
 
     T = I_scattered / I_laser
-    return T
+    return T[1] # T is a matrix with 1 element
 end
 
 @inline function getSensor_on_Sphere(x, problem)

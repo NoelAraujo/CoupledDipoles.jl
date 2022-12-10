@@ -1,13 +1,9 @@
-function laser_field(problem::LinearOptics{Scalar}, atoms::Atom{T}) where T <: Dimension
-    return laser_field(problem, atoms.r)
-end
-
-"""
-    laser_field(problem, sensor) = (-im/2)*Ω₀*[laser geometry]
-"""
+#=
+            LASER FIELD
+=#
 function laser_field(problem::LinearOptics{Scalar}, sensor::AbstractVector)
     Ω₀ = raby_frequency(problem.laser)
-    return Matrix(transpose([(-im/2)*Ω₀*_scalar_laser_field(problem.laser, sensor)]))
+    return Matrix(transpose([LASER_FACTOR*Ω₀*_scalar_laser_field(problem.laser, sensor)]))
 end
 function laser_field(problem::LinearOptics{Scalar}, sensors::AbstractMatrix)
     Ω₀ = raby_frequency(problem.laser)
@@ -28,17 +24,7 @@ function _get_intensity(problem::LinearOptics{Scalar}, fields::AbstractVector)
 end
 
 
-"""
-    raby_frequency(laser) = √(s * (1 + 4(Δ / Γ)^2) / 2)
-"""
-function raby_frequency(laser)
-    return √(laser.s * (1 + 4(laser.Δ / Γ)^2) / 2)
-end
 
-
-
-
-## PUMP FIELD
 """
     _scalar_laser_field(laser::Laser{PlaneWave3D}, sensor)
 
@@ -70,38 +56,9 @@ function _scalar_laser_field(laser::Laser{Gaussian3D}, sensor)
 end
 
 
-
-
-## SCATTERING FIELD: FAR FIELD
-"""
-    Eletric Field: -(Γ/2) * (exp(ikr) / ikr) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)
-"""
-function scattering_far_field(problem::LinearOptics{Scalar}, β, sensor)
-    _scattering_far_field(problem.atoms, β, sensor)
-end
-
-function _scattering_far_field(atoms::Atom{T}, β, sensor)  where T <: TwoD
-    ## TO DO
-    return nothing
-end
-function _scattering_far_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
-    atoms = atoms.r
-    sensor_norm = norm(sensor)
-    n̂ = sensor / sensor_norm
-
-    E_scatt = mapreduce(+, pairs(eachcol(atoms))) do x
-        j, atom = x
-        cis(-k₀ * (n̂[1] * atom[1] + n̂[2] * atom[2] + n̂[3] * atom[3])) * β[j]
-    end
-
-    E_scatt = -(Γ / 2) * (cis(k₀ * sensor_norm) / sensor_norm) * E_scatt
-    return E_scatt
-end
-
-
-
-
-## SCATTERING FIELD: NEAR FIELD
+#=
+            SCATTERED FIELD: :near_field
+=#
 """
     Eletric Field: +(Γ/2) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)/(k₀* sensor⋅R⃗ⱼ)
 """
@@ -122,7 +79,7 @@ function _scalar_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: Th
         β[j] * ( cis(k₀ * d_SensorAtom) / d_SensorAtom)
     end
     # FAR FIELD has a negative sign, because the far field approximation created the negative sign
-    E_scatt = +(Γ / 2) * im * E_scatt
+    E_scatt = +im*(Γ / 2) * E_scatt
     return E_scatt
 end
 
@@ -130,3 +87,33 @@ end
 
 
 
+
+
+
+#=
+            SCATTERED FIELD: :far_field
+=#
+"""
+    Eletric Field: -(Γ/2) * (exp(ikr) / ikr) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)
+"""
+function scattering_far_field(problem::LinearOptics{Scalar}, β, sensor)
+    _scalar_scattering_far_field(problem.atoms, β, sensor)
+end
+
+function _scalar_scattering_far_field(atoms::Atom{T}, β, sensor)  where T <: TwoD
+    ## TO DO
+    return nothing
+end
+function _scalar_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
+    atoms = atoms.r
+    sensor_norm = norm(sensor)
+    n̂ = sensor / sensor_norm
+
+    E_scatt = mapreduce(+, pairs(eachcol(atoms))) do x
+        j, atom = x
+        cis(-k₀ * (n̂[1] * atom[1] + n̂[2] * atom[2] + n̂[3] * atom[3])) * β[j]
+    end
+
+    E_scatt = +im * (Γ / 2) * (cis(k₀ * sensor_norm) / sensor_norm) * E_scatt
+    return E_scatt
+end

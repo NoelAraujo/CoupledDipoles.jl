@@ -20,6 +20,7 @@ using ParallelStencil
 
 using Distributions: MvNormal
 using Bessels
+using Random
 
 const k₀ = 1
 const Γ = 1
@@ -69,6 +70,7 @@ include("linear/vectorial_pump_scattering.jl")
 export scattered_electric_field, scattered_intensity, laser_and_scattered_intensity
 export laser_field, apply_laser_over_oneAtom, laser_angles
 export apply_laser_over_sensors, apply_laser_over_oneSensor
+export laser_intensity
 
 include("eigenanalysis/eigen_analysis.jl")
 export get_spectrum

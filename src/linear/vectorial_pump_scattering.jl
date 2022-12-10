@@ -82,7 +82,7 @@ end
 function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: TwoD
     return nothing
 end
-function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
+@views function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
     r = @views atoms.r
     N = atoms.N
 
@@ -113,7 +113,7 @@ function _vectorial_3D_green_kernel(r_jm::Vector)
     return G
 end
 
-function _vectorial_3D_green_kernel!(r_jm::Vector, G::Matrix)
+@inline function _vectorial_3D_green_kernel!(r_jm::Vector, G::Matrix)
     r = k₀*norm(r_jm)
     r2 = r^2
 

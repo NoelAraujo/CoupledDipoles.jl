@@ -66,7 +66,7 @@ function time_evolution(
 
     ### use default G and Ωₙ
     G = copy(interaction_matrix(problem))
-    Ωₙ = laser_field(problem, problem.atoms)
+    Ωₙ = vec(laser_field(problem, problem.atoms.r))
     solution = time_evolution(problem, u₀, tspan, Ωₙ, G; kargs...)
 
     return solution
