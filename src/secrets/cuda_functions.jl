@@ -9,14 +9,15 @@ using CUDA
 # Pkg.add(name="CUDA", version="3.8")
 
 function steady_state(problem::LinearOptics{Scalar})
-    if ENV["COUPLED_DIPOLES_USE_GPU"]
+    runGPU = haskey(ENV, "COUPLED_DIPOLES_USE_GPU") ? ENV["COUPLED_DIPOLES_USE_GPU"] : "false"
+    if runGPU== "true"
         G = interaction_matrix(problem) |> CuArray
     else
         G = interaction_matrix(problem)
     end
 
     if problem.atoms.N > 1
-        if ENV["COUPLED_DIPOLES_USE_GPU"]
+        if runGPU == "true"
             Ωₙ = vec(laser_field(problem, problem.atoms.r)) |> CuArray
         else
             Ωₙ = vec(laser_field(problem, problem.atoms.r))
@@ -31,8 +32,14 @@ function steady_state(problem::LinearOptics{Scalar})
     return βₛ |> Array
 end
 function steady_state(problem::LinearOptics{Vectorial})
-    G = interaction_matrix(problem) |> CuArray
-    Ωₙ = laser_field(problem, problem.atoms.r)
+    runGPU = haskey(ENV, "COUPLED_DIPOLES_USE_GPU") ? ENV["COUPLED_DIPOLES_USE_GPU"] : "false"
+    if runGPU == "true"
+        G = interaction_matrix(problem) |> CuArray
+        Ωₙ = vec(laser_field(problem, problem.atoms.r)) |> CuArray
+    else
+        G = interaction_matrix(problem)
+        Ωₙ = vec(laser_field(problem, problem.atoms.r))
+    end
     ## Ωₙ_eff  = [all X - all Y - all Z]
     Ωₙ_eff = vcat(view(Ωₙ, 1, :), view(Ωₙ, 2, :), view(Ωₙ, 3, :))  |> CuArray
     if problem.atoms.N > 1
@@ -51,48 +58,48 @@ function steady_state(problem::LinearOptics{Vectorial})
     return βₛ_eff
 end
 
-function CoupledDipoles.steady_state(problem::NonLinearOptics{MeanField})
-    @debug "start: stedy state - NonLinearOptics"
+# function CoupledDipoles.steady_state(problem::NonLinearOptics{MeanField})
+#     @debug "start: stedy state - NonLinearOptics"
 
-    u₀ = default_initial_condition(problem) |> CuArray
-    tspan = (0.0, 500)
-    steady_state = CoupledDipoles.time_evolution(problem, u₀, tspan; progress=true, save_on=false)
+#     u₀ = default_initial_condition(problem) |> CuArray
+#     tspan = (0.0, 500)
+#     steady_state = CoupledDipoles.time_evolution(problem, u₀, tspan; progress=true, save_on=false)
 
-    @debug "end  : stedy state - NonLinearOptics"
-    return Array(steady_state.u[end])
-end
+#     @debug "end  : stedy state - NonLinearOptics"
+#     return Array(steady_state.u[end])
+# end
 
-function CoupledDipoles.time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)
-    @debug "start: time evolution - NonLinearOptics"
-    G = interaction_matrix(problem)
+# function CoupledDipoles.time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)
+#     @debug "start: time evolution - NonLinearOptics"
+#     G = interaction_matrix(problem)
 
-    #=
-        I don't sum over diagonal elements during time evolution
-     thus, to avoid an IF statement, I put a zero on diagonal
-    =#
-    saveDiag = diagind(G)
-    G[diagind(G)] .= zero(eltype(G))
-    Ggpu = CuArray(G)
-    # laser_field returns `(-im/2)*Ω`, but I need only `Ω`
-    Ωₙ = aser_field(problem.laser, problem.atoms) / (-im / 2) |> CuArray
-    Wₙ = similar(Ωₙ)
-    G_βₙ = similar(Ωₙ)
-    temp1 = similar(Ωₙ)
-    temp2 = similar(Ωₙ)
+#     #=
+#         I don't sum over diagonal elements during time evolution
+#      thus, to avoid an IF statement, I put a zero on diagonal
+#     =#
+#     saveDiag = diagind(G)
+#     G[diagind(G)] .= zero(eltype(G))
+#     Ggpu = CuArray(G)
+#     # laser_field returns `(-im/2)*Ω`, but I need only `Ω`
+#     Ωₙ = aser_field(problem.laser, problem.atoms) / (-im / 2) |> CuArray
+#     Wₙ = similar(Ωₙ)
+#     G_βₙ = similar(Ωₙ)
+#     temp1 = similar(Ωₙ)
+#     temp2 = similar(Ωₙ)
 
-    parameters = view(Ggpu, :, :), view(Ωₙ, :), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ, temp1, temp2
+#     parameters = view(Ggpu, :, :), view(Ωₙ, :), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ, temp1, temp2
 
-    ### calls for solver
-    problemFunction = get_evolution_function(problem)
-    prob = ODEProblem(problemFunction, u₀, tspan, parameters)
-    solution = DifferentialEquations.solve(prob, OwrenZen3(); reltol=1e-8, kargs...)
+#     ### calls for solver
+#     problemFunction = get_evolution_function(problem)
+#     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
+#     solution = DifferentialEquations.solve(prob, OwrenZen3(); reltol=1e-8, kargs...)
 
-    # !!!! restore diagonal !!!!
-    Ggpu = 1 # clear memory
+#     # !!!! restore diagonal !!!!
+#     Ggpu = 1 # clear memory
 
-    @debug "end  : time evolution - NonLinearOptics"
-    return solution
-end
+#     @debug "end  : time evolution - NonLinearOptics"
+#     return solution
+# end
 
 # function my_pairwise(a, b=a)
 #     na = length(a)
