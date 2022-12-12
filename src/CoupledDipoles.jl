@@ -29,6 +29,11 @@ const R1_THRESHOLD = 0.5
 const FARFIELD_FACTOR = 100
 const LASER_FACTOR = -im/2
 
+if !haskey(ENV, "COUPLED_DIPOLES_USE_GPU")
+    ENV["COUPLED_DIPOLES_USE_GPU"] = false
+end
+
+
 include("structs.jl")
 include("atoms/atom_cube.jl")
 include("atoms/atom_cylinder.jl")
@@ -109,6 +114,13 @@ export _create_sphere_sensor, _create_plane_sensor
 include("applications/cbs.jl")
 export CBS_scalar
 
+include("secrets/cuda_functions.jl")
+
+function use_gpu(state)    
+    ENV["COUPLED_DIPOLES_USE_GPU"] = state
+    return nothing
+end
+export use_gpu
 
 # import SnoopPrecompile
 # SnoopPrecompile.@precompile_all_calls begin

@@ -6,6 +6,7 @@ version = "0.2.8"
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Bessels = "0e736298-9ec6-45e8-9647-e4fc86a2fe38"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Crayons = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
