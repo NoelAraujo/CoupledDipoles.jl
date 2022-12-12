@@ -2,22 +2,20 @@
 ENV["JULIA_CUDA_USE_COMPAT"] = false
 ENV["JULIA_CUDA_USE_BINARYBUILDER"] = true
 using CUDA
-# using OrdinaryDiffEq
-# using LinearAlgebra
 
 # import Pkg
 # Pkg.add(name="CUDA", version="3.8")
 
 function steady_state(problem::LinearOptics{Scalar})
     runGPU = haskey(ENV, "COUPLED_DIPOLES_USE_GPU") ? ENV["COUPLED_DIPOLES_USE_GPU"] : "false"
-    if runGPU== "true"
+    if runGPU== "true" && CUDA.functional()
         G = interaction_matrix(problem) |> CuArray
     else
         G = interaction_matrix(problem)
     end
 
     if problem.atoms.N > 1
-        if runGPU == "true"
+        if runGPU == "true" && CUDA.functional()
             Ωₙ = vec(laser_field(problem, problem.atoms.r)) |> CuArray
         else
             Ωₙ = vec(laser_field(problem, problem.atoms.r))
@@ -33,7 +31,7 @@ function steady_state(problem::LinearOptics{Scalar})
 end
 function steady_state(problem::LinearOptics{Vectorial})
     runGPU = haskey(ENV, "COUPLED_DIPOLES_USE_GPU") ? ENV["COUPLED_DIPOLES_USE_GPU"] : "false"
-    if runGPU == "true"
+    if runGPU == "true" && CUDA.functional()
         G = interaction_matrix(problem) |> CuArray
         Ωₙ = vec(laser_field(problem, problem.atoms.r)) |> CuArray
     else
