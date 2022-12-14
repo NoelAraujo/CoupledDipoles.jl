@@ -109,40 +109,40 @@ export _create_sphere_sensor, _create_plane_sensor
 include("applications/cbs.jl")
 export CBS_scalar
 
-include("secrets/cuda_functions.jl")
+# include("secrets/cuda_functions.jl")
 
-function use_gpu(state)
-    ENV["COUPLED_DIPOLES_USE_GPU"] = state
-    return nothing
-end
-export use_gpu
-
-# import SnoopPrecompile
-# SnoopPrecompile.@precompile_all_calls begin
-
-#     N = 40
-#     kL = 32.4
-#     w₀, s, Δ = 4π, 1e-5, 0.3
-#     tspan = (0, 15.0)
-
-#     atoms = Atom(Sphere(gaussian=true), N, kL; r_min=0.0)
-#     laser = Laser(Gaussian3D(w₀), s, Δ)
-
-#     simulation = LinearOptics(Scalar(), atoms, laser)
-#     βₙ = steady_state(simulation)
-#     G = interaction_matrix(simulation)
-#     ωₙ, Γₙ = get_spectrum(simulation)
-#     u₀ = default_initial_condition(simulation)
-#     βₜ = time_evolution(simulation, u₀, tspan)
-
-
-#     simulation = LinearOptics(Vectorial(), atoms, laser)
-#     G = interaction_matrix(simulation)
-#     βₙ = steady_state(simulation)
-
-#     simulation = NonLinearOptics(MeanField(), atoms, laser)
-#     u₀ = default_initial_condition(simulation)
-#     βₜ = time_evolution(simulation, u₀, tspan)
+# function use_gpu(state)
+#     ENV["COUPLED_DIPOLES_USE_GPU"] = state
+#     return nothing
 # end
+# export use_gpu
+
+import SnoopPrecompile
+SnoopPrecompile.@precompile_all_calls begin
+
+    N = 40
+    kL = 32.4
+    w₀, s, Δ = 4π, 1e-5, 0.3
+    tspan = (0, 15.0)
+
+    atoms = Atom(Sphere(gaussian=true), N, kL; r_min=0.0)
+    laser = Laser(Gaussian3D(w₀), s, Δ)
+
+    simulation = LinearOptics(Scalar(), atoms, laser)
+    βₙ = steady_state(simulation)
+    G = interaction_matrix(simulation)
+    ωₙ, Γₙ = get_spectrum(simulation)
+    u₀ = default_initial_condition(simulation)
+    βₜ = time_evolution(simulation, u₀, tspan)
+
+
+    simulation = LinearOptics(Vectorial(), atoms, laser)
+    G = interaction_matrix(simulation)
+    βₙ = steady_state(simulation)
+
+    simulation = NonLinearOptics(MeanField(), atoms, laser)
+    u₀ = default_initial_condition(simulation)
+    βₜ = time_evolution(simulation, u₀, tspan)
+end
 
 end
