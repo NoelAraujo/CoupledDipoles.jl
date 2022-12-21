@@ -50,10 +50,15 @@ i_ss_S = get_intensity_over_an_angle(simulationScalar, ss_S, deg2rad(35))
 i_ss_MF = get_intensity_over_an_angle(simulationMeanField, ss_MF, deg2rad(35))
 
 ### ------------ PLOTS ---------------------
-plot(aS.t, iS; label="Scalar", lw=5, ylabel="intensity", xlabel="time")
-plot!(aMF.t, iMF; label="Mean Field", lw=4, linestyle=:dash, size=(800, 600))
+#=
+    Qutip's result don't match ours due to some normalization constants.
+=#
+constFactor = (iQutip[end]/i_ss_MF)
+
+plot(aS.t, constFactor*iS; label="Scalar", lw=5, ylabel="intensity", xlabel="time")
+plot!(aMF.t, constFactor*iMF; label="Mean Field", lw=4, linestyle=:dash, size=(800, 600))
 plot!(time_Qutip, iQutip; label="Qutip", lw=4, linestyle=:dot)
 plot!(; guidefont=17, tickfont=15, legendfontsize=15, legend=:bottomright)
 
-hline!([i_ss_S]; label="i_ss_S", lw=5, linestyle=:dash)
-hline!([i_ss_MF]; label="i_ss_MF", lw=5, linestyle=:dot)
+hline!([constFactor*i_ss_S]; label="i_ss_S", lw=5, linestyle=:dash)
+hline!([constFactor*i_ss_MF]; label="i_ss_MF", lw=5, linestyle=:dot)

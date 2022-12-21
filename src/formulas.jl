@@ -95,3 +95,9 @@ function laser_angles(direction::AbstractVector)
     end
     return θ, ϕ
 end
+
+
+function how_far_is_farField(problem)
+    R = 5*size(problem.atoms)^2
+    return R
+end

@@ -90,8 +90,9 @@ include("scattering.jl")
 include("linear/linear_scattering.jl")
 include("nonlinear/nonlinear_scattering.jl")
 export scattering_intensity, scattering_fuction
-export get_intensity_over_an_angle, get_intensity_over_an_angle_fast
-export get_intensity_over_an_angle_legacy
+export get_intensity_over_an_angle#, get_intensity_over_an_angle_fast
+# export get_intensity_over_an_angle_legacy
+
 
 include("sensors.jl")
 export get_sensors_ring
@@ -135,7 +136,7 @@ SnoopPrecompile.@precompile_all_calls begin
     u₀ = default_initial_condition(simulation)
     βₜ = time_evolution(simulation, u₀, tspan)
 
-
+    laser = Laser(Gaussian3D(w₀), s, Δ; polarization=[1,0,0])
     simulation = LinearOptics(Vectorial(), atoms, laser)
     G = interaction_matrix(simulation)
     βₙ = steady_state(simulation)
