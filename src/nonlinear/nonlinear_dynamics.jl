@@ -12,18 +12,33 @@ end
 
 """
     steady_state(problem::NonLinearOptics{MeanField})
-
-For Non Linear Optics makes a time evolution to infinity (t=500Γ by default) and returns the state.
 """
 function steady_state(problem::NonLinearOptics{MeanField})
-    @debug "start: stedy state - NonLinearOptics"
 
+    G = interaction_matrix(problem)
+
+    #=
+        I don't sum over diagonal elements during time evolution
+     thus, to avoid an IF statement, I put a zero on diagonal
+    =#
+    saveDiag = diagind(G)
+    G[diagind(G)] .= zero(eltype(G))
+
+    # `laser_field = (-im/2)*Ω`, but I need only `Ω`
+    Ωₙ = laser_field(problem.laser, problem.atoms) / LASER_FACTOR
+    Wₙ = similar(Ωₙ)
+    G_βₙ = similar(Ωₙ)
+    temp1 = similar(Ωₙ)
+    temp2 = similar(Ωₙ)
+    parameters = view(G, :, :), view(Ωₙ, :), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ, temp1, temp2
     u₀ = default_initial_condition(problem)
-    tspan = (0.0, 500)
-    steady_state = time_evolution(problem, u₀, tspan; save_on=false)
 
-    @debug "end  : stedy state - NonLinearOptics"
-    return steady_state.u[end]
+    solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=900, xtol=exp10(-5));
+
+    # !!!! restore diagonal !!!!
+    G[diagind(G)] .= saveDiag
+
+    return solution.zero
 end
 
 function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)

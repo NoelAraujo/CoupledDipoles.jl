@@ -3,8 +3,8 @@ using Plots, ProgressMeter
 using Revise
 
 # cloud settings
-N = 75
-ρ = 0.5
+N = 750
+ρ = 0.05
 
 cloud = Atom(CoupledDipoles.Cylinder(), cylinder_inputs(N, ρ; h=5π)...)
 R = cloud.sizes.R
@@ -14,7 +14,7 @@ w₀ = 1.5 * 2π
 s = 1e-5
 
 # create transmission depending on detunning
-Δ_range = range(-50, 50; length=30)
+Δ_range = range(-100, 100; length=100)
 T = zeros(length(Δ_range))
 let
     p = Progress(length(Δ_range); showspeed=true)
@@ -29,7 +29,7 @@ let
         # _problem = NonLinearOptics(MeanField(), cloud, _laser)
         # _βₙ = steady_state(_problem)
 
-        T[idx] = transmission(_problem, _βₙ)[1]
+        T[idx] = transmission(_problem, _βₙ; regime=:near_field)[1]
         ProgressMeter.next!(p)
     end
 
@@ -47,6 +47,7 @@ let
     ylabel!("Transmission")
     display(title!("Cylinder : N=$(N), ρ=$(round(ρ,digits=3)), R=$(round(R,digits=2)), w₀=$(round(w₀,digits=2)), λ=$(round(2π,digits=2))"))
 end
+
 #=
     The code below is to visualize the intensity over the space in the Far Field limit.
 

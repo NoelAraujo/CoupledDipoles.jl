@@ -14,7 +14,8 @@ using Printf
 using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
 using HCubature
-# using MKL ## in some servers I can download this package
+using MKL ## in some servers I can download this package
+using NLsolve
 using ParallelStencil
 @init_parallel_stencil(Threads, Float64, 2);
 
