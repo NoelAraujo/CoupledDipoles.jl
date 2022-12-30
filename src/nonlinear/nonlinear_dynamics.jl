@@ -33,7 +33,7 @@ function steady_state(problem::NonLinearOptics{MeanField})
     parameters = view(G, :, :), view(Ωₙ, :), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ, temp1, temp2
     u₀ = default_initial_condition(problem)
 
-    solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=900, xtol=exp10(-5));
+    solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=950)
 
     # !!!! restore diagonal !!!!
     G[diagind(G)] .= saveDiag
