@@ -145,6 +145,7 @@ SnoopPrecompile.@precompile_all_calls begin
     simulation = NonLinearOptics(MeanField(), atoms, laser)
     u₀ = default_initial_condition(simulation)
     βₜ = time_evolution(simulation, u₀, tspan)
+    βₛ = steady_state(simulation)
 end
 
 end

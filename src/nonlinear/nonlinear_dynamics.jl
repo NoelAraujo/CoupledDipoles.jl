@@ -31,9 +31,14 @@ function steady_state(problem::NonLinearOptics{MeanField})
     temp1 = similar(Ωₙ)
     temp2 = similar(Ωₙ)
     parameters = view(G, :, :), view(Ωₙ, :), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ, temp1, temp2
-    u₀ = default_initial_condition(problem)
 
-    solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=950)
+    ## `nlsolve` convergence is senstive to initial conditions
+    ## therefore, i decided to make a small time evoltuion, and use the result as initial condition
+    u₀ = default_initial_condition(problem)
+    u₀ = time_evolution(problem, u₀, (0.0, 200.0); reltol=1e-7, abstol=1e-6, save_on=false).u[end] # evolve a little bit
+
+    solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=950, autodiff = :forward)
+
 
     # !!!! restore diagonal !!!!
     G[diagind(G)] .= saveDiag
