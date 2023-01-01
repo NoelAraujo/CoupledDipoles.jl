@@ -34,10 +34,14 @@ function steady_state(problem::NonLinearOptics{MeanField})
 
     ## `nlsolve` convergence is senstive to initial conditions
     ## therefore, i decided to make a small time evoltuion, and use the result as initial condition
+    ## NOTE: this trick is usefull only for small N, for now, is N < 1200
+    ## but this number was obtained by non systematic tests, and could be improved
     u₀ = default_initial_condition(problem)
-    u₀ = time_evolution(problem, u₀, (0.0, 200.0); reltol=1e-7, abstol=1e-6, save_on=false).u[end] # evolve a little bit
-
-    solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=950, autodiff = :forward)
+    if problem.atoms.N < 1200
+        tspan = (0.0, 200.0)
+        u₀ = time_evolution(problem, u₀, tspan; reltol=1e-6, abstol=1e-6, save_on=false).u[end] # evolve a little bit
+    end
+    solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=50, autodiff = :forward)
 
 
     # !!!! restore diagonal !!!!
