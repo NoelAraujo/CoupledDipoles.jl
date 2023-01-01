@@ -82,18 +82,22 @@ end
 function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: TwoD
     return nothing
 end
-@views function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
-    r = @views atoms.r
+function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
+    r = atoms.r
     N = atoms.N
 
     E_x = zero(eltype(β))
     E_y, E_z = zero(eltype(β)), zero(eltype(β))
+    r_jm = zeros(eltype(atoms.r), 3)
     G = zeros(ComplexF64, 3, 3)
-    for j = 1:N
-        rⱼ = r[:, j]
-        βⱼ = β[:, j]
+    for (j, rⱼ) = enumerate(eachcol(r))
+        r_jm[1] = sensor[1] - rⱼ[1]
+        r_jm[2] = sensor[2] - rⱼ[2]
+        r_jm[3] = sensor[3] - rⱼ[3]
 
-        _vectorial_3D_green_kernel!(sensor - rⱼ, G)
+        βⱼ = view(β, :, j)
+
+        _vectorial_3D_green_kernel!(r_jm, G)
         for η=1:3
             E_x += G[1,η]*βⱼ[η]
         end

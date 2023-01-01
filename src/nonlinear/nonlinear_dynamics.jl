@@ -13,8 +13,7 @@ end
 """
     steady_state(problem::NonLinearOptics{MeanField})
 """
-function steady_state(problem::NonLinearOptics{MeanField})
-
+function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e-7, abstol=1e-7)
     G = interaction_matrix(problem)
 
     #=
@@ -25,7 +24,7 @@ function steady_state(problem::NonLinearOptics{MeanField})
     G[diagind(G)] .= zero(eltype(G))
 
     # `laser_field = (-im/2)*Ω`, but I need only `Ω`
-    Ωₙ = laser_field(problem.laser, problem.atoms) / LASER_FACTOR
+    Ωₙ::Vector{ComplexF64} = laser_field(problem.laser, problem.atoms) / LASER_FACTOR
     Wₙ = similar(Ωₙ)
     G_βₙ = similar(Ωₙ)
     temp1 = similar(Ωₙ)
@@ -35,19 +34,35 @@ function steady_state(problem::NonLinearOptics{MeanField})
     ## `nlsolve` convergence is senstive to initial conditions
     ## therefore, i decided to make a small time evoltuion, and use the result as initial condition
     ## NOTE: this trick is usefull only for small N, for now, is N < 1200
-    ## but this number was obtained by non systematic tests, and could be improved
+    ## but this number was obtained by systematic tests, and could be improved
     u₀ = default_initial_condition(problem)
     if problem.atoms.N < 1200
-        tspan = (0.0, 200.0)
-        u₀ = time_evolution(problem, u₀, tspan; reltol=1e-6, abstol=1e-6, save_on=false).u[end] # evolve a little bit
+        tspan = (0.0, tmax)
+        u₀::Vector{ComplexF64} = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
     end
-    solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=50, autodiff = :forward)
 
+    try
+        solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=50, autodiff = :forward)
 
-    # !!!! restore diagonal !!!!
-    G[diagind(G)] .= saveDiag
+        # !!!! restore diagonal !!!!
+        G[diagind(G)] .= saveDiag
+        return solution.zero
+    catch
+        # !!!! restore diagonal !!!!
+        G[diagind(G)] .= saveDiag
 
-    return solution.zero
+        ## For lower N (N < 100 ?), nlsolve does not converge (i don't know why)
+        ## Instead of returning an error, I return the result from time evolution.
+        @warn "Steady State may not be accurate. Consider increasing number of particles."
+        if problem.atoms.N < 1200
+            return u₀
+        else
+            tspan = (0.0, tmax)
+            u₀ = default_initial_condition(problem)
+            u₀_attempt = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+            return u₀_attempt
+        end
+    end
 end
 
 function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)

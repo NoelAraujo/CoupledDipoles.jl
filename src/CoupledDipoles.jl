@@ -90,9 +90,7 @@ export get_decay_fit
 include("scattering.jl")
 include("linear/linear_scattering.jl")
 include("nonlinear/nonlinear_scattering.jl")
-export scattering_intensity, scattering_fuction
-export get_intensity_over_an_angle#, get_intensity_over_an_angle_fast
-# export get_intensity_over_an_angle_legacy
+export get_intensity_over_an_angle
 
 
 include("sensors.jl")
@@ -111,13 +109,6 @@ export _create_sphere_sensor, _create_plane_sensor
 include("applications/cbs.jl")
 export CBS_scalar
 
-# include("secrets/cuda_functions.jl")
-
-# function use_gpu(state)
-#     ENV["COUPLED_DIPOLES_USE_GPU"] = state
-#     return nothing
-# end
-# export use_gpu
 
 import SnoopPrecompile
 SnoopPrecompile.@precompile_all_calls begin
