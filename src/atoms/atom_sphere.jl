@@ -22,7 +22,7 @@ end
 
 function Atom(geometry::Sphere, r::Matrix, kR::Union{Real,Integer})
     N = size(r, 2) # remember to use each collum as a atom position
-    return Atom(Sphere(), r, N, Float64(kR))
+    return Atom(Sphere(), Float64.(r), N, Float64(kR))
 end
 
 """

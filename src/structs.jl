@@ -25,7 +25,7 @@ struct Cylinder <: ThreeD end
 
 struct Atom{T<:Dimension}
     shape::T
-    r::AbstractMatrix
+    r::Matrix{Float64}
     N::Int64
     sizes::Any
 end
