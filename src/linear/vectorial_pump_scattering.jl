@@ -61,7 +61,7 @@ function _vectorial_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: 
     r = atoms.r
 
     norm_sensor = norm(sensor)
-    n_hat::Vector{Float64} = sensor./norm_sensor
+    n_hat = sensor./norm_sensor
     E_scatt = zeros(Complex{eltype(r)}, 3)
     terms = zeros(ComplexF64, 3)
     for μ = 1:3
@@ -69,7 +69,7 @@ function _vectorial_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: 
             for η=1:3
                 terms[1] = (float(μ==η) - n_hat[μ]*n_hat[η]')
                 terms[2] = cis( -dot(n_hat, rⱼ ))
-                terms[2] = β[η, j]
+                terms[3] = β[η, j]
                 E_scatt[μ] += prod(terms)
             end
         end

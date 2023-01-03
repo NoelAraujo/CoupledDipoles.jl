@@ -13,7 +13,7 @@ Solve `x=G\\Ω`, with default `interaction_matrix` and `laser_field`.
 function steady_state(problem::LinearOptics{Scalar})
     G = interaction_matrix(problem)
     if problem.atoms.N > 1
-        Ωₙ::Vector{ComplexF64} = vec(laser_field(problem, problem.atoms.r))
+        Ωₙ = vec(laser_field(problem, problem.atoms.r))
         βₛ = -(G \ Ωₙ)
     else
         # the conversion from matrix to vector, avoids an extra function to deal single atom
