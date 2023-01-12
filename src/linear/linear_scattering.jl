@@ -47,7 +47,26 @@
 # end
 
 """
-    used for the same state and many angles (suitable for cbs)
+    get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ_range::AbstractVector)
+
+Used for the same state and many angles (suitable for cbs)
+
+```julia
+using CoupledDipoles, Random
+Random.seed!(111)
+N = 5
+kR, kh = 1.0, 1.0
+atoms = Atom(Cylinder(), N, kR, kh)
+
+s, Δ = 1e-5, 1.0
+laser = Laser(PlaneWave3D(), s, Δ; polarization=[1,0,0])
+
+problem_scalar = LinearOptics(Scalar(), atoms, laser)
+atomic_states_scalar = steady_state(problem_scalar)
+
+θ_range = deg2rad.(range(0, 360, length=30))
+get_intensity_over_an_angle(problem_scalar, atomic_states_scalar, θ_range)
+```
 """
 @views function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ_range::AbstractVector)
     N = problem.atoms.N
@@ -102,7 +121,29 @@ end
 
 
 """
-    used for the single angle and single single state (most probably user case)
+    get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector, θ::Number; tol=exp10(-7.4))
+
+Used for the single angle and single single state (most probably user case).
+
+# Example:
+
+```julia
+using CoupledDipoles, Random
+Random.seed!(111)
+N = 5
+kR, kh = 1.0, 1.0
+atoms = Atom(Cylinder(), N, kR, kh)
+
+s, Δ = 1e-5, 1.0
+laser = Laser(PlaneWave3D(), s, Δ; polarization=[1,0,0])
+
+problem_scalar = LinearOptics(Scalar(), atoms, laser)
+atomic_states_scalar = steady_state(problem_scalar)
+
+θ = deg2rad(48)
+get_intensity_over_an_angle(problem_scalar, atomic_states_scalar, θ)
+```
+
 """
 function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector, θ::Number; tol=exp10(-7.4))
     if problem.atoms.N < 1000
@@ -113,7 +154,30 @@ function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states
     end
 end
 """
-    used for the same angle and different states (for example, the output of `time_evolution`)
+    get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{Vector{ComplexF64}}, θ::Number; tol=exp10(-7.4), exact_solution=false)
+
+Used for the same angle and different states (for example, the output of `time_evolution`).
+
+# Example:
+```julia
+using CoupledDipoles, Random
+Random.seed!(111)
+N = 5
+kR, kh = 1.0, 1.0
+atoms = Atom(Cylinder(), N, kR, kh)
+
+s, Δ = 1e-5, 1.0
+laser = Laser(PlaneWave3D(), s, Δ; polarization=[1,0,0])
+
+problem_scalar = LinearOptics(Scalar(), atoms, laser)
+u0 = default_initial_condition(problem_scalar)
+tspan = (0.0, 10.0)
+solutions = time_evolution(problem_scalar, u0, tspan)
+states = solutions.u
+
+θ = deg2rad(48)
+get_intensity_over_an_angle(problem_scalar, states, θ)
+```
 """
 function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{Vector{ComplexF64}}, θ::Number; tol=exp10(-7.4), exact_solution=false)
 

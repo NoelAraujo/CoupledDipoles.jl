@@ -9,6 +9,7 @@ makedocs(
          pages=[
                 "Home" => "index.md",
                 "Steady State" => "steady_state.md",
+                "Scattering" => "scattering.md",
                 "Single Atom" => "dipole_example/single_atom_volume.md",
                 "Intensity Statistics" => "variances_angles/rayleigh_variance.md",
                ])

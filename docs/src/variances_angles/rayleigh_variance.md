@@ -4,7 +4,7 @@ Our goal is to reproduce `Figure 2` from the paper [Cottier et all, 2019](http:/
 
 With exception of the `Step 1`, the code is expected to run without any adjustments.
 
-## Step 1
+*Step 1*
 
 Load the necessary packages. For me (the author), I prefer to execute all repetitions in parallel in my home made cluster. If you don't want parallel processing, just remove the process nodes.
 
@@ -18,33 +18,33 @@ end
 @time begin
     using Distributed
 
-    ## for local paralellism, uncomment this line
-    # addprocs(2; exeflags=`--project=$(Base.active_project()) --threads 4`, topology=:master_worker, enable_threaded_blas=true)
+    ## for local paralellism
+    addprocs(2; exeflags=`--project=$(Base.active_project()) --threads 4`, topology=:master_worker, enable_threaded_blas=true)
 
-    ## remove this line if you don't have a remote machines
-    ip_m2 = "pc2@192.168.15.8"
-    nprocess_m2 = 2
-    machine2 = [(ip_m2, nprocess_m2)]
-    addprocs(
-        machine2;
-        topology = :master_worker,
-        exeflags = `--threads 6`,
-        enable_threaded_blas = true,
-        exename = "/home/pc2/julia/julia-1.8.0-rc3/bin/julia",
-        dir = "/home/pc2",
-    )
+    ## for remote machines
+    # ip_m2 = "pc2@192.168.15.8"
+    # nprocess_m2 = 2
+    # machine2 = [(ip_m2, nprocess_m2)]
+    # addprocs(
+    #     machine2;
+    #     topology = :master_worker,
+    #     exeflags = `--threads 6`,
+    #     enable_threaded_blas = true,
+    #     exename = "/home/pc2/julia/julia-1.8.0-rc3/bin/julia",
+    #     dir = "/home/pc2",
+    # )
 
-    ip_m3 = "pc3@192.168.15.7"
-    nprocess_m3 = 2
-    machine3 = [(ip_m3, nprocess_m3)]
-    addprocs(
-        machine3;
-        topology = :master_worker,
-        exeflags = `--threads 4`,
-        enable_threaded_blas = true,
-        exename = "/home/pc3/julia_program/julia-1.8.0-rc3/bin/julia",
-        dir = "/home/pc3",
-    )
+    # ip_m3 = "pc3@192.168.15.7"
+    # nprocess_m3 = 2
+    # machine3 = [(ip_m3, nprocess_m3)]
+    # addprocs(
+    #     machine3;
+    #     topology = :master_worker,
+    #     exeflags = `--threads 4`,
+    #     enable_threaded_blas = true,
+    #     exename = "/home/pc3/julia_program/julia-1.8.0-rc3/bin/julia",
+    #     dir = "/home/pc3",
+    # )
 end
 
 @time @everywhere begin
@@ -53,7 +53,7 @@ end
 end
 ```
 
-## Step 2
+*Step 2*
 We use the exact configuration parameters from the paper. You will notice may `Warning` messages. This happen because a small laser waist leads to unreasonable results.
 
 If you are studying Cottier's paper, note that the results from the paper are **not accurate** due to its small laser waist, even though they general paper's message is still correct.
@@ -75,7 +75,7 @@ sensors = get_sensors_ring(; num_pts = 720, kR = 300, θ = 5π / 12)
 maxRep = 15
 ```
 
-## Step 3
+*Step 3*
 
 For each atom number `N`, create `maxRep` atomic configurations, compute their state states, and scattered light intensity. The normalization over the mean comes from the paper.
 
@@ -103,7 +103,7 @@ end
 ```
 
 
-## Step 4
+*Step 4*
 
 Instead of ploting `histogram` for each particle number, we are interested in the **data** from the `histogram` to display it in a `scatter` plot. Also, this is the moment to compute the variance of all intensities.
 
@@ -126,7 +126,7 @@ end
 ```
 
 
-## Step 5
+*Step 5*
 
 Overlay the Distribution Probability in a single figure.
 
