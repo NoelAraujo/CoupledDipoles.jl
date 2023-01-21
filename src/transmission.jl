@@ -4,6 +4,9 @@ struct SensorType
 end
 
 function transmission(problem, β; regime=:near_field, rtol=exp10(-10))
+    # For future, use this link to create integration points in any direction: 
+    # https://fasiha.github.io/post/spherical-cap/
+    # https://github.com/fasiha/sphere-cap-random/blob/gh-pages/src/capRandom.js
     if problem.laser.direction ≉ [0,0,1]
         @error "`transmission`  only works for lasers pointing into z-direction."
     end

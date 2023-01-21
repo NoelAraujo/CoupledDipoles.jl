@@ -5,6 +5,15 @@ function default_initial_condition(problem::LinearOptics{Scalar})
     return zeros(ComplexF64, problem.atoms.N) # I must use "zeros" and NOT an undef array - with trash data inside
 end
 
+
+"""
+    default_initial_condition(::Vectorial) = zeros(ComplexF64, 3N)
+"""
+function default_initial_condition(problem::LinearOptics{Vectorial})
+    return zeros(ComplexF64, 3problem.atoms.N) # I must use "zeros" and NOT an undef array - with trash data inside
+end
+
+
 """
     steady_state(problem::LinearOptics{Scalar})
 
@@ -59,14 +68,13 @@ function time_evolution(
     ### if time is big, and laser is swithc-off, the 'FORMAL SOLUTION' of the ODE problem is much faster
     if problem.laser.s ≈ 0
         time_interval = get(kargs, :saveat, range(tspan[1], tspan[2], length = 20))
-        states = time_evolution_laser_off(problem, u₀, time_interval)
-        solution = (t = time_interval, u = states)
+        solution = time_evolution_laser_off(problem, u₀, time_interval)
         return solution
     end
 
     ### use default G and Ωₙ
     G = copy(interaction_matrix(problem))
-    Ωₙ = vec(laser_field(problem, problem.atoms.r))
+    Ωₙ = laser_field(problem, problem.atoms.r)
     solution = time_evolution(problem, u₀, tspan, Ωₙ, G; kargs...)
 
     return solution
@@ -75,7 +83,7 @@ function time_evolution(
     problem::LinearOptics{T},
     u₀,
     tspan::Tuple,
-    Ωₙ::Vector;
+    Ωₙ::VecOrMat;
     kargs...,
 ) where {T<:Linear}
     ### use default G
@@ -88,7 +96,7 @@ function time_evolution(
     problem::LinearOptics{T},
     u₀,
     tspan::Tuple,
-    Ωₙ::Vector,
+    Ωₙ::VecOrMat,
     G::Matrix;
     kargs...,
 ) where {T<:Linear}
@@ -116,6 +124,13 @@ end
 get_evolution_function(problem::LinearOptics{Scalar}) = Scalar!
 get_evolution_params(problem::LinearOptics{Scalar}, G, Ωₙ) = view(G, :, :), view(Ωₙ, :)
 
+# MUDAR AQUI
+get_evolution_function(problem::LinearOptics{Vectorial}) = Scalar!
+function get_evolution_params(problem::LinearOptics{Vectorial}, G, Ωₙ)
+    ## Ωₙ_eff  = [all X - all Y - all Z]
+    Ωₙ_eff = vcat(view(Ωₙ, 1, :), view(Ωₙ, 2, :), view(Ωₙ, 3, :))
+    return view(G, :, :), view(Ωₙ_eff, :)
+end
 function Scalar!(du, u, p, t)
     G, Ωₙ = p
 
@@ -154,12 +169,12 @@ function time_evolution_laser_on(
         Λinv = BigFloat.(real.(Λinv)) + BigFloat.(imag.(Λinv))*im
         PinvΩₙ = BigFloat.(real.(PinvΩₙ)) + BigFloat.(imag.(PinvΩₙ))*im
     end
-    z = ThreadsX.map(time_interval) do t
+    u = ThreadsX.map(time_interval) do t
         term1 = (P * Diagonal(exp.(+t * Λ)) * Pinv)*initial_state
         term2 = P * Diagonal(exp.(+t * Λ)) * (  Λinv*(Diagonal(exp.(-t * Λ)) - I )*PinvΩₙ    )
         term1 + term2
     end
-    return z
+    return (t=time_interval, u=u)
 end
 
 ### NOT INTENDED TO BE EXPOSED
@@ -172,9 +187,9 @@ function time_evolution_laser_off(
     Λ, P = eigen(G)
     Pinv = inv(P)
 
-    z = ThreadsX.map(time_interval) do t
+    u = ThreadsX.map(time_interval) do t
         P * Diagonal(exp.(t * Λ)) * Pinv * initial_state
     end
-    return z
+    return (t=time_interval, u=u)
 end
 
