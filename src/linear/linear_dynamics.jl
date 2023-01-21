@@ -187,3 +187,12 @@ function time_evolution_laser_off(
     return (t=time_interval, u=u)
 end
 
+# this function is executed when i compute the vectorial model
+function time_evolution_laser_off(
+    problem,
+    initial_state::AbstractMatrix,
+    time_interval::AbstractVector,
+)
+    initial_state_array =_vecAux_Matrix_into_longArray(initial_state)
+    time_evolution_laser_off(problem, initial_state_array, time_interval)
+end
