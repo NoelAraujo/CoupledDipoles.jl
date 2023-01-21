@@ -83,13 +83,6 @@ function _scalar_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: Th
     return E_scatt
 end
 
-
-
-
-
-
-
-
 #=
             SCATTERED FIELD: :far_field
 =#

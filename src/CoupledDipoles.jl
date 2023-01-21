@@ -66,12 +66,19 @@ export interaction_matrix
 export green_scalar!
 
 include("lasers.jl")
+export laser_field, laser_intensity
+export apply_laser_over_sensors, apply_laser_over_oneSensor
+export apply_laser_over_oneAtom, laser_angles
+
+include("scattering.jl")
 include("linear/scalar_pump_scattering.jl")
 include("linear/vectorial_pump_scattering.jl")
+include("nonlinear/meanfield_pump_scattering.jl")
 export scattered_electric_field, scattered_intensity, laser_and_scattered_intensity
-export laser_field, apply_laser_over_oneAtom, laser_angles
-export apply_laser_over_sensors, apply_laser_over_oneSensor
-export laser_intensity
+
+
+include("integrate_over_angle.jl")
+export get_intensity_over_an_angle
 
 include("eigenanalysis/eigen_analysis.jl")
 export get_spectrum
@@ -86,11 +93,6 @@ export select_points
 include("plot_modes.jl")
 export get_spatial_profile_single_mode_and_fit
 export get_decay_fit
-
-include("scattering.jl")
-include("linear/linear_scattering.jl")
-include("nonlinear/nonlinear_scattering.jl")
-export get_intensity_over_an_angle
 
 
 include("sensors.jl")

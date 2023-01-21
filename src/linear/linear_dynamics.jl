@@ -41,21 +41,15 @@ Solve `x=G\\Ω`, with default `interaction_matrix` and `laser_field`. The soluti
 function steady_state(problem::LinearOptics{Vectorial})
     G = interaction_matrix(problem)
     Ωₙ = laser_field(problem, problem.atoms.r)
-    ## Ωₙ_eff  = [all X - all Y - all Z]
-    Ωₙ_eff = vcat(view(Ωₙ, 1, :), view(Ωₙ, 2, :), view(Ωₙ, 3, :))
+    Ωₙ_eff = _vecAux_Matrix_into_longArray(Ωₙ)
+
     if problem.atoms.N > 1
         βₛ = (G \ Ωₙ_eff)
     else
         βₛ = -(Ωₙ / G[1])
     end
-    # transpose and NOT transpose conjugated
-    # because i am just changing the array format to create
-    # an effetive result
-    N = problem.atoms.N
-    βₛ_x = transpose(βₛ[1:N])
-    βₛ_y = transpose(βₛ[N+1:2N])
-    βₛ_z = transpose(βₛ[2N+1:3N])
-    βₛ_eff = vcat(βₛ_x, βₛ_y, βₛ_z)
+
+    βₛ_eff = _vecAux_longArray_into_Matrix(problem.atoms.N, βₛ)
     return βₛ_eff
 end
 

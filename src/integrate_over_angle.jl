@@ -22,7 +22,7 @@ atomic_states_scalar = steady_state(problem_scalar)
 get_intensity_over_an_angle(problem_scalar, atomic_states_scalar, θ)
 ```
 """
-function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{ComplexF64}, angle::Number; tol=exp10(-7.4), exact_solution=false)
+function get_intensity_over_an_angle(problem, atoms_states::Vector{ComplexF64}, angle::Number; tol=exp10(-7.4), exact_solution=false)
     if exact_solution
         xⱼₘ2, yⱼₘ2, zⱼₘ = _rⱼₘ_distances(problem)
         return _intensity_angle_exact_parallel(problem, atoms_states, angle, xⱼₘ2, yⱼₘ2, zⱼₘ)
@@ -59,7 +59,7 @@ states = solutions.u
 get_intensity_over_an_angle(problem_scalar, states, θ)
 ```
 """
-function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{Vector{ComplexF64}}, angle::Number; tol=exp10(-7.4), exact_solution=false)
+function get_intensity_over_an_angle(problem, atoms_states::Vector{Vector{ComplexF64}}, angle::Number; tol=exp10(-7.4), exact_solution=false)
     if exact_solution
         # i avoid creating these matrices many times creating them here, and making the same program
         # as the 'single angle and single single state', defined above
@@ -75,14 +75,14 @@ function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states
 end
 
 
-function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{Vector{ComplexF64}}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false)
+function get_intensity_over_an_angle(problem, atoms_states::Vector{Vector{ComplexF64}}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false)
     # Many States + Many Angles
     return reduce(hcat, map(atoms_states) do β # O(N)
         get_intensity_over_an_angle(problem, β, angles; tol = tol, exact_solution=exact_solution)
     end)
 
 end
-function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_state::Vector{ComplexF64}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false)
+function get_intensity_over_an_angle(problem, atoms_state::Vector{ComplexF64}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false)
     # Single States + Many Angles
     return map(angles) do θ
         get_intensity_over_an_angle(problem, atoms_state, θ; tol=tol, exact_solution=exact_solution)
@@ -116,20 +116,20 @@ end
 
 
 
-@views function _intensity_angle_exact_parallel(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ::Number, xⱼₘ2, yⱼₘ2, zⱼₘ)
+@views function _intensity_angle_exact_parallel(problem, atoms_states::AbstractVector, θ::Number, xⱼₘ2, yⱼₘ2, zⱼₘ)
     N = problem.atoms.N
-    βₙ = view(atoms_states, 1:N)
-    βₘ = conj.(βₙ)
+    βⱼ = view(atoms_states, 1:N)
+    βₘ = conj.(βⱼ)
 
     number_configurations = ((N^2) ÷ 2 - N ÷ 2)
 
-    βₙₘ = Array{ComplexF64}(undef, number_configurations)
+    βⱼₘ = Array{ComplexF64}(undef, number_configurations)
     count = 1
     for m in 1:N
         b_m = βₘ[m]
         for n in (m+1):N
-            b_n = βₙ[n]
-            βₙₘ[count] = b_n*b_m
+            b_n = βⱼ[n]
+            βⱼₘ[count] = b_n*b_m
             count += 1
         end
     end
@@ -137,9 +137,11 @@ end
     k₀sinθ = abs(k₀*sin(θ))
     k₀cosθ = k₀*cos(θ)
     total_intensity = ThreadsX.mapreduce(+, 1:number_configurations) do ii
-        βₙₘ[ii]*cis(-zⱼₘ[ii]*k₀cosθ)*Bessels.besselj0(k₀sinθ*sqrt(xⱼₘ2[ii] + yⱼₘ2[ii]))
+        βⱼₘ[ii]*cis(-zⱼₘ[ii]*k₀cosθ)*Bessels.besselj0(k₀sinθ*sqrt(xⱼₘ2[ii] + yⱼₘ2[ii]))
     end
-    total_intensity += sum(abs2, βₙ)/2
+
+    # i don't know where this '/2' comes from, but i NEED it
+    total_intensity += sum_diagonals(problem, atoms_states)/2
 
     k₀R = k₀*how_far_is_farField(problem)
 
@@ -147,11 +149,21 @@ end
 
 end
 
+function sum_diagonals(problem::LinearOptics{T}, atomic_state) where T <: Scalar
+    return sum(abs2, atomic_state)
+end
+function sum_diagonals(problem::LinearOptics{T}, atomic_state) where T <: Vectorial
+    return @error "[TO DO]: VECTORIAL MODEL EXACT SOLUTION NEEDS TO BE IMPLEMENTED YET.\n USE THE QUADRATURE SOLUTION FOR NOW."
+end
+function sum_diagonals(problem::NonLinearOptics{T}, atomic_state) where T <: MeanField
+    N = problem.atoms.N
+    z = view(atomic_state, (N + 1):(2N))
+    return sum(1 .+ z)/ 2
+end
 
 
 
-
-@views function _intensity_angle_approx_quadradure(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ::Number; tol=exp10(-7.4))
+function _intensity_angle_approx_quadradure(problem, atoms_states::AbstractVector, θ::Number; tol=exp10(-7.4))
     R = how_far_is_farField(problem)
 
     sensor = Array{Float64}(undef,3)
