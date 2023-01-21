@@ -1,127 +1,5 @@
-# function _OnePoint_Intensity(physic::Union{Scalar,Vectorial}, laser, atoms, sensor, β, scattering_func)
-#     E_L = laser_field(laser, sensor)
-#     E_scatt = scattering_func(atoms, β, sensor)
-#     return abs2(E_L + E_scatt)
-# end
-
-# @views function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ::Number)
-#     N = problem.atoms.N
-#     r = problem.atoms.r
-#     βₙ = view(atoms_states, 1:N)
-#     βₘ = conj.(βₙ)
-
-#     k₀sinθ = abs(k₀*sin(θ))
-#     k₀cosθ = k₀*cos(θ)
-#     number_configurations = ((N^2) ÷ 2 - N ÷ 2)
-
-#     xₙₘ = Array{Float64}(undef, number_configurations)
-#     yₙₘ, zₙₘ = similar(xₙₘ), similar(xₙₘ)
-#     count = 1
-#     for m in 1:N
-#         rm = r[:,m]
-#         for n in (m+1):N
-#             xₙₘ[count] = r[1,n] - rm[1]
-#             yₙₘ[count] = r[2,n] - rm[2]
-#             zₙₘ[count] = r[3,n] - rm[3]
-#             count += 1
-#         end
-#     end
-
-#     βₙₘ = Array{ComplexF64}(undef, number_configurations)
-#     count = 1
-#     for m in 1:N
-#         b_m = βₘ[m]
-#         for n in (m+1):N
-#             b_n = βₙ[n]
-#             βₙₘ[count] = b_n*b_m
-#             count += 1
-#         end
-#     end
-
-#     total_intensity = ThreadsX.mapreduce(+, 1:number_configurations) do ii
-#         βₙₘ[ii]*exp(-im*zₙₘ[ii]*k₀cosθ)*Bessels.besselj0(k₀sinθ*sqrt(xₙₘ[ii]^2+yₙₘ[ii]^2))
-#     end
-#     total_intensity += sum(abs2, βₙ)/2
-#     return 2real(total_intensity)
-
-# end
-
 """
-    get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ_range::AbstractVector)
-
-Used for the same state and many angles (suitable for cbs)
-
-```julia
-using CoupledDipoles, Random
-Random.seed!(111)
-N = 5
-kR, kh = 1.0, 1.0
-atoms = Atom(Cylinder(), N, kR, kh)
-
-s, Δ = 1e-5, 1.0
-laser = Laser(PlaneWave3D(), s, Δ; polarization=[1,0,0])
-
-problem_scalar = LinearOptics(Scalar(), atoms, laser)
-atomic_states_scalar = steady_state(problem_scalar)
-
-θ_range = deg2rad.(range(0, 360, length=30))
-get_intensity_over_an_angle(problem_scalar, atomic_states_scalar, θ_range)
-```
-"""
-@views function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::AbstractVector, θ_range::AbstractVector)
-    N = problem.atoms.N
-    r = problem.atoms.r
-    xₙ, yₙ, zₙ = r[1,:], r[2,:], r[3,:]
-
-    βₙ = view(atoms_states, 1:N)
-    βₘ = conj.(βₙ)
-
-    number_configurations = ((N^2) ÷ 2 - N ÷ 2)
-
-    xₙₘ = Array{Float64}(undef, number_configurations)
-    yₙₘ, zₙₘ = similar(xₙₘ), similar(xₙₘ)
-    count = 1
-    for m in 1:N
-        for n in (m+1):N
-            xₙₘ[count] = xₙ[n] - xₙ[m]
-            yₙₘ[count] = yₙ[n] - yₙ[m]
-            zₙₘ[count] = zₙ[n] - zₙ[m]
-            count += 1
-        end
-    end
-
-    βₙₘ = Array{ComplexF64}(undef, number_configurations)
-    count = 1
-    for m in 1:N
-        b_m = βₘ[m]
-        for n in (m+1):N
-            b_n = βₙ[n]
-            βₙₘ[count] = b_n*b_m
-            count += 1
-        end
-    end
-
-    intensities = zeros(length(θ_range))
-    for (idx_θ, θ) in enumerate(θ_range)
-        k₀sinθ = abs(k₀*sin(θ))
-        k₀cosθ = k₀*cos(θ)
-
-        _intensity = ThreadsX.mapreduce(+, 1:number_configurations) do ii
-            βₙₘ[ii]*exp(-im*zₙₘ[ii]*k₀cosθ)*Bessels.besselj0(k₀sinθ*sqrt(xₙₘ[ii]^2+yₙₘ[ii]^2))
-        end
-        _intensity += sum(abs2, βₙ)/2
-
-        intensities[idx_θ] = 2real(_intensity)
-    end
-
-    return intensities
-end
-
-
-
-
-"""
-    get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector, θ::Number; tol=exp10(-7.4))
+    get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{ComplexF64}, θ::Number; tol=exp10(-7.4))
 
 Used for the single angle and single single state (most probably user case).
 
@@ -143,20 +21,22 @@ atomic_states_scalar = steady_state(problem_scalar)
 θ = deg2rad(48)
 get_intensity_over_an_angle(problem_scalar, atomic_states_scalar, θ)
 ```
-
 """
-function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector, θ::Number; tol=exp10(-7.4))
-    if problem.atoms.N < 1000
+function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{ComplexF64}, angle::Number; tol=exp10(-7.4), exact_solution=false)
+    if exact_solution
         xⱼₘ2, yⱼₘ2, zⱼₘ = _rⱼₘ_distances(problem)
-        return _intensity_angle_exact_parallel(problem, atoms_states, θ, xⱼₘ2, yⱼₘ2, zⱼₘ)
+        return _intensity_angle_exact_parallel(problem, atoms_states, angle, xⱼₘ2, yⱼₘ2, zⱼₘ)
     else
-        return _intensity_angle_approx_quadradure(problem, atoms_states, θ; tol=tol)
+        return _intensity_angle_approx_quadradure(problem, atoms_states, angle; tol=tol)
     end
 end
+
+
+
 """
     get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{Vector{ComplexF64}}, θ::Number; tol=exp10(-7.4), exact_solution=false)
 
-Used for the same angle and different states (for example, the output of `time_evolution`).
+Used for the single angle and different states (for example, the output of `time_evolution`).
 
 # Example:
 ```julia
@@ -179,19 +59,38 @@ states = solutions.u
 get_intensity_over_an_angle(problem_scalar, states, θ)
 ```
 """
-function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{Vector{ComplexF64}}, θ::Number; tol=exp10(-7.4), exact_solution=false)
-
-    if exact_solution # O((N^2 - N)/2)
+function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{Vector{ComplexF64}}, angle::Number; tol=exp10(-7.4), exact_solution=false)
+    if exact_solution
+        # i avoid creating these matrices many times creating them here, and making the same program
+        # as the 'single angle and single single state', defined above
         xⱼₘ2, yⱼₘ2, zⱼₘ = _rⱼₘ_distances(problem)
         return map(atoms_states) do β
-            _intensity_angle_exact_parallel(problem, β, θ, xⱼₘ2, yⱼₘ2, zⱼₘ)
+            _intensity_angle_exact_parallel(problem, β, angle, xⱼₘ2, yⱼₘ2, zⱼₘ)
         end
     end
 
-    return ThreadsX.map(atoms_states) do β # O(N)
-        _intensity_angle_approx_quadradure(problem, β, θ; tol=tol)
+    return map(atoms_states) do β # O(N)
+        _intensity_angle_approx_quadradure(problem, β, angle; tol=tol)
     end
 end
+
+
+function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{Vector{ComplexF64}}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false)
+    # Many States + Many Angles
+    return reduce(hcat, map(atoms_states) do β # O(N)
+        get_intensity_over_an_angle(problem, β, angles; tol = tol, exact_solution=exact_solution)
+    end)
+
+end
+function get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_state::Vector{ComplexF64}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false)
+    # Single States + Many Angles
+    return map(angles) do θ
+        get_intensity_over_an_angle(problem, atoms_state, θ; tol=tol, exact_solution=exact_solution)
+    end
+end
+
+
+
 @views function _rⱼₘ_distances(problem)
     N = problem.atoms.N
     r = problem.atoms.r
