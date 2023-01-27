@@ -13,7 +13,7 @@ end
 """
     steady_state(problem::NonLinearOptics{MeanField})
 """
-function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e-7, abstol=1e-7)
+function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e-7, abstol=1e-7, m=75)
     G = interaction_matrix(problem)
 
     #=
@@ -34,7 +34,7 @@ function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e
     ## `nlsolve` convergence is senstive to initial conditions
     ## therefore, i decided to make a small time evoltuion, and use the result as initial condition
     ## NOTE: this trick is usefull only for small N, for now, is N < 1200
-    ## but this number was obtained by systematic tests, and could be improved
+    ## but this number was NOT obtained by systematic tests, and could be improved
     u₀ = default_initial_condition(problem)
     if problem.atoms.N < 1200
         tspan = (0.0, tmax)
@@ -42,14 +42,12 @@ function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e
     end
 
     try
-        solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=50, autodiff = :forward)
+        solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=m, autodiff = :forward)
 
         # !!!! restore diagonal !!!!
         G[diagind(G)] .= saveDiag
         return solution.zero
     catch
-        # !!!! restore diagonal !!!!
-        G[diagind(G)] .= saveDiag
 
         ## For lower N (N < 100 ?), nlsolve does not converge (i don't know why)
         ## Instead of returning an error, I return the result from time evolution.
@@ -60,6 +58,8 @@ function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e
             tspan = (0.0, tmax)
             u₀ = default_initial_condition(problem)
             u₀_attempt = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+            # !!!! restore diagonal !!!!
+            G[diagind(G)] .= saveDiag
             return u₀_attempt
         end
     end

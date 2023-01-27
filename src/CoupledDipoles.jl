@@ -23,6 +23,9 @@ using Distributions: MvNormal
 using Bessels
 using Random
 
+# using Distributed
+# using ProgressMeter, FileIO
+
 const k₀ = 1
 const Γ = 1
 const PROBABILITY_THRESHOLD = 0.9999
@@ -107,6 +110,9 @@ export time_evolution, default_initial_condition, get_evolution_function
 include("transmission.jl")
 export transmission, how_far_is_FarField
 export _create_sphere_sensor, _create_plane_sensor
+
+# include("long_simulations.jl")
+# export save_1D_simulation, save_2D_simulation, load_simulation
 
 include("applications/cbs.jl")
 export CBS_scalar

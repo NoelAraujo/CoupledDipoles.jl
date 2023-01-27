@@ -16,7 +16,7 @@ function transmission(problem, β; regime=:near_field, rtol=exp10(-10))
     ## The values the intensity are small
     ## making the integration convergence slow
     ## One solution is to multiply all values for some factor
-    scaling_factor = new_R = 25*size(problem.atoms)
+    scaling_factor = 25*size(problem.atoms)
 
     (I_scattered, _e) = hcubature(integral_domain..., rtol=rtol) do x
         sensor = getSensor_on_Sphere(x, problem)

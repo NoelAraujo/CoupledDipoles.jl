@@ -51,10 +51,11 @@ function green_scalar!(atoms, laser, G)
         return nothing
     end
 
-    get_pairwise_matrix!(atoms.r, G) # R_jk
+    get_pairwise_matrix!(atoms.r, G) # R_jm
+    G .*= k₀
 
     Threads.@threads for j in eachindex(G)
-        @inbounds G[j] = -(Γ / 2) * cis(k₀ * G[j]) / (1im * k₀ * G[j])
+        @inbounds G[j] = +im*(Γ / 2) * cis(G[j]) / (G[j])
     end
     G[diagind(G)] .= 1im * laser.Δ - Γ / 2
 

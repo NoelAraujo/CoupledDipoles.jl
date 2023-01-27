@@ -101,3 +101,21 @@ function how_far_is_farField(problem)
     R = 5*size(problem.atoms)^2
     return R
 end
+
+@views function inverseMatrix2x2(A)
+    constDivision = 1/det(A)
+    [A[4]*constDivision -A[3]*constDivision; -A[2]*constDivision A[1]*constDivision]
+end
+@views function inverseMatrix3x3(A)
+    constDivision = 1/det(A)
+    a1 = (A[2,2]*A[3,3] -A[2,3]*A[3,2])*constDivision
+    a2 = (A[1,3]*A[3,2] -A[1,2]*A[3,3])*constDivision
+    a3 = (A[1,2]*A[2,3] -A[1,3]*A[2,2])*constDivision
+    a4 = (A[2,3]*A[3,1] -A[2,1]*A[3,3])*constDivision
+    a5 = (A[1,1]*A[3,3] -A[1,3]*A[3,1])*constDivision
+    a6 = (A[1,3]*A[2,1] -A[1,1]*A[2,3])*constDivision
+    a7 = (A[2,1]*A[3,2] -A[2,2]*A[3,1])*constDivision
+    a8 = (A[1,2]*A[3,1] -A[1,1]*A[3,2])*constDivision
+    a9 = (A[1,1]*A[2,2] -A[1,2]*A[2,1])*constDivision
+    return [a1 a2 a3; a4 a5 a6; a7 a8 a9]
+end

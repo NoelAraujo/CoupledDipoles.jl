@@ -60,7 +60,7 @@ end
             SCATTERED FIELD: :near_field
 =#
 """
-    Eletric Field: +(Γ/2) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)/(k₀* sensor⋅R⃗ⱼ)
+    Eletric Field: +i * (Γ/2) * ∑ⱼ exp(i*k₀* |R-R⃗ⱼ|)/(k₀*|R-R⃗ⱼ|)
 """
 function scattering_near_field(problem::LinearOptics{Scalar}, β, sensor)
     _scalar_scattering_near_field(problem.atoms, β, sensor)
@@ -76,9 +76,9 @@ function _scalar_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: Th
     E_scatt = mapreduce(+, pairs(eachcol(atoms))) do x
         j, atom = x
         d_SensorAtom = k₀*sqrt((sensor[1] - atom[1])^2 + (sensor[2] - atom[2])^2 + (sensor[3] - atom[3])^2)
-        β[j] * ( cis(k₀ * d_SensorAtom) / d_SensorAtom)
+        (cis(d_SensorAtom) / d_SensorAtom)*β[j]
     end
-    # FAR FIELD has a negative sign, because the far field approximation created the negative sign
+
     E_scatt = +im*(Γ / 2) * E_scatt
     return E_scatt
 end
@@ -87,7 +87,7 @@ end
             SCATTERED FIELD: :far_field
 =#
 """
-    Eletric Field: -(Γ/2) * (exp(ikr) / ikr) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)
+    Eletric Field: +i * (Γ/2) * (exp(ikR) / kR) * ∑ⱼ exp(-i*k₀* n̂⋅R⃗ⱼ)
 """
 function scattering_far_field(problem::LinearOptics{Scalar}, β, sensor)
     _scalar_scattering_far_field(problem.atoms, β, sensor)
@@ -99,14 +99,14 @@ function _scalar_scattering_far_field(atoms::Atom{T}, β, sensor)  where T <: Tw
 end
 function _scalar_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
     atoms = atoms.r
-    sensor_norm = norm(sensor)
+    sensor_norm = k₀*norm(sensor)
     n̂ = sensor / sensor_norm
 
     E_scatt = mapreduce(+, pairs(eachcol(atoms))) do x
         j, atom = x
-        cis(-k₀ * (n̂[1] * atom[1] + n̂[2] * atom[2] + n̂[3] * atom[3])) * β[j]
+        cis(-(n̂[1]*atom[1] + n̂[2]*atom[2] + n̂[3]*atom[3])) * β[j]
     end
 
-    E_scatt = +im * (Γ / 2) * (cis(k₀ * sensor_norm) / sensor_norm) * E_scatt
+    E_scatt = +im*(Γ / 2 ) * (cis(sensor_norm) / (sensor_norm)) * E_scatt
     return E_scatt
 end
