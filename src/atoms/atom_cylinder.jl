@@ -26,7 +26,8 @@ end
 function ftn_AtomsOnCylinder(; kwargs...)
     R, h = kwargs[:R], kwargs[:h]
 
-    r, θ = R * rand(), 2π * rand()
+    # Thanks to chatGPT for 'r = R*sqrt(rand())' command
+    r, θ = R * sqrt(rand()), 2π * rand()
 
     x = r * cos(θ)
     y = r * sin(θ)
