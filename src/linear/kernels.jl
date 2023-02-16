@@ -77,23 +77,38 @@ end
 end
 
 @parallel_indices (x,y) function Gx_parallel!(Gxx, Gyx, Gzx, temp1, Xjm, Yjm, Zjm, temp2)
-       Gxx[x,y] = temp1[x,y]*( (1 - Xjm[x,y]*Xjm[x,y]) + (1 - 3.0*Xjm[x,y]*Xjm[x,y])*temp2[x,y])
-       Gyx[x,y] = temp1[x,y]*( ( - Yjm[x,y]*Xjm[x,y]) + ( - 3.0*Yjm[x,y]*Xjm[x,y])*temp2[x,y])
-       Gzx[x,y] = temp1[x,y]*( ( - Zjm[x,y]*Xjm[x,y]) + ( - 3.0*Zjm[x,y]*Xjm[x,y])*temp2[x,y])
+    _temp1 = temp1[x,y]
+    _temp2 = temp2[x,y]
+    _Xjm = Xjm[x,y]
+    _Yjm = Yjm[x,y]
+    _Zjm = Zjm[x,y]
+    Gxx[x,y] = _temp1*( (1.0 - _Xjm*_Xjm) + (1.0 - 3.0*_Xjm*_Xjm)*_temp2)
+    Gyx[x,y] = _temp1*( ( - _Yjm*_Xjm) + ( - 3.0*_Yjm*_Xjm)*_temp2)
+    Gzx[x,y] = _temp1*( ( - _Zjm*_Xjm) + ( - 3.0*_Zjm*_Xjm)*_temp2)
     return nothing
 end
 
 @parallel_indices (x,y) function Gy_parallel!(Gxy, Gyy, Gzy, temp1, Xjm, Yjm, Zjm, temp2)
-    Gxy[x,y] = temp1[x,y]*( ( - Xjm[x,y]*Yjm[x,y]) + ( - 3.0*Xjm[x,y]*Yjm[x,y])*temp2[x,y])
-    Gyy[x,y] = temp1[x,y]*( (1 - Yjm[x,y]*Yjm[x,y]) + (1 - 3.0.*Yjm[x,y]*Yjm[x,y])*temp2[x,y])
-    Gzy[x,y] = temp1[x,y]*( ( - Zjm[x,y]*Yjm[x,y]) + ( - 3.0.*Zjm[x,y]*Yjm[x,y])*temp2[x,y])
+_temp1 = temp1[x,y]
+    _temp2 = temp2[x,y]
+    _Xjm = Xjm[x,y]
+    _Yjm = Yjm[x,y]
+    _Zjm = Zjm[x,y]
+    Gxy[x,y] = _temp1*( ( - _Xjm*_Yjm) + ( - 3.0*_Xjm*_Yjm)*_temp2)
+    Gyy[x,y] = _temp1*( (1.0 - _Yjm*_Yjm) + (1.0 - 3.0*_Yjm*_Yjm)*_temp2)
+    Gzy[x,y] = _temp1*( ( - _Zjm*_Yjm) + ( - 3.0*_Zjm*_Yjm)*_temp2)
     return nothing
 end
 
 @parallel_indices (x,y) function Gz_parallel!(Gxz, Gyz, Gzz, temp1, Xjm, Yjm, Zjm, temp2)
-     Gxz[x,y] = temp1[x,y]*( ( - Xjm[x,y]*Zjm[x,y]) + ( - 3.0*Xjm[x,y]*Zjm[x,y])*temp2[x,y])
-     Gyz[x,y] = temp1[x,y]*( ( - Yjm[x,y]*Zjm[x,y]) + ( - 3.0*Yjm[x,y]*Zjm[x,y])*temp2[x,y])
-     Gzz[x,y] = temp1[x,y]*( (1 - Zjm[x,y]*Zjm[x,y]) + (1 - 3.0*Zjm[x,y]*Zjm[x,y])*temp2[x,y])
+    _temp1 = temp1[x,y]
+    _temp2 = temp2[x,y]
+    _Xjm = Xjm[x,y]
+    _Yjm = Yjm[x,y]
+    _Zjm = Zjm[x,y]
+    Gxz[x,y] = _temp1*( ( - _Xjm*_Zjm) + ( - 3.0*_Xjm*_Zjm)*_temp2)
+    Gyz[x,y] = _temp1*( ( - _Yjm*_Zjm) + ( - 3.0*_Yjm*_Zjm)*_temp2)
+    Gzz[x,y] = _temp1*( (1.0 - _Zjm*_Zjm) + (1.0 - 3.0*_Zjm*_Zjm)*_temp2)
      return nothing
 end
 
