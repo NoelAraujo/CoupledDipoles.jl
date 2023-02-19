@@ -13,54 +13,59 @@ end
 """
     steady_state(problem::NonLinearOptics{MeanField})
 """
-function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e-7, abstol=1e-7, m=75)
+function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e-7, abstol=1e-7, m=75, bruteforce=false)
     G = interaction_matrix(problem)
-
-    #=
-        I don't sum over diagonal elements during time evolution
-     thus, to avoid an IF statement, I put a zero on diagonal
-    =#
-    saveDiag = diagind(G)
-    G[diagind(G)] .= zero(eltype(G))
-
-    # `laser_field = (-im/2)*Ω`, but I need only `Ω`
-    Ωₙ::Vector{ComplexF64} = laser_field(problem.laser, problem.atoms) / LASER_FACTOR
-    Wₙ = similar(Ωₙ)
-    G_βₙ = similar(Ωₙ)
-    temp1 = similar(Ωₙ)
-    temp2 = similar(Ωₙ)
-    parameters = view(G, :, :), view(Ωₙ, :), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ, temp1, temp2
-
-    ## `nlsolve` convergence is senstive to initial conditions
-    ## therefore, i decided to make a small time evoltuion, and use the result as initial condition
-    ## NOTE: this trick is usefull only for small N, for now, is N < 1200
-    ## but this number was NOT obtained by systematic tests, and could be improved
-    u₀ = default_initial_condition(problem)
-    if problem.atoms.N < 1200
+    if bruteforce
         tspan = (0.0, tmax)
-        u₀::Vector{ComplexF64} = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
-    end
+        u₀ = default_initial_condition(problem)
+        return time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+    else
+        #=
+            I don't sum over diagonal elements during time evolution
+        thus, to avoid an IF statement, I put a zero on diagonal
+        =#
+        saveDiag = diagind(G)
+        G[diagind(G)] .= zero(eltype(G))
 
-    try
-        solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=m, autodiff = :forward)
+        # `laser_field = (-im/2)*Ω`, but I need only `Ω`
+        Ωₙ::Vector{ComplexF64} = laser_field(problem.laser, problem.atoms) / LASER_FACTOR
+        Wₙ = similar(Ωₙ)
+        G_βₙ = similar(Ωₙ)
+        temp1 = similar(Ωₙ)
+        temp2 = similar(Ωₙ)
+        parameters = view(G, :, :), view(Ωₙ, :), Wₙ, problem.laser.Δ, problem.atoms.N, G_βₙ, temp1, temp2
 
-        # !!!! restore diagonal !!!!
-        G[diagind(G)] .= saveDiag
-        return solution.zero
-    catch
-
-        ## For lower N (N < 100 ?), nlsolve does not converge (i don't know why)
-        ## Instead of returning an error, I return the result from time evolution.
-        @warn "Steady State may not be accurate. Consider increasing number of particles."
+        ## `nlsolve` convergence is senstive to initial conditions
+        ## therefore, i decided to make a small time evoltuion, and use the result as initial condition
+        ## NOTE: this trick is usefull only for small N, for now, is N < 1200
+        ## but this number was NOT obtained by systematic tests, and could be improved
+        u₀ = default_initial_condition(problem)
         if problem.atoms.N < 1200
-            return u₀
-        else
             tspan = (0.0, tmax)
-            u₀ = default_initial_condition(problem)
-            u₀_attempt = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+            u₀::Vector{ComplexF64} = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+        end
+
+        try
+            solution = nlsolve((du,u)->MeanField!(du, u, parameters, 0.0), u₀, method = :anderson, m=m, autodiff = :forward)
+
             # !!!! restore diagonal !!!!
             G[diagind(G)] .= saveDiag
-            return u₀_attempt
+            return solution.zero
+        catch
+
+            ## For lower N (N < 100 ?), nlsolve does not converge (i don't know why)
+            ## Instead of returning an error, I return the result from time evolution.
+            @warn "Steady State may not be accurate. Consider increasing number of particles."
+            if problem.atoms.N < 1200
+                return u₀
+            else
+                tspan = (0.0, tmax)
+                u₀ = default_initial_condition(problem)
+                u₀_attempt = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+                # !!!! restore diagonal !!!!
+                G[diagind(G)] .= saveDiag
+                return u₀_attempt
+            end
         end
     end
 end

@@ -19,11 +19,18 @@ end
 
 Solve `x=G\\Ω`, with default `interaction_matrix` and `laser_field`.
 """
-function steady_state(problem::LinearOptics{Scalar})
+function steady_state(problem::LinearOptics{Scalar}; tmax=250.0, reltol=1e-7, abstol=1e-7, bruteforce=false)
     G = interaction_matrix(problem)
     if problem.atoms.N > 1
-        Ωₙ = vec(laser_field(problem, problem.atoms.r))
-        βₛ = -(G \ Ωₙ)
+        if  bruteforce
+            tspan = (0.0, tmax)
+            u₀ = default_initial_condition(problem)
+            βₛ = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+            return βₛ
+        else
+            Ωₙ = vec(laser_field(problem, problem.atoms.r))
+            βₛ = -(G \ Ωₙ)
+        end
     else
         # the conversion from matrix to vector, avoids an extra function to deal single atom
         Ωₙ = laser_field(problem, vec(problem.atoms.r))
@@ -38,13 +45,20 @@ end
 
 Solve `x=G\\Ω`, with default `interaction_matrix` and `laser_field`. The solution x is reshaped as a 3xN matrix.
 """
-function steady_state(problem::LinearOptics{Vectorial})
+function steady_state(problem::LinearOptics{Vectorial}; tmax=250.0, reltol=1e-7, abstol=1e-7, bruteforce=false)
     G = interaction_matrix(problem)
     Ωₙ = laser_field(problem, problem.atoms.r)
     Ωₙ_eff = _vecAux_Matrix_into_longArray(Ωₙ)
 
     if problem.atoms.N > 1
-        βₛ = (G \ Ωₙ_eff)
+        if  bruteforce
+            tspan = (0.0, tmax)
+            u₀ = default_initial_condition(problem)
+            βₛ = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+            return βₛ
+        else
+            βₛ = (G \ Ωₙ_eff)
+        end
     else
         βₛ = -(Ωₙ / G[1])
     end
