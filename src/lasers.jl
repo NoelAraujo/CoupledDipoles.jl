@@ -80,7 +80,7 @@ function laser_field(laser::Laser{T}, sensors::AbstractMatrix) where T <: Pump
     end
 end
 
-function laser_field(laser::Laser{T}, atoms::Atom{D}) where {T <: Pump, D<:Dimension}
+function laser_field(laser::Laser{T}, atoms) where T <: Pump
     # user may want field at atoms positions
     return laser_field(laser, atoms.r)
  end

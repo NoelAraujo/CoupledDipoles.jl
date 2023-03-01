@@ -58,9 +58,14 @@ function scattered_electric_field(problem, atomic_states, sensor_positions; regi
     else
         @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
     end
-
-    _electric_fields = ThreadsX.map(eachcol(measurement_positions)) do sensor
-        single_point_field(problem, states, sensor)
+    if problem.atoms.N ≤ 25 # SEQUENCIAL map worths for atoms below ~25
+        _electric_fields = map(eachcol(measurement_positions)) do sensor
+            single_point_field(problem, states, sensor)
+        end
+    else
+        _electric_fields = ThreadsX.map(eachcol(measurement_positions)) do sensor
+            single_point_field(problem, states, sensor)
+        end
     end
     electric_fields::Matrix{ComplexF64} = hcat(_electric_fields...)
 

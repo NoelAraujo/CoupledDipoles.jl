@@ -22,7 +22,7 @@ atomic_states_scalar = steady_state(problem_scalar)
 get_intensity_over_an_angle(problem_scalar, atomic_states_scalar, θ)
 ```
 """
-function get_intensity_over_an_angle(problem, atoms_states::Vector{ComplexF64}, angle::Number; tol=exp10(-7.4), exact_solution=false)
+function get_intensity_over_an_angle(problem, atoms_states::Vector{T}, angle::Number; tol=exp10(-7.4), exact_solution=false) where T <: Complex
     if exact_solution
         xⱼₘ2, yⱼₘ2, zⱼₘ = _rⱼₘ_distances(problem)
         return _intensity_angle_exact_parallel(problem, atoms_states, angle, xⱼₘ2, yⱼₘ2, zⱼₘ)
@@ -59,7 +59,7 @@ states = solutions.u
 get_intensity_over_an_angle(problem_scalar, states, θ)
 ```
 """
-function get_intensity_over_an_angle(problem, atoms_states::Vector{Vector{ComplexF64}}, angle::Number; tol=exp10(-7.4), exact_solution=false)
+function get_intensity_over_an_angle(problem, atoms_states::Vector{Vector{T}}, angle::Number; tol=exp10(-7.4), exact_solution=false) where T <: Complex
     if exact_solution
         # i avoid creating these matrices many times creating them here, and making the same program
         # as the 'single angle and single single state', defined above
@@ -75,14 +75,14 @@ function get_intensity_over_an_angle(problem, atoms_states::Vector{Vector{Comple
 end
 
 
-function get_intensity_over_an_angle(problem, atoms_states::Vector{Vector{ComplexF64}}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false)
+function get_intensity_over_an_angle(problem, atoms_states::Vector{Vector{T}}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false) where T <: Complex
     # Many States + Many Angles
     return reduce(hcat, map(atoms_states) do β # O(N)
         get_intensity_over_an_angle(problem, β, angles; tol = tol, exact_solution=exact_solution)
     end)
 
 end
-function get_intensity_over_an_angle(problem, atoms_state::Vector{ComplexF64}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false)
+function get_intensity_over_an_angle(problem, atoms_state::Vector{T}, angles::AbstractArray; tol=exp10(-7.4), exact_solution=false) where T <: Complex
     # Single States + Many Angles
     return map(angles) do θ
         get_intensity_over_an_angle(problem, atoms_state, θ; tol=tol, exact_solution=exact_solution)

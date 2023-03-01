@@ -120,8 +120,6 @@ function time_evolution(
         prob,
         VCABM();
         dt = 1e-10,
-        abstol = 1e-10,
-        reltol = 1e-10,
         kargs...,
     )
 
@@ -164,12 +162,12 @@ function time_evolution_laser_on(
 )
     N = problem.atoms.N
     G = interaction_matrix(problem)
-    Ωₙ = laser_field(problem, problem.atoms)
+    Ωₙ = laser_field(problem, problem.atoms.r)
 
     Λ, P = eigen(G)
     Pinv = inv(P)
     Λinv = inv(Diagonal(Λ))
-    PinvΩₙ = Pinv*Ωₙ
+    PinvΩₙ = Pinv*vec(Ωₙ)
 
     if useBigFloat
         Λ = BigFloat.(real.(Λ)) + BigFloat.(imag.(Λ))*im
