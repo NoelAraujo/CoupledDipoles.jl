@@ -43,7 +43,7 @@ end
 """
     steady_state(problem::LinearOptics{Vectorial})
 
-Solve `x=G\\Ω`, with default `interaction_matrix` and `laser_field`. The solution x is reshaped as a 3xN matrix.
+Solve `x=-G\\Ω`, with default `interaction_matrix` and `laser_field`. The solution x is reshaped as a 3xN matrix.
 """
 function steady_state(problem::LinearOptics{Vectorial}; tmax=250.0, reltol=1e-7, abstol=1e-7, bruteforce=false)
     G = interaction_matrix(problem)
@@ -57,7 +57,7 @@ function steady_state(problem::LinearOptics{Vectorial}; tmax=250.0, reltol=1e-7,
             βₛ = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
             return βₛ
         else
-            βₛ = (G \ Ωₙ_eff)
+            βₛ = -(G \ Ωₙ_eff)
         end
     else
         βₛ = -(Ωₙ / G[1])

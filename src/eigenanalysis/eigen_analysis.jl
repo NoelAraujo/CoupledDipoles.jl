@@ -19,6 +19,9 @@ end
 function get_number_modes(problem::LinearOptics{Scalar})
     return problem.atoms.N
 end
+function get_number_modes(problem::LinearOptics{Vectorial})
+    return 3problem.atoms.N
+end
 """
     get_spectrum(problem; forceComputation=false)
 return ωₙ, Γₙ
