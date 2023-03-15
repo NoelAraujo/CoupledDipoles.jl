@@ -118,7 +118,7 @@ function time_evolution(
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
     solution = OrdinaryDiffEq.solve(
         prob,
-        VCABM();
+        VCABM3();
         dt = 1e-10,
         kargs...,
     )
