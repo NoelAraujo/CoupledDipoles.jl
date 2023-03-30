@@ -119,7 +119,6 @@ function time_evolution(
     solution = OrdinaryDiffEq.solve(
         prob,
         VCABM3();
-        dt = 1e-10,
         kargs...,
     )
 

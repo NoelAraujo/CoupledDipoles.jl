@@ -193,19 +193,19 @@ end
 
 
 
-function scattered_intensity(problem::NonLinearOptics{MeanField}, atomic_states, sensor_positions; regime=:far_field)
+function scattered_intensity(problem::NonLinearOptics{MeanField}, atomic_states, sensor_positions; regime=:far_field, inelasticPart=true)
     fields = scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
 
     if regime == :far_field
         intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
             field, sensor = fields[sensor_field[1]], sensor_field[2]
-            _get_intensity_far_field(problem, field, atomic_states, norm(sensor))
+            _get_intensity_far_field(problem, field, atomic_states, norm(sensor); inelasticPart=inelasticPart)
         end
     elseif regime == :near_field
         r = problem.atoms.r
         intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
             field, sensor = fields[sensor_field[1]], sensor_field[2]
-            _get_intensity_near_field(problem, field, atomic_states, sensor, r)
+            _get_intensity_near_field(problem, field, atomic_states, sensor, r; inelasticPart=inelasticPart)
         end
     else
         @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
@@ -214,19 +214,19 @@ function scattered_intensity(problem::NonLinearOptics{MeanField}, atomic_states,
     return intensities
 end
 
-function laser_and_scattered_intensity(problem::NonLinearOptics{MeanField}, atomic_states, sensor_positions; regime=:far_field)
+function laser_and_scattered_intensity(problem::NonLinearOptics{MeanField}, atomic_states, sensor_positions; regime=:far_field, inelasticPart=true)
     total_field = laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
 
     if regime == :far_field
         intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
             field, sensor = total_field[sensor_field[1]], sensor_field[2]
-            _get_intensity_far_field(problem, field, atomic_states, norm(sensor))
+            _get_intensity_far_field(problem, field, atomic_states, norm(sensor); inelasticPart=inelasticPart)
         end
     elseif regime == :near_field
         r = problem.atoms.r
         intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
             field, sensor = total_field[sensor_field[1]], sensor_field[2]
-            _get_intensity_near_field(problem, field, atomic_states, sensor, r)
+            _get_intensity_near_field(problem, field, atomic_states, sensor, r; inelasticPart=inelasticPart)
         end
     else
         @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
