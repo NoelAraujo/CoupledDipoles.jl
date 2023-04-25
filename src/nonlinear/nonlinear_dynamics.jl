@@ -18,7 +18,7 @@ function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e
     if bruteforce
         tspan = (0.0, tmax)
         u₀ = default_initial_condition(problem)
-        return time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+        return time_evolution(problem, u₀, tspan, G; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
     else
         #=
             I don't sum over diagonal elements during time evolution
@@ -42,7 +42,7 @@ function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e
         u₀ = default_initial_condition(problem)
         if problem.atoms.N < 1200
             tspan = (0.0, tmax)
-            u₀::Vector{ComplexF64} = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+            u₀::Vector{ComplexF64} = time_evolution(problem, u₀, tspan, G; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
         end
 
         try
@@ -61,7 +61,7 @@ function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e
             else
                 tspan = (0.0, tmax)
                 u₀ = default_initial_condition(problem)
-                u₀_attempt = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+                u₀_attempt = time_evolution(problem, u₀, tspan, G; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
                 # !!!! restore diagonal !!!!
                 G[diagind(G)] .= saveDiag
                 return u₀_attempt
@@ -71,9 +71,13 @@ function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e
 end
 
 function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)
-    @debug "start: time evolution - NonLinearOptics"
-    G = interaction_matrix(problem)
 
+    G = interaction_matrix(problem)
+    solution = time_evolution(problem, u₀, tspan, G; kargs...)
+
+    return solution
+end
+function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple, G::AbstractMatrix; kargs...)
     #=
         I don't sum over diagonal elements during time evolution
      thus, to avoid an IF statement, I put a zero on diagonal
@@ -95,10 +99,9 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple;
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
     solution = OrdinaryDiffEq.solve(prob, RDPK3SpFSAL35(); kargs...)
 
-    # !!!! restore diagonal !!!!
-    G[diagind(G)] .= saveDiag
+    # # !!!! restore diagonal !!!!
+    # G[diagind(G)] .= saveDiag
 
-    @debug "end  : time evolution - NonLinearOptics"
     return solution
 end
 get_evolution_function(problem::NonLinearOptics{MeanField}) = MeanField!

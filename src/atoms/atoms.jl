@@ -119,7 +119,7 @@ function cylinder_inputs(N::Integer, ρ::Real; kwargs...)
         h = NaN
     elseif isnan(R) && isnan(h) # R and h not provided
         # assume that R=h ⇢ (h*πR^2 = πR^3) and solve for R
-        R = cbrt(N / π * ρ)
+        R = cbrt(N / (π * ρ))
         h = R
     elseif (h > 0) && isnan(R) # R not provided
         R = sqrt(N / (π * ρ * h))
