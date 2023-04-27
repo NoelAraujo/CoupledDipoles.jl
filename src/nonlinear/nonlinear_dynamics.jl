@@ -13,12 +13,12 @@ end
 """
     steady_state(problem::NonLinearOptics{MeanField})
 """
-function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e-7, abstol=1e-7, m=75, bruteforce=false)
+function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e-10, abstol=1e-10, m=90, bruteforce=false)
     G = interaction_matrix(problem)
     if bruteforce
         tspan = (0.0, tmax)
         u₀ = default_initial_condition(problem)
-        return time_evolution(problem, u₀, tspan, G; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+        return time_evolution(problem, u₀, tspan, G; reltol=reltol, abstol=abstol, save_on=false).u[end]
     else
         #=
             I don't sum over diagonal elements during time evolution

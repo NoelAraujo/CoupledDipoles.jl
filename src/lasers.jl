@@ -93,8 +93,8 @@ end
 
 
 """
-    raby_frequency(laser) = √(s * (1 + 4(Δ / Γ)^2) / 2)
+    raby_frequency(laser) = Γ √(s / 2) # saturation is on ressonance
 """
 function raby_frequency(laser)
-    return √(laser.s * (1 + 4(laser.Δ / Γ)^2) / 2)
+    return Γ * √(laser.s / 2)
 end
