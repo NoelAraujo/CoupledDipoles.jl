@@ -26,6 +26,7 @@ using Random
 
 # using Distributed, FileIO
 using ProgressMeter
+using Tullio
 
 const k₀ = 1
 const Γ = 1
@@ -112,8 +113,8 @@ include("transmission.jl")
 export transmission, how_far_is_FarField
 export _create_sphere_sensor, _create_plane_sensor
 
-# include("long_simulations.jl")
-# export save_1D_simulation, save_2D_simulation, load_simulation
+include("powers.jl")
+export scattered_power
 
 include("applications/cbs.jl")
 export CBS_scalar
@@ -136,6 +137,7 @@ SnoopPrecompile.@precompile_all_calls begin
     ωₙ, Γₙ = get_spectrum(simulation)
     u₀ = default_initial_condition(simulation)
     βₜ = time_evolution(simulation, u₀, tspan)
+    P_total = scattered_power(simulation, βₜ[end])
 
     laser = Laser(Gaussian3D(w₀), s, Δ; polarization=[1,0,0])
     simulation = LinearOptics(Vectorial(), atoms, laser)
@@ -146,6 +148,7 @@ SnoopPrecompile.@precompile_all_calls begin
     u₀ = default_initial_condition(simulation)
     βₜ = time_evolution(simulation, u₀, tspan)
     βₛ = steady_state(simulation)
+    P_total = scattered_power(simulation, βₛ)
 end
 
 end

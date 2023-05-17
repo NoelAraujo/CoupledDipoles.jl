@@ -98,15 +98,15 @@ function _scalar_scattering_far_field(atoms::Atom{T}, β, sensor)  where T <: Tw
     return nothing
 end
 function _scalar_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
-    atoms = atoms.r
+    r = atoms.r
     sensor_norm = k₀*norm(sensor)
     n̂ = sensor / sensor_norm
 
-    E_scatt = mapreduce(+, pairs(eachcol(atoms))) do x
+    E_scatt = mapreduce(+, pairs(eachcol(r))) do x
         j, atom = x
         cis(-(n̂[1]*atom[1] + n̂[2]*atom[2] + n̂[3]*atom[3])) * β[j]
     end
-
-    E_scatt = +im*(Γ / 2 ) * (cis(sensor_norm) / (sensor_norm)) * E_scatt
+    R = how_far_is_farField(atoms)
+    E_scatt = +im*(Γ / 2 ) * (cis(R) / R) * E_scatt
     return E_scatt
 end

@@ -101,6 +101,10 @@ function how_far_is_farField(problem)
     R = 5*size(problem.atoms)^2
     return R
 end
+function how_far_is_farField(atoms::Atom{T}) where T<: Dimension
+    R = 5*size(atoms)^2
+    return R
+end
 
 @views function inverseMatrix2x2(A)
     constDivision = 1/det(A)

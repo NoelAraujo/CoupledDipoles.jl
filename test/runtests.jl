@@ -1,5 +1,6 @@
 using CoupledDipoles
 using Test
+using Tullio
 
 @testset begin
     @testset "Green Matrix 1 Atom" begin
@@ -242,5 +243,74 @@ using Test
         @test all(rad2deg.(laser_angles([1,1,0])) .≈ (90, 45))
         @test all(rad2deg.(laser_angles([0,0,+1])) .≈ (0, 0))
         @test all(rad2deg.(laser_angles([1,0,1])) .≈ (45, 0))
+    end
+
+    function _test_sum_all_off_diag(beta, r)
+        result = zero(eltype(beta))
+        for j in eachindex(beta), m in eachindex(beta)
+            if j ≠ m
+                rjm = sqrt((r[j, 1] - r[m, 1])^2 + (r[j, 2] - r[m, 2])^2 + (r[j, 3] - r[m, 3])^2)
+                result += (sin(rjm) / rjm) * beta[j] * conj(beta[m])
+            end
+        end
+        return real(result)
+    end
+    @testset "Scattered Power" begin
+        w₀, s, Δ = 4π, 1e-5, 1.0
+
+        N = 1
+        atoms = Atom(Cylinder(), cylinder_inputs(N, 0.3)...)
+        laser = Laser(Gaussian3D(w₀), s, Δ)
+        simulation = NonLinearOptics(MeanField(), atoms, laser)
+
+        single_atom_state = steady_state(simulation)
+
+        P_tot = scattered_power(simulation, single_atom_state; part=:total)
+        P_def = scattered_power(simulation, single_atom_state)
+        @test P_tot ≈ P_def
+
+
+        P_coh = scattered_power(simulation, single_atom_state; part=:coherent)
+        P_inc = scattered_power(simulation, single_atom_state; part=:incoherent)
+
+        σ⁻ = single_atom_state[1]
+        R = CoupledDipoles.how_far_is_farField(simulation)
+        expected_coh = 4π*(1^2)/(2*R)*abs2(σ⁻)
+        @test expected_coh ≈ P_coh
+
+        σᶻ = real(single_atom_state[2])
+        expected_inc = 4π*(1^2)/(2*R)*(-abs2(σ⁻) + 0.5*(1 + σᶻ))
+        @test expected_inc ≈ P_inc
+
+
+
+        N = 200
+        atoms = Atom(Cylinder(), cylinder_inputs(N, 0.3)...)
+        laser = Laser(Gaussian3D(w₀), s, Δ)
+        simulation = NonLinearOptics(MeanField(), atoms, laser)
+
+        atomic_state = steady_state(simulation)
+
+        result_1 = CoupledDipoles.sum_upper_diagonal(atomic_state[1:N], transpose(atoms.r));
+        result_2 = _test_sum_all_off_diag(atomic_state[1:N], transpose(atoms.r));
+
+        @test result_1 ≈ result_2
+
+
+        N = 10
+        atoms = Atom(Cylinder(), cylinder_inputs(N, 0.3)...)
+        laser = Laser(Gaussian3D(w₀), s, Δ)
+
+        simulation_scalar = LinearOptics(Scalar(), atoms, laser)
+        ss_scalar = steady_state(simulation_scalar)
+
+        simulation_meanfield = NonLinearOptics(MeanField(), atoms, laser)
+        # !!! TRICKING the solutions to be equal !!!
+        ss_meanfield = vcat(vec(ss_scalar[1:N]), rand(N))
+
+        P_scalar = scattered_power(simulation_scalar, ss_scalar; part=:coherent)
+        P_meanfield = scattered_power(simulation_meanfield, ss_meanfield; part=:coherent)
+
+        @test P_scalar ≈ P_meanfield
     end
 end

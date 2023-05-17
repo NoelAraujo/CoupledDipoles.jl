@@ -47,7 +47,7 @@ end
 function ftn_AtomsOnSphere_Gaussian(; kwargs...)
     μ = [0.0, 0.0, 0.0]
     σ = get(kwargs, :kR, 1.0)
-    new_atom = rand(MvNormal(μ, σ))
+    new_atom = rand(MvNormal(μ, σ^2 * I))
 
     return new_atom
 end
