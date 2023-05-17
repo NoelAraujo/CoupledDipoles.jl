@@ -3,7 +3,8 @@ module CoupledDipoles
 using LinearAlgebra
 using Distances
 
-# using DifferentialEquations
+using LinRegOutliers
+using DataFrames
 using OrdinaryDiffEq
 using Logging: global_logger
 using TerminalLoggers: TerminalLogger
@@ -14,7 +15,7 @@ using Printf
 using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
 using HCubature
-using MKL ## in some servers I can download this package
+using MKL
 using NLsolve
 using ParallelStencil
 @init_parallel_stencil(Threads, Float64, 2);
@@ -23,12 +24,12 @@ using Distributions: MvNormal
 using Bessels
 using Random
 
-# using Distributed
-# using ProgressMeter, FileIO
+# using Distributed, FileIO
+using ProgressMeter
 
 const k₀ = 1
 const Γ = 1
-const PROBABILITY_THRESHOLD = 0.9999
+# const PROBABILITY_THRESHOLD = 0.999
 const R1_THRESHOLD = 0.5
 const FARFIELD_FACTOR = 100
 const LASER_FACTOR = -im/2

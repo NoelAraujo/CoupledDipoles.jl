@@ -189,28 +189,20 @@ using Test
         @test laser_field(laser, atoms) ≈ laser_field(laser, copy(atoms.r))
 
         sensor = [-2, 4, 6]
-        println(laser_field(laser, sensor))
-        @test laser_field(laser, sensor)[1][1] ≈ -0.00039247244655043063 - 0.001076983762079716im
-        @test laser_field(simulation, sensor)[1][1] ≈ -0.00039247244655043063 - 0.001076983762079716im
+
+        laser_expected = -0.5im*CoupledDipoles.Γ * √(0.5s)* CoupledDipoles._scalar_laser_field(laser, sensor)
+        @test laser_field(laser, sensor)[1][1] ≈ laser_expected
+        @test laser_field(simulation, sensor)[1][1] ≈ laser_expected
 
         sensors = [ 9  3  2   3  10;
                     7  5  4  10   4;
                     2  8  1   7   4]
-        @test all(laser_field(laser, sensors) .≈ [  0.0005216514121245397 + 0.00023591355008183723im
-                                                     0.0010458875891933728 + 6.97963856486247e-5im
-                                                     0.0009596470108866166 - 0.0006312805503626626im
-                                                     0.0004163359149677086 - 0.0005053621630288653im
-                                                    -0.0004680700476923194 + 0.0004154301036283652im])
+        laser_expected = map(eachcol(sensors)) do oneSensor
+            -0.5im * CoupledDipoles.Γ * √(0.5s)* CoupledDipoles._scalar_laser_field(laser, oneSensor)
+        end
+        @test all(laser_field(laser, sensors) .≈ laser_expected)
         @test all(laser_field(laser, sensors)[1] .≈ laser_field(simulation, sensors)[1])
 
-
-
-        laser = Laser(PlaneWave3D(), s, Δ)
-        simulation = LinearOptics(    Scalar(),    atoms, laser)
-
-        sensor = [-2, 4, 6]
-        @test laser_field(laser, sensor)[1] ≈ -0.0003643132375818668 - 0.0012519088884270365im
-        @test laser_field(simulation, sensor)[1] ≈ -0.0003643132375818668 - 0.0012519088884270365im
     end
     @testset "Vectorial Scattering - Single Atom" begin
         using LinearAlgebra

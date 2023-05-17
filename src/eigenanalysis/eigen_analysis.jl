@@ -71,11 +71,12 @@ function get_ψ²(problem::LinearOptics, n::Integer)
 end
 
 """
-    get_localization_length(LinearOptics; forceComputation=false)
+get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=lta, PROBABILITY_THRESHOLD=0.999, showprogress=false, runfaster=false)
 
-Main function to obtain the `Localization Length`, ξ, and its `Coefficient of Determination`, R1 (R¹).
+'CoupledDipoles.satman2015' has better precision
+'CoupledDipoles.lta' is faster
 """
-function get_localization_length(problem::LinearOptics; forceComputation=false)
+function get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=lta, PROBABILITY_THRESHOLD=0.999, showprogress=false, runfaster=false)
     if is_localization_NOT_available(problem) && forceComputation == false
         return problem.data[:ξ], problem.data[:R1]
     end
@@ -86,9 +87,17 @@ function get_localization_length(problem::LinearOptics; forceComputation=false)
     # create spectrum if neeeded
     get_spectrum(problem)
 
-    for n in 1:N # faster without Threads.@threads
+    pp = Progress(N)
+    Threads.@threads for n in 1:N
         DCM, ψ² = get_spatial_profile_single_mode(problem, n)
-        ξₙ[n], R¹ₙ[n] = get_single_ξ_and_R1(DCM, ψ²)
+        if runfaster
+            ξₙ[n], R¹ₙ[n] = get_single_ξ_and_R1(DCM, ψ²; regression_method=lta, PROBABILITY_THRESHOLD=PROBABILITY_THRESHOLD)
+        else
+            ξₙ[n], R¹ₙ[n] = get_single_ξ_and_R1(DCM, ψ²; regression_method=regression_method, PROBABILITY_THRESHOLD=PROBABILITY_THRESHOLD)
+        end
+        if showprogress
+            next!(pp)
+        end
     end
     problem.data[:ξ], problem.data[:R1] = ξₙ, R¹ₙ
     return ξₙ, R¹ₙ
