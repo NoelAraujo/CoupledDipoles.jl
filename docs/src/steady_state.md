@@ -1,6 +1,6 @@
 ## Steady State
 
-`LinearOptics` has a defined analytica solution through a linear system of equations. In `Scalar` case, one get an `Array` solution, and in `Vectorial` case, one gets a `Matrix`, where each collum represents the `x,y,z`-components.
+`LinearOptics` has a well defined analytical solution through a linear system of equations. In `Scalar` case, one get an `Array` solution, and in `Vectorial` case, one gets a `Matrix`, where each collum represents the `x,y,z`-components.
 
 
 ```julia

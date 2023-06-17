@@ -39,7 +39,7 @@ end
     green_scalar!(atoms, laser, G)
 
 Computes:
-    @. G = -(Γ/2)*exp(1im*k₀ * R_jk) / (1im * k₀ * R_jk)
+    @. G = +1im*(Γ/2)*exp(1im*k₀ * R_jk) / (k₀ * R_jk)
     G[diagind(G)] .= 1im * laser.Δ - Γ/2
 """
 function green_scalar!(atoms, laser, G)

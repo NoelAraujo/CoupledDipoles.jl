@@ -8,6 +8,7 @@ makedocs(
          authors = "Noel Araujo Moreira",
          pages=[
                 "Home" => "index.md",
+                "Atom" => "create_atoms/atoms.md",
                 "Steady State" => "steady_state.md",
                 "Scattering" => "scattering.md",
                 "Single Atom" => "dipole_example/single_atom_volume.md",

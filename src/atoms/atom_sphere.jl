@@ -1,12 +1,31 @@
 """
-    Atom(T <: ThreeD, ::Int64, ::Union{Real, Integer})
+    Atom(geometry::Sphere, N::Int64, kR::Union{Real,Integer}; kwargs...)
+
+# Arguments
+- `geometry::Sphere`: The geometry of the atom object, which should be a `Sphere`.
+    - for Gaussian distribution, set `gaussian=true`
+- `N::Int64`: The number of atoms.
+- `kR::Union{Real,Integer}`: The radius for the sphere.
+
+# Keyword Arguments
+- `:r_min`: Optional keyword argument specifying the minimum distance between atoms.
+
+
+# Returns
+An `Atom` object with the specified geometry, atom positions, and sphere parameters.
+
+# Example
+```julia
+atom_homogenous = Atom(Sphere(), 100, 5.0; r_min = 0.1)
+atom_gaussian = Atom(Sphere(gaussian=true), 100, 5.0; r_min = 0.1)
+```
 """
 function Atom(geometry::Sphere, N::Int64, kR::Union{Real,Integer}; kwargs...)
     @debug "start: Shape - Sphere"
 
     dimensions = 3
     ρ = 3N / (4π * kR^3)
-    rₘᵢₙ = float(get(kwargs, :r_min, get_rₘᵢₙ(ρ)))
+    rₘᵢₙ = float(get(kwargs, :r_min, radius_of_exclusion(ρ)))
 
     if geometry.isGaussian
         createFunction = ftn_AtomsOnSphere_Gaussian

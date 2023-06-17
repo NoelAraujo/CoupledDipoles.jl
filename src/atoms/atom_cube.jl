@@ -1,14 +1,25 @@
 """
-    Cube Geoemtry
+    Atom(geometry::Cube, N::Int64, kL::Union{Real,Integer}; r_min)
 
-The cube goes from [-kL/2, kL/2] (with homogeneous distribution)
+# Arguments
+- `geometry::Cube`: The geometry of the atom object, which should be a `Cube`.
+- `N::Int64`: The number of atoms.
+- `kL::Union{Real,Integer}`: Cube's side length.
+
+# Keyword Arguments
+- `:r_min`: Optional keyword argument specifying the minimum distance between atoms.
+
+# Example
+```julia
+atom = Atom(Cube(), 100, 5.0; r_min = 0.1)
+```
 """
 function Atom(geometry::Cube, N::Int64, kL::Union{Real,Integer}; kwargs...)
     @debug "start: Shape - Cube"
 
     dimensions = 3
     ρ = N / kL^3
-    rₘᵢₙ = float(get(kwargs, :r_min, get_rₘᵢₙ(ρ)))
+    rₘᵢₙ = float(get(kwargs, :r_min, radius_of_exclusion(ρ)))
 
     createFunction = ftn_AtomsOnCube
     r = get_atoms(dimensions, N, rₘᵢₙ; createFunction, kL)

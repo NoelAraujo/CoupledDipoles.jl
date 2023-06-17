@@ -1,14 +1,26 @@
 """
-    Cylinder Geoemtry (with homogeneous distribution)
+    Atom(geometry::Cylinder, N::Int64, R::Union{Real,Integer}, h::Union{Real,Integer}; r_min)
 
-The Cylinder with heigh `h`, that goes from [-h/2, h/2], and Radius `R`
+# Arguments
+- `geometry::Cylinder`: The geometry of the atom object, which should be a `Cylinder`.
+- `N::Int64`: The number of atoms.
+- `R::Union{Real,Integer}`: The radius of the cylinder.
+- `h::Union{Real,Integer}`: The height of the cylinder.
+
+# Keyword Arguments
+- `:r_min`: Optional keyword argument specifying the minimum distance between atoms.
+
+# Example
+```julia
+atom = Atom(Cylinder(), 100, 5.0, 10.0; r_min = 0.1)
+```
 """
 function Atom(geometry::Cylinder, N::Int64, R::Union{Real,Integer}, h::Union{Real,Integer}; kwargs...)
     @debug "start: Shape - Cylinder"
 
     dimensions = 3
     ρ = N / (h * π * R^2)
-    rₘᵢₙ = float(get(kwargs, :r_min, get_rₘᵢₙ(ρ)))
+    rₘᵢₙ = float(get(kwargs, :r_min, radius_of_exclusion(ρ)))
 
     createFunction = ftn_AtomsOnCylinder
     r = get_atoms(dimensions, N, rₘᵢₙ; createFunction, R, h)

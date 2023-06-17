@@ -56,11 +56,11 @@ function is_atom_valid(new_atom, r, rₘᵢₙ, N)
 end
 
 """
-    get_rₘᵢₙ(ρ)
+    radius_of_exclusion(ρ)
 
-AD HOC value that changes many sometimes to fix different problems
+Calculate the minimum distance between atoms as an ad hoc value intended to address various undocumented issues.
 """
-get_rₘᵢₙ(ρ) = (ρ^(-1 / 3)) / (0.8π^2)
+radius_of_exclusion(ρ) = (ρ^(-1 / 3)) / (0.8π^2)
 
 """
     get_pairwise_matrix(r)

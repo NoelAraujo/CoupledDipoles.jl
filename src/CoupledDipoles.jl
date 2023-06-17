@@ -63,7 +63,7 @@ export turn_laser_off!, turn_off!
 
 include("atoms/atoms.jl")
 export cube_inputs, sphere_inputs, cylinder_inputs
-export get_rₘᵢₙ
+export radius_of_exclusion
 export get_pairwise_matrix
 
 include("linear/kernels.jl")
