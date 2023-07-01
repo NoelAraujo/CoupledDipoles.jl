@@ -9,6 +9,13 @@ function default_initial_condition(problem::NonLinearOptics{MeanField})
     u₀ = vcat(β₀, z₀)
     return u₀
 end
+function default_initial_condition(problem::NonLinearOptics{PairCorrelation})
+    β₀ = zeros(ComplexF64, problem.atoms.N)
+    z₀ = -ones(ComplexF64, problem.atoms.N)
+    u₀ = vcat(β₀, z₀, zeros(ComplexF64, 4*problem.atoms.N^2))
+    return u₀
+end
+
 
 """
     steady_state(problem::NonLinearOptics{MeanField})
@@ -161,4 +168,151 @@ function MeanField!_v2(du, u, p, t)
     du[:] .= vcat(temp1, temp2)
 
     return nothing
+end
+
+
+function time_evolution(problem::NonLinearOptics{PairCorrelation}, u₀, tspan::Tuple; kargs...)
+
+    G = interaction_matrix(problem)
+    G_c = (2 / Γ).*G ## I NEED IT
+	G_c = im.*G_c ## TO VERIFY IF I NEED IT
+    solution = time_evolution(problem, u₀, tspan, G_c; kargs...)
+
+    return solution
+end
+function time_evolution(problem::NonLinearOptics{PairCorrelation}, u₀, tspan::Tuple, G::AbstractMatrix; kargs...)
+    N = problem.atoms.N
+    Gconj = conj.(G)
+    Γⱼₘ = real.(G)
+
+    # `laser_field = (-im/2)*Ω`, but I need only `Ω`
+    Ω⁻ = laser_field(problem.laser, problem.atoms) / LASER_FACTOR
+    Ω⁺ = conj.(Ω⁻)
+
+    Δ = problem.laser.Δ
+
+    parameters = N, view(G,:,:), view(Gconj,:,:), view(Γⱼₘ,:,:), view(Ω⁻,:), view(Ω⁺,:), Δ
+
+    ### calls for solver
+    problemFunction = get_evolution_function(problem)
+    prob = ODEProblem(problemFunction, u₀, tspan, parameters)
+    solution = OrdinaryDiffEq.solve(prob, Tsit5(); kargs...)
+
+    return solution
+end
+get_evolution_function(problem::NonLinearOptics{PairCorrelation}) = PairCorrelation!
+
+function PairCorrelation!(du, u, params, t; Γ=1)
+	N = params[1]
+	G = params[2]
+	Gconj = params[3]
+	Γⱼₘ = params[4]
+
+	Ω⁻ = params[5]
+	Ω⁺ = params[6]
+	Δ = params[7]
+
+	σ⁻ = u[1:N]
+	σᶻ = u[N+1:2*N]
+	σ⁺ = conj.(σ⁻)
+
+	σᶻσ⁻ = reshape(u[2*N+1:2*N+N^2], (N, N))
+	σ⁺σ⁻ = reshape(u[2*N+1+N^2:2*N+2*N^2], (N, N))
+	σ⁻σ⁻ = reshape(u[2*N+1+2*N^2:2*N+3*N^2], (N, N))
+	σᶻσᶻ = reshape(u[2*N+1+3*N^2:2*N+4*N^2], (N, N))
+
+    σ⁺σᶻ = transpose(σᶻσ⁻)
+    # σ⁻σᶻ = σᶻσ⁻./(1 .- 2Array(1.0LinearAlgebra.I(N,N)))
+
+    σ⁻σᶻ = @tullio σ[j,m] := begin
+		if m==j
+			-σᶻσ⁻[j,m]
+		else
+			conj(σᶻσ⁻[j,m])
+		end
+	end
+    σᶻσ⁺ = transpose(σ⁻σᶻ) ## aqui
+
+	σ⁺σ⁻σ⁻ = truncation(σ⁺, σ⁻, σ⁻, σ⁺σ⁻, σ⁺σ⁻, σ⁻σ⁻)
+	σᶻσᶻσ⁻ = truncation(σᶻ, σᶻ, σ⁻, σᶻσᶻ, σᶻσ⁻, σᶻσ⁻)
+	σ⁺σ⁻σᶻ = truncation(σ⁺, σ⁻, σᶻ, σ⁺σ⁻, σ⁺σᶻ, σ⁻σᶻ)
+	σᶻσ⁻σ⁻ = truncation(σᶻ, σ⁻, σ⁻, σᶻσ⁻, σᶻσ⁻, σ⁻σ⁻)
+	σ⁺σᶻσ⁻ = truncation(σ⁺, σᶻ, σ⁻, σ⁺σᶻ, σ⁺σ⁻, σᶻσ⁻)
+	σᶻσ⁺σ⁻ = truncation(σᶻ, σ⁺, σ⁻, σᶻσ⁺, σᶻσ⁻, σ⁺σ⁻)
+
+
+	dₜ_σ⁻ = @tullio σ[j] := begin
+		if m≠j
+			(im*Δ - Γ/2)*σ⁻[j] + im*(Ω⁺[j]/2)*σᶻ[j] + (Γ/2) .* G[j,m] .* σᶻσ⁻[j,m]
+		else
+			zero(eltype(u))
+		end
+	end
+	dₜ_σᶻ = @tullio σ[j] := begin
+		if m≠j
+			im*(Ω⁻[j]*σ⁻[j] - conj(Ω⁻[j]*σ⁻[j])) - Γ*(1 + σᶻ[j]) - Γ*(G[j,m]*σ⁺σ⁻[j,m] + conj(G[j,m] * σ⁺σ⁻[j,m]))
+		else
+			zero(eltype(u))
+		end
+	end
+
+	dₜ_σᶻσ⁻ = @tullio σ[j,m] := begin
+			if (k≠j) && (k≠m)
+				(im*Δ - 3Γ/2)*σᶻσ⁻[j,m] - Γ*σ⁻[m] + im*(Ω⁻[j]*σ⁻σ⁻[j,m] - Ω⁺[j]*σ⁺σ⁻[j,m] + 0.5*Ω⁺[m]*σᶻσᶻ[j,m])
+				- Γ*( G[j,k]*σ⁺σ⁻σ⁻[j,m,k] + Gconj[j,k]*σ⁺σ⁻σ⁻[k,m,j] ) +  0.5Γ*( G[m,k]*σᶻσᶻσ⁻[m,j,k]  )
+                # - Γ*( G[j,k]*σ⁺σ⁻σ⁻[j,m,k] + Gconj[j,k]*σ⁺σ⁻σ⁻[k,m,j] ) +  0.5Γ*( G[m,k]*σᶻσᶻσ⁻[j,k,m]  )
+				- Γ*Γⱼₘ[j,m]*σ⁻σᶻ[j,m]  - (Γ/2)* Gconj[j,m]*σ⁻[j]
+			else
+				zero(eltype(u))
+			end
+		end
+	dₜ_σ⁺σ⁻ = @tullio σ[j,m] := begin
+			if (k≠j) && (k≠m)
+				- Γ*σ⁺σ⁻[j,m] - 0.5im*(Ω⁻[j]*σᶻσ⁻[j,m] - Ω⁺[m]*σ⁺σᶻ[j,m])
+				+(Γ/2)*(Gconj[j,k]*σ⁺σ⁻σᶻ[k,m,j] + G[m,k]*σ⁺σ⁻σᶻ[j,k,m])
+				+(Γ/4)*(G[j,m]*σᶻ[m] + Gconj[j,m]*σᶻ[j]) + (Γ/2)*Γⱼₘ[j,m]*σᶻσᶻ[j,m]
+			else
+				zero(eltype(u))
+			end
+		end
+	dₜ_σ⁻σ⁻ = @tullio σ[j,m] := begin
+			if (k≠j) && (k≠m)
+				(2im*Δ - Γ)*σ⁻σ⁻[j,m] + 0.5im*(Ω⁺[j]*σᶻσ⁻[j,m] + Ω⁻[m]*σᶻσ⁻[m,j])
+				+(Γ/2)*(G[j,k]*σᶻσ⁻σ⁻[j,m,k] + G[m,k]*σᶻσ⁻σ⁻[m,j,k])
+			else
+				zero(eltype(u))
+			end
+		end
+	dₜ_σᶻσᶻ = @tullio σ[j,m] := begin
+			if (k≠j) && (k≠m)
+				-Γ * (σᶻ[j] + σᶻ[m] + 2σᶻσᶻ[j,m]) + im*(Ω⁻[j]*σᶻσ⁻[m,j] + Ω⁻[m]*σᶻσ⁻[j,m] - conj(Ω⁻[j]*σᶻσ⁻[m,j] + Ω⁻[m]*σᶻσ⁻[j,m]))
+				-Γ*(G[j,k]*σ⁺σᶻσ⁻[j,m,k] + G[m,k]*σᶻσ⁺σ⁻[j,m,k] + conj(G[j,k]*σ⁺σᶻσ⁻[j,m,k] + G[m,k]*σᶻσ⁺σ⁻[j,m,k]))
+                # -Γ*(G[j,k]*σ⁺σᶻσ⁻[j,m,k] + G[m,k]*σᶻσ⁺σ⁻[k,j,m] + conj(G[j,k]*σ⁺σᶻσ⁻[j,m,k] + G[m,k]*σᶻσ⁺σ⁻[k,j,m]))
+				+2Γ * Γⱼₘ[j,m]*(σ⁺σ⁻[j,m] + conj(σ⁺σ⁻[j,m]))
+			else
+				zero(eltype(u))
+			end
+		end
+    ## Diagonal must be zero.
+    ## Take for example, σ⁻σ⁻: once on ground,
+    ## the application of the down operator leads to zero
+    dₜ_σᶻσ⁻[diagind(dₜ_σᶻσ⁻)] .= 0.0 + 0.0im
+    dₜ_σ⁺σ⁻[diagind(dₜ_σ⁺σ⁻)] .= 0.0 + 0.0im
+    dₜ_σ⁻σ⁻[diagind(dₜ_σ⁻σ⁻)] .= 0.0 + 0.0im
+    dₜ_σᶻσᶻ[diagind(dₜ_σᶻσᶻ)] .= 0.0 + 0.0im
+
+	du[:] .= vcat(dₜ_σ⁻, dₜ_σᶻ,
+            reshape(dₜ_σᶻσ⁻,(N^2)),
+            reshape(dₜ_σ⁺σ⁻,(N^2)),
+            reshape(dₜ_σ⁻σ⁻,(N^2)),
+            reshape(dₜ_σᶻσᶻ,(N^2))
+            )
+
+    σ⁺σ⁻σ⁻ = σᶻσᶻσ⁻ = σ⁺σ⁻σᶻ = σᶻσ⁻σ⁻ = σ⁺σᶻσ⁻ = 1
+	nothing
+end
+function truncation(A, B, C, AB, AC, BC)
+	@tullio σ[j, m, k] := begin
+		AB[j, m]*C[k] + AC[j, k]*B[m] + BC[m, k]*A[j] - 2A[j]*B[m]*C[k]
+	end
 end

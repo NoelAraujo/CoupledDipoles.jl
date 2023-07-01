@@ -73,13 +73,13 @@ abstract type NonLinear <: Physics end
 struct Scalar <: Linear end
 struct Vectorial <: Linear end
 struct MeanField <: NonLinear end
-struct BBGKY <: NonLinear end
+struct PairCorrelation <: NonLinear end
 
 struct LinearOptics{T<:Linear}
     physic::T
     atoms::Atom
     laser::Laser
-    kernelFunction::Function
+    kernelFunction!::Function
     spectrum::Dict
     data::Dict
 end

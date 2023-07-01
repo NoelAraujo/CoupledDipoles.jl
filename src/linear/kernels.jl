@@ -5,7 +5,7 @@ function interaction_matrix(problem::LinearOptics)
     @debug "start: interaction_matrix"
 
     G = get_empty_matrix(problem.physic, problem.atoms)
-    problem.kernelFunction(problem.atoms, problem.laser, G)
+    problem.kernelFunction!(problem.atoms, problem.laser, G)
 
     @debug "end  : interaction_matrix"
     return G
@@ -27,12 +27,27 @@ function interaction_matrix(problem::NonLinearOptics{MeanField})
 
     temp_scalar_problem = LinearOptics(Scalar(), problem.atoms, problem.laser)
     G = get_empty_matrix(temp_scalar_problem.physic, temp_scalar_problem.atoms)
-    temp_scalar_problem.kernelFunction(temp_scalar_problem.atoms, problem.laser, G)
+    temp_scalar_problem.kernelFunction!(temp_scalar_problem.atoms, problem.laser, G)
 
     temp_scalar_problem = 1
     # problem.data[:G] = G
     @debug "end  : interaction_matrix"
     return G
+end
+function interaction_matrix(problem::NonLinearOptics{PairCorrelation})
+	@debug "start: interaction_matrix"
+
+	temp_scalar_problem = LinearOptics(Scalar(), problem.atoms, problem.laser)
+	G = get_empty_matrix(temp_scalar_problem.physic, temp_scalar_problem.atoms)
+	temp_scalar_problem.kernelFunction!(temp_scalar_problem.atoms, problem.laser, G)
+
+	# @. G *= 2 / Γ ## I NEED IT
+	# @. G /= im ## TO VERIFY IF I NEED IT
+
+	temp_scalar_problem = 1
+
+	@debug "end  : interaction_matrix"
+	return G
 end
 
 """

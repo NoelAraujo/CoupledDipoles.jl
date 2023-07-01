@@ -9,6 +9,7 @@ eltype(problem::LinearOptics{Scalar}) = "Scalar"
 eltype(problem::LinearOptics{Vectorial}) = "Vectorial"
 
 eltype(problem::NonLinearOptics{MeanField}) = "MeanField"
+eltype(problem::NonLinearOptics{PairCorrelation}) = "PairCorrelation"
 
 function Base.show(io::IO, atoms::Atom{Cube})
     geometry_text = "Atoms on a $( highlight("Cube", :yellow) )"

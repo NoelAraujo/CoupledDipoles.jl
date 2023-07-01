@@ -55,7 +55,7 @@ export Gaussian2D, Gaussian3D
 
 export Physics, Linear
 export LinearOptics, Scalar, Vectorial
-export NonLinearOptics, MeanField, BBGKY
+export NonLinearOptics, MeanField, PairCorrelation
 
 include("linear/linear_problems.jl")
 include("nonlinear/nonlinear_problems.jl")
