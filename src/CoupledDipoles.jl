@@ -15,7 +15,7 @@ using Printf
 using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
 using HCubature
-using MKL
+# using MKL
 using NLsolve
 using ParallelStencil
 @init_parallel_stencil(Threads, Float64, 2);
