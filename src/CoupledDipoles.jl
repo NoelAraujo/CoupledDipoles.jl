@@ -15,7 +15,12 @@ using Printf
 using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
 using HCubature
-using MKL
+## MKL improves performance for Intel, but degrades performance for AMD
+## --> only for reference: Intel vendor is called 'GenuineIntel', and AMD is 'AuthenticAMD'
+vendor_id = readchomp(pipeline(`lscpu`, `grep -i vendor`))
+if occursin("GenuineIntel", vendor_id)
+	using MKL
+end
 using NLsolve
 using ParallelStencil
 @init_parallel_stencil(Threads, Float64, 2);
