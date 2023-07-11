@@ -16,10 +16,17 @@ using LsqFit: curve_fit, coef
 using Optim: minimizer, optimize, Options
 using HCubature
 ## MKL improves performance for Intel, but degrades performance for AMD
-## --> only for reference: Intel vendor is called 'GenuineIntel', and AMD is 'AuthenticAMD'
-vendor_id = readchomp(pipeline(`lscpu`, `grep -i vendor`))
-if occursin("GenuineIntel", vendor_id)
-	using MKL
+## --> only for reference: Intel vendor is called 'GenuineIntel', and AMD is 'AuthenticAMD' on Linux
+@static if Sys.iswindows()
+    vendor_id = readchomp(`wmic cpu get name`)
+    if occursin("Intel", vendor_id)
+        using MKL
+    end
+elseif Sys.islinux()
+    vendor_id = readchomp(pipeline(`lscpu`, `grep -i vendor`))
+    if occursin("GenuineIntel", vendor_id)
+        using MKL
+    end
 end
 using NLsolve
 using ParallelStencil
