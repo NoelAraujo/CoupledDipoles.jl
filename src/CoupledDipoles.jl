@@ -23,7 +23,7 @@ using HCubature
         using MKL
     end
 elseif Sys.islinux()
-    vendor_id = readchomp(pipeline(`lscpu`, `grep -i vendor`))
+    vendor_id = readchomp(pipeline(`lscpu`))
     if occursin("GenuineIntel", vendor_id)
         using MKL
     end
