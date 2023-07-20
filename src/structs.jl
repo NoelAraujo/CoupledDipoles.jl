@@ -51,7 +51,7 @@ struct Gaussian3D <: Gaussian
         if w₀ < 2λ
             @warn "Waist is Too Small, it should be larger than 2λ (~ $(round(2λ, digits=3))).
             \n If the input value is correct, at least make sure that `w₀` is larger than `system size`.
-            \n This advice garantee that Transmission curves will have values below 1." maxlog = 50
+            \n This advice garantee that Transmission curves will have values below 1." maxlog = 1
         end
         return new(w₀)
     end
