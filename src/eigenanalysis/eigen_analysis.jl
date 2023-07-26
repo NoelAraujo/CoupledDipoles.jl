@@ -71,18 +71,18 @@ function get_ψ²(problem::LinearOptics, n::Integer)
 end
 
 """
-get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=lta, PROBABILITY_THRESHOLD=0.999, showprogress=false, runfaster=false)
+get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, runfaster=false)
 
 'CoupledDipoles.satman2015' has better precision
 'CoupledDipoles.lta' is faster
 """
-function get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=lta, PROBABILITY_THRESHOLD=0.999, showprogress=false, runfaster=false)
+function get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, runfaster=false)
     if is_localization_NOT_available(problem) && forceComputation == false
-        return problem.data[:ξ], problem.data[:R1]
+        return problem.data[:ξ], problem.data[:R2]
     end
     N = problem.atoms.N
     ξₙ = zeros(N)
-    R¹ₙ = zeros(N)
+    R²ₙ = zeros(N)
 
     # create spectrum if neeeded
     get_spectrum(problem)
@@ -91,20 +91,20 @@ function get_localization_length(problem::LinearOptics; forceComputation=false, 
     Threads.@threads for n in 1:N
         DCM, ψ² = get_spatial_profile_single_mode(problem, n)
         if runfaster
-            ξₙ[n], R¹ₙ[n] = get_single_ξ_and_R1(DCM, ψ²; regression_method=lta, PROBABILITY_THRESHOLD=PROBABILITY_THRESHOLD)
+            ξₙ[n], R²ₙ[n] = get_single_ξ_and_R2(DCM, ψ²; regression_method=lta, probability_threshold=probability_threshold)
         else
-            ξₙ[n], R¹ₙ[n] = get_single_ξ_and_R1(DCM, ψ²; regression_method=regression_method, PROBABILITY_THRESHOLD=PROBABILITY_THRESHOLD)
+            ξₙ[n], R²ₙ[n] = get_single_ξ_and_R2(DCM, ψ²; regression_method=regression_method, probability_threshold=probability_threshold)
         end
         if showprogress
             next!(pp)
         end
     end
-    problem.data[:ξ], problem.data[:R1] = ξₙ, R¹ₙ
-    return ξₙ, R¹ₙ
+    problem.data[:ξ], problem.data[:R2] = ξₙ, R²ₙ
+    return ξₙ, R²ₙ
 end
 
 function is_localization_NOT_available(problem)
-    if haskey(problem.data, :ξ) && haskey(problem.data, :R1)
+    if haskey(problem.data, :ξ) && haskey(problem.data, :R2)
         return true
     else
         return false
@@ -162,12 +162,12 @@ end
     classify_modes(problem)
 returns a tuple `(loc, sub, super)` with indices
 """
-function classify_modes(problem; forceComputation=false)
+function classify_modes(problem; forceComputation=false, fitting_threshold=0.5)
     ωₙ, Γₙ = get_spectrum(problem; forceComputation=forceComputation)
-    ξₙ, R¹ₙ = get_localization_length(problem; forceComputation=forceComputation)
+    ξₙ, R²ₙ = get_localization_length(problem; forceComputation=forceComputation)
 
-    localized_modes = findall((Γₙ .< Γ) .* (R¹ₙ .≥ R1_THRESHOLD))
-    sub_radiant_modes = findall((Γₙ .< Γ) .* (R¹ₙ .< R1_THRESHOLD))
+    localized_modes = findall((Γₙ .< Γ) .* (R²ₙ .≥ fitting_threshold))
+    sub_radiant_modes = findall((Γₙ .< Γ) .* (R²ₙ .< fitting_threshold))
     super_radiant_modes = findall(Γₙ .> Γ)
     return (loc=localized_modes, sub=sub_radiant_modes, super=super_radiant_modes)
 end

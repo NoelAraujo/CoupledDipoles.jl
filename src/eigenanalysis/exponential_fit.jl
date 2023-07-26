@@ -2,14 +2,14 @@
 'satman2015' has better precision
 'lta' is faster
 """
-function get_single_ξ_and_R1(x, y; regression_method = satman2015, PROBABILITY_THRESHOLD=0.999)
-    x_use, y_use = select_points(x, y; PROBABILITY_THRESHOLD=PROBABILITY_THRESHOLD)
+function get_single_ξ_and_R2(x, y; regression_method = satman2015, probability_threshold=0.999)
+    x_use, y_use = select_points(x, y; probability_threshold=probability_threshold)
     A, B, y_fit = linear_fit_robust(x_use, log10.(y_use); regression_method = regression_method)
 
     ξ = abs(-1/B) # 'abs' to hangle extended modes
-    R1 = my_r2score(log10.(y_use), y_fit)
+    R2 = my_r2score(log10.(y_use), y_fit)
 
-    return ξ, R1
+    return ξ, R2
 end
 function linear_fit_robust(x, y; regression_method = satman2015)
 	reg = createRegressionSetting(@formula(y ~ x), DataFrame([:x => x, :y => y]))
@@ -33,15 +33,15 @@ end
 """
     x_use, y_use = select_points(DCM::Vector, ψ²::Vector)
 
-computes how many points since the center of mass are important based upon the `PROBABILITY_THRESHOLD` (constant defined as 0.9999)
+computes how many points since the center of mass are important based upon the `probability_threshold` (constant defined as 0.9999)
 """
-function select_points(DCM::Vector, ψ²::Vector; PROBABILITY_THRESHOLD=0.999)
+function select_points(DCM::Vector, ψ²::Vector; probability_threshold=0.999)
     if length(ψ²) < 10
         error("Very few data. Need at least 10 points")
     end
 
     cumulative_probability = cumsum(ψ²)
-    threshold = max(sum(cumulative_probability .< PROBABILITY_THRESHOLD), 10)
+    threshold = max(sum(cumulative_probability .< probability_threshold), 10)
 
     x_use = DCM[1:threshold]
     y_use = ψ²[1:threshold]

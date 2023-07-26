@@ -36,14 +36,11 @@ using Distributions: MvNormal
 using Bessels
 using Random
 
-# using Distributed, FileIO
 using ProgressMeter
 using Tullio
 
 const k₀ = 1
 const Γ = 1
-# const PROBABILITY_THRESHOLD = 0.999
-const R1_THRESHOLD = 0.5
 const FARFIELD_FACTOR = 100
 const LASER_FACTOR = -im/2
 
@@ -107,10 +104,6 @@ export classify_modes
 
 include("eigenanalysis/exponential_fit.jl")
 export select_points
-
-include("plot_modes.jl")
-export get_spatial_profile_single_mode_and_fit
-export get_decay_fit
 
 
 include("sensors.jl")
