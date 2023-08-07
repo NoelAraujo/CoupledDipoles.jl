@@ -75,7 +75,7 @@ function _vectorial_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: 
             end
         end
     end
-    return -im*(3Γ/4)*(cis(norm_sensor)/norm_sensor)*E_scatt
+    return +im*(3Γ/4)*(cis(norm_sensor)/norm_sensor)*E_scatt
 end
 
 
@@ -114,7 +114,7 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
         end
     end
 
-    return -im*(Γ/2)*[E_x, E_y, E_z]
+    return +im*(Γ/2)*[E_x, E_y, E_z]
 end
 function _vectorial_3D_green_kernel(r_jm::Vector)
     G = Array{Complex{eltype(r_jm)}}(undef, 3,3)
