@@ -71,12 +71,17 @@ function time_evolution(
     problem::LinearOptics{T},
     u₀,
     tspan::Tuple;
+    bruteForce = false,
     kargs...,
 ) where {T<:Linear}
     ### if time is big, and laser is swithc-off, the 'FORMAL SOLUTION' of the ODE problem is much faster
-    if problem.laser.s ≈ 0
+    if problem.laser.s ≈ 0 && bruteForce==true
         time_interval = get(kargs, :saveat, range(tspan[1], tspan[2], length = 20))
         solution = time_evolution_laser_off(problem, u₀, time_interval)
+        return solution
+    elseif bruteForce==true
+        time_interval = get(kargs, :saveat, range(tspan[1], tspan[2], length = 20))
+        solution = time_evolution_laser_on(problem, u₀, time_interval)
         return solution
     end
 

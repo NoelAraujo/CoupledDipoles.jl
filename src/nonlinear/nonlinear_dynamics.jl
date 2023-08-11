@@ -94,7 +94,6 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple,
         I don't sum over diagonal elements during time evolution
      thus, to avoid an IF statement, I put a zero on diagonal
     =#
-    saveDiag = diagind(G)
     G[diagind(G)] .= zero(eltype(G))
 
     # `laser_field = (-im/2)*Ω`, but I need only `Ω`
@@ -109,11 +108,12 @@ function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple,
     ### calls for solver
     problemFunction = get_evolution_function(problem)
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
-    solution = OrdinaryDiffEq.solve(prob, RDPK3SpFSAL35(); kargs...)
 
-    # # !!!! restore diagonal !!!!
-    # G[diagind(G)] .= saveDiag
-
+    if ρ_of(problem.atoms) > 0.1
+        solution = OrdinaryDiffEq.solve(prob, RDPK3Sp35(); abstol=1e-10, kargs...)
+    else
+        solution = OrdinaryDiffEq.solve(prob, VCABM3(); abstol=1e-10, kargs...)
+    end
     return solution
 end
 get_evolution_function(problem::NonLinearOptics{MeanField}) = MeanField!
