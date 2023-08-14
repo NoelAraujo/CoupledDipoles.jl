@@ -216,9 +216,9 @@ using Tullio
         n = sensor./R
         nx, ny, nz = n[1], n[2], n[3]
         C = cis(-nx - ny - nz)
-        E_x_expected = -(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2)*3 + -nx*ny*4im - nx*nz*5)
-        E_y_expected = -(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx*3 + (1 -ny^2)*4im - ny*nz*5)
-        E_z_expected = -(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx*3 - nz*ny*4im + (1 - nz^2)*5)
+        E_x_expected = +(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2)*3 + -nx*ny*4im - nx*nz*5)
+        E_y_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx*3 + (1 -ny^2)*4im - ny*nz*5)
+        E_z_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx*3 - nz*ny*4im + (1 - nz^2)*5)
         @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
 
 
@@ -232,9 +232,9 @@ using Tullio
         n = sensor./R
         nx, ny, nz = n[1], n[2], n[3]
         C = cis(-nx - ny)
-        E_x_expected = -(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2) + nx*ny*2im - nx*nz*15)
-        E_y_expected = -(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx - (1 -ny^2)*2im - ny*nz*15)
-        E_z_expected = -(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx + nz*ny*2im + (1 - nz^2)*15)
+        E_x_expected = +(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2) + nx*ny*2im - nx*nz*15)
+        E_y_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx - (1 -ny^2)*2im - ny*nz*15)
+        E_z_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx + nz*ny*2im + (1 - nz^2)*15)
 
         @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
     end

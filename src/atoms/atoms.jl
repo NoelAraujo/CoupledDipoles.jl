@@ -76,7 +76,7 @@ function get_pairwise_matrix(r)
 end
 function get_pairwise_matrix!(r, R_jk)
     r_matrix = transpose(r)
-    Distances.pairwise!(R_jk, Euclidean(), r_matrix, r_matrix; dims=1)
+    Distances.pairwise!(Euclidean(), R_jk, r_matrix, r_matrix; dims = 1)
     R_jk[diagind(R_jk)] .= 0
     return nothing
 end
