@@ -3,16 +3,15 @@ struct SensorType
     domain::Tuple
 end
 
-function transmission(problem, β; regime=:near_field, rtol=exp10(-10), max_angle=deg2rad(25))
+function transmission(problem, β; regime=:near_field, rtol=exp10(-10), max_angle=deg2rad(10))
     # For future, use this link to create integration points in any direction: 
     # https://fasiha.github.io/post/spherical-cap/
     # https://github.com/fasiha/sphere-cap-random/blob/gh-pages/src/capRandom.js
     if problem.laser.direction ≉ [0,0,1]
         @error "`transmission`  only works for lasers pointing into z-direction."
     end
-    # these values were ad hoc, but do not come from a systematic anaylis
-    θₘₐₓ = problem.atoms.N < 50 ? deg2rad(50) : max_angle
-    integral_domain = ((0.0, 0.0), (θₘₐₓ, 2π))
+
+    integral_domain = ((0.0, 0.0), (max_angle, 2π))
     ## The values the intensity are small
     ## making the integration convergence slow
     ## One solution is to multiply all values for some factor

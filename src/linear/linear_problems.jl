@@ -38,7 +38,7 @@ get_kernelFunction!(physics::Vectorial, dimension::Atom{<:ThreeD}) = green_vecto
 """
     β_eff  = [all X - all Y - all Z]
 """
-@inline function _vecAux_Matrix_into_longArray(β)
+function _vecAux_Matrix_into_longArray(β)
     ## Ωₙ_eff  = [all X - all Y - all Z]
     β_array = vcat(view(β, 1, :), view(β, 2, :), view(β, 3, :))
 
@@ -48,13 +48,13 @@ end
 """
     β_eff = vcat(view(Ωₙ, 1, :), view(Ωₙ, 2, :), view(Ωₙ, 3, :))
 """
-@inline function _vecAux_longArray_into_Matrix(N, β)
+function _vecAux_longArray_into_Matrix(N, β)
     # transpose and NOT transpose conjugated
     # because i am just changing the array format to create
     # an effetive result
-    β_x = transpose(β[1:N])
-    β_y = transpose(β[N+1:2N])
-    β_z = transpose(β[2N+1:3N])
-    β_matrix = vcat(β_x, β_y, β_z)
+    β_x = β[1:N]
+    β_y = β[N+1:2N]
+    β_z = β[2N+1:3N]
+    β_matrix = copy(transpose(hcat(β_x, β_y, β_z)))
     return β_matrix
 end

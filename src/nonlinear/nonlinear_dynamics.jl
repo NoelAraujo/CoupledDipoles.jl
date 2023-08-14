@@ -25,9 +25,9 @@ end
 """
     steady_state(problem::NonLinearOptics{MeanField})
 """
-function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e-10, abstol=1e-10, m=90, bruteforce=false)
+function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e-10, abstol=1e-10, m=90, ode_solver=false)
     G = interaction_matrix(problem)
-    if bruteforce
+    if ode_solver
         tspan = (0.0, tmax)
         u₀ = default_initial_condition(problem)
         return time_evolution(problem, u₀, tspan, G; reltol=reltol, abstol=abstol, save_on=false).u[end]
@@ -82,8 +82,10 @@ function steady_state(problem::NonLinearOptics{MeanField}; tmax=250.0, reltol=1e
     end
 end
 
-function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; kargs...)
-
+function time_evolution(problem::NonLinearOptics{MeanField}, u₀, tspan::Tuple; ode_solver=true, kargs...)
+    if ode_solver==false
+        @warn "NonLinearOptics does not have formal solution. Using numerical solution instead." maxlog = 1
+    end
     G = interaction_matrix(problem)
     solution = time_evolution(problem, u₀, tspan, G; kargs...)
 
@@ -176,8 +178,10 @@ function MeanField!_v2(du, u, p, t)
 end
 
 
-function time_evolution(problem::NonLinearOptics{PairCorrelation}, u₀, tspan::Tuple; kargs...)
-
+function time_evolution(problem::NonLinearOptics{PairCorrelation}, u₀, tspan::Tuple; ode_solver=true, kargs...)
+    if ode_solver==false
+        @warn "NonLinearOptics does not have formal solution. Using numerical solution instead." maxlog = 1
+    end
     G = interaction_matrix(problem)
     # for the PairCorrelation, the interaction matrix does not contain 'im*(Γ/2)'
     G_c = (2 / Γ).*G

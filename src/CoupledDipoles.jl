@@ -142,7 +142,8 @@ SnoopPrecompile.@precompile_all_calls begin
     G = interaction_matrix(simulation)
     ωₙ, Γₙ = get_spectrum(simulation)
     u₀ = default_initial_condition(simulation)
-    βₜ = time_evolution(simulation, u₀, tspan)
+    βₜ = time_evolution(simulation, u₀, tspan) # using ODE solver
+    βₜ = time_evolution(simulation, u₀, tspan; ode_solver=false) # using FORMAL solution
     P_total = scattered_power(simulation, βₜ[end])
 
     laser = Laser(Gaussian3D(w₀), s, Δ; polarization=[1,0,0])

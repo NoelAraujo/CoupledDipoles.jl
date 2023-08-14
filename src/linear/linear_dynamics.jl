@@ -19,13 +19,13 @@ end
 
 Solve `x=G\\Ω`, with default `interaction_matrix` and `laser_field`.
 """
-function steady_state(problem::LinearOptics{Scalar}; tmax=250.0, reltol=1e-7, abstol=1e-7, bruteforce=false)
+function steady_state(problem::LinearOptics{Scalar}; tmax=250.0, reltol=1e-7, abstol=1e-7, ode_solver=false)
     G = interaction_matrix(problem)
     if problem.atoms.N > 1
-        if  bruteforce
+        if  ode_solver
             tspan = (0.0, tmax)
             u₀ = default_initial_condition(problem)
-            βₛ = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
+            βₛ = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end]
             return βₛ
         else
             Ωₙ = vec(laser_field(problem, problem.atoms.r))
@@ -45,17 +45,17 @@ end
 
 Solve `x=-G\\Ω`, with default `interaction_matrix` and `laser_field`. The solution x is reshaped as a 3xN matrix.
 """
-function steady_state(problem::LinearOptics{Vectorial}; tmax=250.0, reltol=1e-7, abstol=1e-7, bruteforce=false)
+function steady_state(problem::LinearOptics{Vectorial}; tmax=250.0, reltol=1e-7, abstol=1e-7, ode_solver=false)
     G = interaction_matrix(problem)
     Ωₙ = laser_field(problem, problem.atoms.r)
     Ωₙ_eff = _vecAux_Matrix_into_longArray(Ωₙ)
 
     if problem.atoms.N > 1
-        if  bruteforce
+        if  ode_solver
             tspan = (0.0, tmax)
             u₀ = default_initial_condition(problem)
             βₛ = time_evolution(problem, u₀, tspan; reltol=reltol, abstol=abstol, save_on=false).u[end] # evolve a little bit
-            return βₛ
+            return _vecAux_longArray_into_Matrix(problem.atoms.N, βₛ)
         else
             βₛ = -(G \ Ωₙ_eff)
         end
@@ -71,15 +71,15 @@ function time_evolution(
     problem::LinearOptics{T},
     u₀,
     tspan::Tuple;
-    bruteForce = false,
+    ode_solver = true,
     kargs...,
 ) where {T<:Linear}
     ### if time is big, and laser is swithc-off, the 'FORMAL SOLUTION' of the ODE problem is much faster
-    if problem.laser.s ≈ 0 && bruteForce==true
+    if problem.laser.s ≈ 0 && ode_solver==false
         time_interval = get(kargs, :saveat, range(tspan[1], tspan[2], length = 20))
         solution = time_evolution_laser_off(problem, u₀, time_interval)
         return solution
-    elseif bruteForce==true
+    elseif ode_solver==false
         time_interval = get(kargs, :saveat, range(tspan[1], tspan[2], length = 20))
         solution = time_evolution_laser_on(problem, u₀, time_interval)
         return solution
@@ -105,6 +105,10 @@ function time_evolution(
 
     return solution
 end
+## TO DO:
+## - maybe change the 'time_evolution' to call a 'time_evolution_ode_solver' function
+## this way, I also need to change 'time_evolution_laser_on' nomeclature to
+## 'time_evolution_formal_solution_on' (or any better name)
 function time_evolution(
     problem::LinearOptics{T},
     u₀,
@@ -113,8 +117,6 @@ function time_evolution(
     G::Matrix;
     kargs...,
 ) where {T<:Linear}
-    @debug "start: time evolution - LinearOptics"
-
     ### parameters == constant vector and matrices
     parameters = get_evolution_params(problem, G, Ωₙ)
 
@@ -127,14 +129,12 @@ function time_evolution(
         kargs...,
     )
 
-    @debug "end  : time evolution - LinearOptics"
     return solution
 end
 
 get_evolution_function(problem::LinearOptics{Scalar}) = Scalar!
 get_evolution_params(problem::LinearOptics{Scalar}, G, Ωₙ) = view(G, :, :), view(Ωₙ, :)
 
-# MUDAR AQUI
 get_evolution_function(problem::LinearOptics{Vectorial}) = Scalar!
 function get_evolution_params(problem::LinearOptics{Vectorial}, G, Ωₙ)
     ## Ωₙ_eff  = [all X - all Y - all Z]
