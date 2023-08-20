@@ -103,15 +103,19 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
         βⱼ = view(β, :, j)
 
         _vectorial_3D_green_kernel!(r_jm, G)
-        for η=1:3
-            E_x += G[1,η]*βⱼ[η]
-        end
-        for η=1:3
-            E_y += G[2,η]*βⱼ[η]
-        end
-        for η=1:3
-            E_z += G[3,η]*βⱼ[η]
-        end
+        _E = G*βⱼ
+        E_x += _E[1]
+        E_y += _E[2]
+        E_z += _E[3]
+        # for η=1:3
+        #     E_x += G[1,η]*βⱼ[η]
+        # end
+        # for η=1:3
+        #     E_y += G[2,η]*βⱼ[η]
+        # end
+        # for η=1:3
+        #     E_z += G[3,η]*βⱼ[η]
+        # end
     end
 
     return +im*(Γ/2)*[E_x, E_y, E_z]

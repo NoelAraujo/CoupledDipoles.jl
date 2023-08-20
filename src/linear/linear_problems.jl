@@ -53,8 +53,8 @@ function _vecAux_longArray_into_Matrix(N, β)
     # because i am just changing the array format to create
     # an effetive result
     β_x = β[1:N]
-    β_y = β[N+1:2N]
-    β_z = β[2N+1:3N]
+    β_y = β[(N+1):2N]
+    β_z = β[(2N+1):3N]
     β_matrix = copy(transpose(hcat(β_x, β_y, β_z)))
     return β_matrix
 end

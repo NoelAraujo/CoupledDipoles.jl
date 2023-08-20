@@ -245,6 +245,19 @@ using Tullio
         @test all(rad2deg.(laser_angles([1,0,1])) .≈ (45, 0))
     end
 
+    @testset "aux vectorial" begin
+        nAtoms = 4
+        x = [1 2 3 4 5 6 7 8 9 10 11 12]
+        y_expected = transpose(hcat(1:4, 5:8, 9:12))
+        y = CoupledDipoles._vecAux_longArray_into_Matrix(nAtoms, x)
+        @test all(y .≈ y_expected)
+
+        x = [1 2; 3 4; 5 6]
+        y_expected = vec([1 2 3 4 5 6])
+        y = CoupledDipoles._vecAux_Matrix_into_longArray(x)
+        @test all(y .≈ y_expected)
+    end
+
     function _test_sum_all_off_diag(beta, r)
         result = zero(eltype(beta))
         for j in eachindex(beta), m in eachindex(beta)

@@ -110,10 +110,15 @@ include("sensors.jl")
 export get_sensors_ring
 export get_sensors_sphereSurface
 
-include("linear/linear_dynamics.jl")
-include("nonlinear/nonlinear_dynamics.jl")
+include("initial_conditions.jl")
+export default_initial_condition
+
+include("linear/time_evolution_linear.jl")
+include("linear/steady_state_linear.jl")
+include("nonlinear/time_evolution_nonlinear.jl")
+include("nonlinear/steady_state_nonlinear.jl")
 export steady_state
-export time_evolution, default_initial_condition, get_evolution_function
+export time_evolution, get_evolution_function
 
 include("transmission.jl")
 export transmission, how_far_is_FarField
