@@ -42,14 +42,14 @@ function steady_state(problem::LinearOptics{Vectorial}; tmax=250.0, reltol=1e-9,
             return _vecAux_longArray_into_Matrix(problem.atoms.N, βₛ)
         else
             G = interaction_matrix(problem)
-            Ωₙ = laser_field(problem, problem.atoms.r)
+            Ωₙ = laser_field(problem, problem.atoms)
             Ωₙ_eff = _vecAux_Matrix_into_longArray(Ωₙ)
 
             βₛ = -(G \ Ωₙ_eff)
         end
     else ## single atom
         G = interaction_matrix(problem)
-        Ωₙ = laser_field(problem, problem.atoms.r)
+        Ωₙ = laser_field(problem, problem.atoms)
         βₛ = -(Ωₙ / G[1])
     end
 

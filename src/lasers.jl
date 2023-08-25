@@ -38,7 +38,7 @@ function _produce_orthogonal_polarization(laser)
     2. I need to orthonormalize it with Gram-Schmidt.
     =#
     polarization = [one(T), zero(T), zero(T)]
-    if direction ⋅ polarization ≈ 0        
+    if direction ⋅ polarization ≈ 0
          return polarization
     else
         aSeed = round(Int64, sum(10direction)^4)
@@ -59,37 +59,6 @@ function _produce_orthogonal_polarization(laser)
 function laser_intensity(problem, sensor)
     return _get_intensity(problem, laser_field(problem, sensor))
 end
-
-
-
-"""
-    laser_field(laser, points)
-
-    Compute -(im/2)*Ω.(points), where Ω is the laser
-"""
-function laser_field(laser::Laser{T}, sensors::AbstractMatrix) where T <: Pump
-    Ω₀ = raby_frequency(laser)
-    if laser.polarization == [0,0,0]
-        return map(eachcol(sensors)) do sensor
-                    LASER_FACTOR*Ω₀*_scalar_laser_field(laser, sensor)
-                end
-    else
-        return map(eachcol(sensors)) do sensor
-                    LASER_FACTOR*Ω₀*_vectorial_laser_field(laser, laser.polarization, sensor)
-                end
-    end
-end
-
-function laser_field(laser::Laser{T}, atoms) where T <: Pump
-    # user may want field at atoms positions
-    return laser_field(laser, atoms.r)
- end
-
-function laser_field(laser::Laser{T}, sensor::AbstractVector) where T <: Pump
-    # user may want field at single points. but we need to use Matrices and not Vectors
-    return laser_field(laser, Array(Matrix(sensor')'))
-end
-
 
 
 """

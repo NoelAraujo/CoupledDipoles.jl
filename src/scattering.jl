@@ -1,130 +1,3 @@
-"""
-    scattered_electric_field(problem, atomic_states, sensor_positions; regime=:far_field)
-
-Returns a Matrix{ComplexF64} with value of the `Eletric Laser` + `Electric Scattered` from atoms
-
-- problem: `LinearOptics` or `NonLinearOptics`
-- atomic_states: β for `Scalar`/`Vectorial` Model, or [β,z] for `Mean Field` Model
-- sensor_positions: matrix with measurement points
-
-Note:
-- `Scalar` problem returns a Matrix and not a Vector, to maintain consistency
-    with `Vectorial` problem that necessary returns a Matrix,
-    where each column has the [Ex, Ey, Ez] components of the field.
-
-- Also, even for single sensor, returns a Matrix of one element.
-
-# Example
-
-```julia
-using CoupledDipoles, Random
-Random.seed!(111)
-N = 5
-kR, kh = 1.0, 1.0
-atoms = Atom(Cylinder(), N, kR, kh)
-
-s, Δ = 1e-5, 1.0
-laser = Laser(PlaneWave3D(), s, Δ; polarization=[1,0,0])
-
-problem_scalar = LinearOptics(Scalar(), atoms, laser)
-problem_vectorial = LinearOptics(Vectorial(), atoms, laser)
-
-atomic_states_scalar = steady_state(problem_scalar)
-atomic_states_vectorial = steady_state(problem_vectorial)
-
-## 1 sensor
-Random.seed!(222)
-nSensors = 1
-sensor = Matrix(rand(3, nSensors)) # '3' == sensor in position in 3D space
-scattered_electric_field(problem_scalar, atomic_states_scalar, sensor)
-scattered_electric_field(problem_vectorial, atomic_states_vectorial, sensor)
-
-
-## 10 sensors
-Random.seed!(333)
-nSensors = 10
-sensor = rand(3, nSensors) # '3' == sensor in position in 3D space
-scattered_electric_field(problem_scalar, atomic_states_scalar, sensor)
-scattered_electric_field(problem_vectorial, atomic_states_vectorial, sensor)
-```
-"""
-function scattered_electric_field(problem, atomic_states, sensor_positions; regime=:far_field)
-    states = prepare_input_state(problem, atomic_states)
-    measurement_positions = prepare_input_position(problem, sensor_positions)
-    if regime == :far_field
-        single_point_field = scattering_far_field
-    elseif regime == :near_field
-        single_point_field = scattering_near_field
-    else
-        @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
-    end
-    if problem.atoms.N ≤ 25 # SEQUENCIAL map worths for atoms below ~25
-        _electric_fields = map(eachcol(measurement_positions)) do sensor
-            single_point_field(problem, states, sensor)
-        end
-    else
-        _electric_fields = ThreadsX.map(eachcol(measurement_positions)) do sensor
-            single_point_field(problem, states, sensor)
-        end
-    end
-    electric_fields::Matrix{ComplexF64} = hcat(_electric_fields...)
-
-    return electric_fields
-
-end
-
-function laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime=:far_field)
-    laserField = laser_field(problem, sensor_positions)
-    scatteredField = scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
-    total_field = laserField + scatteredField
-    return total_field
-end
-
-
-
-
-
-
-function prepare_input_state(problem::LinearOptics{Scalar}, atomic_states::AbstractVecOrMat)
-    n_states = length(atomic_states)
-    if     n_states == problem.atoms.N# if is a vector, return it as a view to reduce memory access
-        return view(atomic_states, :, :)
-    else
-        @error "Atomic States are Invalid. Use an Array with the same length as the Number of Atoms."
-    end
-end
-function prepare_input_state(problem::LinearOptics{Vectorial}, atomic_states::AbstractVecOrMat)
-    ## TO DO
-    return atomic_states
-end
-function prepare_input_state(problem::NonLinearOptics{MeanField}, atomic_states::AbstractVector)
-    ## TO DO
-    return atomic_states
-end
-
-
-
-function prepare_input_position(problem, sensor_positions::AbstractVector)
-    n_axes_components = length(sensor_positions)
-    system_dimension = get_dimension(problem.atoms)
-    if     n_axes_components == system_dimension
-        return view( Array(Matrix(sensor_positions')'), :, :) ## convert array into a matrix of single coluumn
-    else
-        @error "Your `Measurement Position Vector`  does not match the dimensionality of the system."
-    end
-end
-function prepare_input_position(problem, sensor_positions::AbstractMatrix)
-    dimensions, n_sensors = size(sensor_positions)
-    system_dimension = get_dimension(problem.atoms)
-    if     dimensions == system_dimension
-        return view(sensor_positions, :, :)
-    else
-        @error "Your `Measurement Position Matrix`  does not match the dimensionality of the system."
-    end
-end
-
-
-
 
 ## INTENSITY
 """
@@ -170,11 +43,156 @@ scattered_intensity(problem_scalar, atomic_states_scalar, sensor)
 scattered_intensity(problem_vectorial, atomic_states_vectorial, sensor)
 ```
 """
-function scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field)
-    fields = scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
-    intesities = _get_intensity(problem, fields)
+function scattered_intensity(problem::LinearOptics{T}, atomic_states, sensor_positions; regime=:far_field) where {T<:Union{Scalar,Vectorial}}
+    fields = scattered_electric_field(problem, atomic_states, sensor_positions; regime=regime)
+
+    intesities = mapreduce(vcat, eachcol(fields)) do field
+        _get_intensity(problem, field)
+    end
     return intesities
 end
+
+function _get_intensity(problem::LinearOptics{Scalar}, fields::AbstractVector)
+    return abs2.(fields)
+end
+
+function _get_intensity(problem::LinearOptics{Vectorial}, field::AbstractVector)
+    return vec([sum(abs2, field)])
+end
+
+
+function scattered_intensity(problem::NonLinearOptics{T}, atomic_states, sensors; regime=:far_field, inelasticPart=true) where {T<:Union{MeanField,PairCorrelation}}
+
+    ## define the 'function' to be used
+    if regime == :far_field
+        get_intensity = _get_intensity_far_field
+    elseif regime == :near_field
+        get_intensity = _get_intensity_near_field
+    else
+        @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
+    end
+
+    ## it is more efficient to compute the Scalar intensity here, and pass as arguments
+    ## right now: this is usefull for MeanField, but not on PairCorrelation
+
+    _dummy = LinearOptics(Scalar(), problem.atoms, problem.laser)
+    _atomic_states = view(atomic_states, 1:problem.atoms.N)
+    intensities_scalar = scattered_intensity(_dummy, _atomic_states, sensors)
+
+    intensities = get_intensity(problem, atomic_states, sensors, intensities_scalar)
+    return intensities
+end
+
+
+
+
+
+## mean field
+function _get_intensity_far_field(problem::NonLinearOptics{MeanField}, atomic_states::AbstractVector, sensors, _intensities; inelasticPart=true)
+    N = problem.atoms.N
+    σ⁻ = view(atomic_states, 1:N)
+    σᶻ = view(atomic_states, (N+1):2N)
+    r = how_far_is_farField(problem)
+
+    I_meanField = _intensities
+    if inelasticPart
+        inelast_factor = (Γ^2 / (4*(k₀^2) * r^2)) * sum(-abs2.(σ⁻) .+ (1 .+ σᶻ) ./ 2)
+        I_meanField = I_meanField .+ inelast_factor
+    end
+    return real.(I_meanField)
+end
+function _get_intensity_near_field(problem::NonLinearOptics{MeanField}, atomic_states::AbstractVector, sensors, _intensities; inelasticPart=true)
+    N = problem.atoms.N
+    σ⁻ = view(atomic_states, 1:N)
+    σᶻ = view(atomic_states, (N+1):2N)
+    r = view(problem.atoms.r, :, :)
+
+    I_meanField = _intensities
+    if inelasticPart
+        inelast_factor = mapreduce(vcat, eachcol(sensors)) do sensor
+            sum(abs2(σ⁻[j]) / norm(sensor - r[:, j])^2 + (1 + σᶻ[j]) / (2 * norm(sensor - r[:, j])^2) for j = 1:N)
+        end
+        I_meanField = I_meanField .+ (Γ^2 / (4*(k₀^2))) * inelast_factor
+    end
+    return real.(I_meanField)
+end
+
+## pair correlation
+function _get_intensity_far_field(problem::NonLinearOptics{PairCorrelation}, atomic_states::AbstractVector, sensors, _intensities; inelasticPart=true)
+    N = problem.atoms.N
+    r = view(problem.atoms.r, :, :)
+    σᶻ = view(atomic_states, (N+1):2N)
+    σ⁻σ⁺ = reshape(atomic_states[2*N+1+N^2:2*N+2*N^2], (N, N))
+    σ⁺σ⁻ = transpose(σ⁻σ⁺)
+    r_far_field = how_far_is_farField(problem)
+
+    I_pairCorrelation = mapreduce(vcat, eachcol(sensors)) do sensor
+    # for sensor in eachcol(sensors)
+        sensor_norm = k₀ * norm(sensor)
+        n̂ = sensor / sensor_norm
+        _I_pairCorrelation = sum(σ⁺σ⁻[j, m] * cis(dot(n̂, r[:, j] - r[:, m])) for m = 1:N, j = 1:N if j ≠ m)
+        if inelasticPart
+            inelast_factor = sum((1 .+ σᶻ) ./ 2)
+            _I_pairCorrelation = _I_pairCorrelation .+ inelast_factor
+        end
+        (Γ^2 / (4 * (k₀^2) * r_far_field^2)) * _I_pairCorrelation
+    end
+
+    return real.(I_pairCorrelation)
+end
+function _get_intensity_near_field(problem::NonLinearOptics{PairCorrelation}, atomic_states::AbstractVector, sensors, _intensities; inelasticPart=true)
+    N = problem.atoms.N
+    r = view(problem.atoms.r, :, :)
+
+    σᶻ = view(atomic_states, (N+1):2N)
+    σ⁺σ⁻ = reshape(atomic_states[2*N+1+N^2:2*N+2*N^2], (N, N))
+
+    # atomsPhases =[ j≠m ? cis( dot(sensor,r[:,j]-r[:,m]) )/( norm(sensor-r[:,j])*norm(sensor-r[:,m])  ) : 0im for j=1:N, m=1:N]
+    # I_pairCorrelation = sum(atomsPhases.*σ⁺σ⁻) # NOT A MATRIX MULTIPLICATION, IT IS A ELEMENT-WISE MULTIPLICATION
+
+    I_pairCorrelation = mapreduce(vcat, eachcol(sensors)) do sensor
+        _I_pairCorrelation = sum(
+            σ⁺σ⁻[j,m]*
+            cis( norm(sensor - r[:,j]) - norm(sensor - r[:,m])  ) / (norm(sensor-r[:,j])*norm(sensor-r[:,m]))
+            for j=1:N, m=1:N  if j ≠ m)
+        if inelasticPart
+            _I_pairCorrelation = _I_pairCorrelation + sum(0.5 * (1 + σᶻ[j]) / norm(sensor - r[:, j])^2 for j = 1:N)
+        end
+        real(_I_pairCorrelation)
+    end
+    return (Γ^2 / (4 * k₀^2)) * I_pairCorrelation
+end
+
+
+
+
+
+
+
+
+
+# ------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------
+# function laser_and_scattered_intensity(problem::NonLinearOptics{MeanField}, atomic_states, sensor_positions; regime=:far_field, inelasticPart=true)
+#     total_field = laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime=regime)
+
+#     if regime == :far_field
+#         intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
+#             field, sensor = total_field[sensor_field[1]], sensor_field[2]
+#             _get_intensity_far_field(problem, field, atomic_states, norm(sensor); inelasticPart=inelasticPart)
+#         end
+#     elseif regime == :near_field
+#         r = problem.atoms.r
+#         intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
+#             field, sensor = total_field[sensor_field[1]], sensor_field[2]
+#             _get_intensity_near_field(problem, field, atomic_states, sensor, r; inelasticPart=inelasticPart)
+#         end
+#     else
+#         @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
+#     end
+#     return intensities
+# end
+
 
 """
     laser_and_scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field)
@@ -186,50 +204,7 @@ Returns a Vector{Float64} with value of the `|Electric Laser + Electric Scattere
 - sensor_positions: matrix with measurement points
 """
 function laser_and_scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field)
-    total_field = laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
+    total_field = laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime=regime)
     intesities = _get_intensity(problem, total_field)
     return intesities
-end
-
-
-
-function scattered_intensity(problem::NonLinearOptics{MeanField}, atomic_states, sensor_positions; regime=:far_field, inelasticPart=true)
-    fields = scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
-
-    if regime == :far_field
-        intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
-            field, sensor = fields[sensor_field[1]], sensor_field[2]
-            _get_intensity_far_field(problem, field, atomic_states, norm(sensor); inelasticPart=inelasticPart)
-        end
-    elseif regime == :near_field
-        r = problem.atoms.r
-        intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
-            field, sensor = fields[sensor_field[1]], sensor_field[2]
-            _get_intensity_near_field(problem, field, atomic_states, sensor, r; inelasticPart=inelasticPart)
-        end
-    else
-        @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
-    end
-
-    return intensities
-end
-
-function laser_and_scattered_intensity(problem::NonLinearOptics{MeanField}, atomic_states, sensor_positions; regime=:far_field, inelasticPart=true)
-    total_field = laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime = regime)
-
-    if regime == :far_field
-        intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
-            field, sensor = total_field[sensor_field[1]], sensor_field[2]
-            _get_intensity_far_field(problem, field, atomic_states, norm(sensor); inelasticPart=inelasticPart)
-        end
-    elseif regime == :near_field
-        r = problem.atoms.r
-        intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
-            field, sensor = total_field[sensor_field[1]], sensor_field[2]
-            _get_intensity_near_field(problem, field, atomic_states, sensor, r; inelasticPart=inelasticPart)
-        end
-    else
-        @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
-    end
-    return intensities
 end

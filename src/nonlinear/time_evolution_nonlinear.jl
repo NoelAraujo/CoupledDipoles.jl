@@ -42,7 +42,7 @@ function get_evolution_params(problem::NonLinearOptics{MeanField}, G, Ωₙ)
     G[diagind(G)] .= zero(eltype(G))
 
     # `laser_field = (-im/2)*Ω`, but I need only `Ω`
-    Ωₙ_clean = Ωₙ ./ LASER_FACTOR
+    Ωₙ_clean = vec(Ωₙ) ./ LASER_FACTOR
     Wₙ = similar(Ωₙ_clean)
     G_βₙ = similar(Ωₙ_clean)
     temp1 = similar(Ωₙ_clean)
@@ -84,7 +84,7 @@ function get_evolution_params(problem::NonLinearOptics{PairCorrelation}, G, Ω�
     Γⱼₘ = real.(G_c)
 
     # `laser_field = (-im/2)*Ω`, but I need only `Ω`
-    Ω⁻ = Ωₙ ./ LASER_FACTOR
+    Ω⁻ = vec(Ωₙ) ./ LASER_FACTOR
     Ω⁺ = conj.(Ω⁻)
 
     Δ = problem.laser.Δ

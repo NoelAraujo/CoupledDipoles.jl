@@ -102,7 +102,7 @@ end
 
 ## Scalar
 get_evolution_function(problem::LinearOptics{Scalar}) = ODE_LinearSystem!
-get_evolution_params(problem::LinearOptics{Scalar}, G, Ωₙ) = view(G, :, :), view(Ωₙ, :)
+get_evolution_params(problem::LinearOptics{Scalar}, G, Ωₙ) = view(G, :, :), view(vec(Ωₙ), :)
 
 
 

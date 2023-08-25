@@ -84,6 +84,9 @@ export laser_field, laser_intensity
 export apply_laser_over_sensors, apply_laser_over_oneSensor
 export apply_laser_over_oneAtom, laser_angles
 
+include("scattered_fields.jl")
+include("scattered_fields_implementations.jl")
+include("laser_fields.jl")
 include("scattering.jl")
 include("linear/scalar_pump_scattering.jl")
 include("linear/vectorial_pump_scattering.jl")
@@ -141,9 +144,12 @@ SnoopPrecompile.@precompile_all_calls begin
 
     atoms = Atom(Sphere(gaussian=true), N, kL; r_min=0.0)
     laser = Laser(Gaussian3D(w₀), s, Δ)
+    sensors = get_sensors_ring(; num_pts = 10, kR = 300, θ = 5π / 12)
 
     simulation = LinearOptics(Scalar(), atoms, laser)
     βₙ = steady_state(simulation)
+    scattered_intensity(simulation, βₙ, sensors; regime=:near_field)
+    scattered_intensity(simulation, βₙ, sensors; regime=:far_field)
     G = interaction_matrix(simulation)
     ωₙ, Γₙ = get_spectrum(simulation)
     u₀ = default_initial_condition(simulation)
@@ -155,11 +161,15 @@ SnoopPrecompile.@precompile_all_calls begin
     simulation = LinearOptics(Vectorial(), atoms, laser)
     G = interaction_matrix(simulation)
     βₙ = steady_state(simulation)
+    scattered_intensity(simulation, βₙ, sensors; regime=:near_field)
+    scattered_intensity(simulation, βₙ, sensors; regime=:far_field)
 
     simulation = NonLinearOptics(MeanField(), atoms, laser)
     u₀ = default_initial_condition(simulation)
     βₜ = time_evolution(simulation, u₀, tspan)
     βₛ = steady_state(simulation)
+    scattered_intensity(simulation, βₛ, sensors; regime=:near_field)
+    scattered_intensity(simulation, βₛ, sensors; regime=:far_field)
     P_total = scattered_power(simulation, βₛ)
 end
 

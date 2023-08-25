@@ -4,7 +4,7 @@ struct SensorType
 end
 
 function transmission(problem, β; regime=:near_field, rtol=exp10(-10), max_angle=deg2rad(10))
-    # For future, use this link to create integration points in any direction: 
+    # For future, use this link to create integration points in any direction:
     # https://fasiha.github.io/post/spherical-cap/
     # https://github.com/fasiha/sphere-cap-random/blob/gh-pages/src/capRandom.js
     if problem.laser.direction ≉ [0,0,1]
@@ -36,7 +36,7 @@ end
     new_R = 25*size(problem.atoms) # near field values are faster to integrate
     spherical_coordinate = [θ, ϕ, new_R]
     sensor = sph2cart(spherical_coordinate)
-    return sensor
+    return Matrix(sensor')
 end
 @inline function _create_plane_sensor(x, problem)
     x, y = x[1], x[2]

@@ -10,7 +10,7 @@ function steady_state(problem::NonLinearOptics{T}; tmax = 250.0, reltol = 1e-10,
     end
 
     G = copy(interaction_matrix(problem))
-    Ωₙ::Vector{ComplexF64} = laser_field(problem.laser, problem.atoms)
+    Ωₙ = laser_field(problem.laser, problem.atoms)
     parameters = get_evolution_params(problem, G, Ωₙ)
 
     ## `nlsolve` convergence is senstive to initial conditions
