@@ -124,18 +124,18 @@ function prepare_states(problem::LinearOptics{Vectorial}, atomic_states)
     end
 end
 function prepare_states(problem::NonLinearOptics{MeanField}, atomic_states)
-    N = length(atomic_states)÷2
-    if N == problem.atoms.N# if is a vector, return it as a view to reduce memory access
-        σ⁻ = view(atomic_states, 1:N)
+    expected_size = 2*problem.atoms.N
+    if length(atomic_states) == expected_size
+        σ⁻ = view(atomic_states, 1:problem.atoms.N)
         return σ⁻
     else
         @error "Atomic States are Invalid. Use an Array with the same length as the Number of Atoms."
     end
 end
 function prepare_states(problem::NonLinearOptics{PairCorrelation}, atomic_states)
-    N = length(atomic_states)
-    if N == problem.atoms.N# if is a vector, return it as a view to reduce memory access
-        σ⁻ = view(atomic_states, 1:N)
+    expected_size = 2*problem.atoms.N + 4*(problem.atoms.N^2)
+    if length(atomic_states) == expected_size
+        σ⁻ = view(atomic_states, 1:problem.atoms.N)
         return σ⁻
     else
         @error "Atomic States are Invalid. Use an Array with the same length as the Number of Atoms."

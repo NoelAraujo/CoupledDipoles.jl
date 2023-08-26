@@ -133,7 +133,7 @@ using Tullio
 
         βₛₛ = steady_state(problem)
         G = interaction_matrix(problem)
-        βₛₛ_expected = -CoupledDipoles.inverseMatrix2x2(G)*laser_field(laser, Array(transpose(r)))
+        βₛₛ_expected = -CoupledDipoles.inverseMatrix2x2(G)*vec(laser_field(problem, Array(transpose(r))))
         @test all(βₛₛ_expected .≈ βₛₛ)
     end
     @testset "3D scalar: 3 atoms" begin
@@ -167,7 +167,7 @@ using Tullio
         @test all(G .≈ G_expected)
 
         βₛₛ = steady_state(problem)
-        βₛₛ_expected = -CoupledDipoles.inverseMatrix3x3(G)*laser_field(laser, Array(transpose(r)))
+        βₛₛ_expected = -CoupledDipoles.inverseMatrix3x3(G)*vec(laser_field(problem, Array(transpose(r))))
         @test all(βₛₛ_expected .≈ βₛₛ)
     end
 
@@ -193,7 +193,7 @@ using Tullio
 
         laser_expected = -0.5im*CoupledDipoles.Γ * √(0.5s)* CoupledDipoles._scalar_laser_field(laser, sensor)
         @test laser_field(laser, sensor)[1][1] ≈ laser_expected
-        @test laser_field(simulation, sensor)[1][1] ≈ laser_expected
+        @test laser_field(simulation, Array(Matrix(transpose(sensor))'))[1] ≈ laser_expected
 
         sensors = [ 9  3  2   3  10;
                     7  5  4  10   4;
@@ -201,9 +201,8 @@ using Tullio
         laser_expected = map(eachcol(sensors)) do oneSensor
             -0.5im * CoupledDipoles.Γ * √(0.5s)* CoupledDipoles._scalar_laser_field(laser, oneSensor)
         end
-        @test all(laser_field(laser, sensors) .≈ laser_expected)
-        @test all(laser_field(laser, sensors)[1] .≈ laser_field(simulation, sensors)[1])
-
+        @test all(  vec(laser_field(laser, sensors)) .≈ laser_expected)
+        @test all( laser_field(laser, sensors)[1] .≈ laser_field(simulation, sensors)[1])
     end
     @testset "Vectorial Scattering - Single Atom" begin
         using LinearAlgebra

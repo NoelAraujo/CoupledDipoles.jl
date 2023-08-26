@@ -20,7 +20,7 @@ function steady_state(problem::LinearOptics{Scalar}; tmax=250.0, reltol=1e-9, ab
         G = interaction_matrix(problem)
 
         # the conversion from matrix to vector, avoids an extra function to deal single atom
-        Ωₙ = laser_field(problem, vec(problem.atoms.r))
+        Ωₙ = laser_field(problem, problem.atoms.r)
         βₛ =   [-(Ωₙ / G[1])]   # I need a vector for single element
     end
     return βₛ

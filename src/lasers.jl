@@ -51,15 +51,19 @@ function _produce_orthogonal_polarization(laser)
  end
 
 
+
  """
-    laser_intensity(laser, points)
+ laser_intensity(laser, points)
 
-    |laser_field(laser, points)|^2
-"""
-function laser_intensity(problem, sensor)
-    return _get_intensity(problem, laser_field(problem, sensor))
-end
-
+ |laser_field(laser, points)|^2
+ """
+ function laser_intensity(problem, sensors)
+     E_laser = laser_field(problem, sensors)
+     intesities = mapreduce(vcat, eachcol(E_laser)) do field
+         _get_intensity(problem, field)
+     end
+     return intesities
+ end
 
 """
     raby_frequency(laser) = Γ √(s / 2) # saturation is on ressonance

@@ -52,14 +52,20 @@ function scattered_intensity(problem::LinearOptics{T}, atomic_states, sensor_pos
     return intesities
 end
 
-function _get_intensity(problem::LinearOptics{Scalar}, fields::AbstractVector)
-    return abs2.(fields)
+function _get_intensity(problem::LinearOptics{Scalar}, field::AbstractVector)
+    return abs2.(field)
 end
 
 function _get_intensity(problem::LinearOptics{Vectorial}, field::AbstractVector)
     return vec([sum(abs2, field)])
 end
 
+function _get_intensity(problem::NonLinearOptics{MeanField}, field::AbstractVector)
+    return abs2.(field)
+end
+function _get_intensity(problem::NonLinearOptics{PairCorrelation}, field::AbstractVector)
+    return abs2.(field)
+end
 
 function scattered_intensity(problem::NonLinearOptics{T}, atomic_states, sensors; regime=:far_field, inelasticPart=true) where {T<:Union{MeanField,PairCorrelation}}
 
@@ -173,27 +179,6 @@ end
 
 # ------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------
-# function laser_and_scattered_intensity(problem::NonLinearOptics{MeanField}, atomic_states, sensor_positions; regime=:far_field, inelasticPart=true)
-#     total_field = laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime=regime)
-
-#     if regime == :far_field
-#         intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
-#             field, sensor = total_field[sensor_field[1]], sensor_field[2]
-#             _get_intensity_far_field(problem, field, atomic_states, norm(sensor); inelasticPart=inelasticPart)
-#         end
-#     elseif regime == :near_field
-#         r = problem.atoms.r
-#         intensities = ThreadsX.map(pairs(eachcol(sensor_positions))) do sensor_field
-#             field, sensor = total_field[sensor_field[1]], sensor_field[2]
-#             _get_intensity_near_field(problem, field, atomic_states, sensor, r; inelasticPart=inelasticPart)
-#         end
-#     else
-#         @error "the regime $(regime) does not exist. The options are ':far_field' or ':near_field'"
-#     end
-#     return intensities
-# end
-
-
 """
     laser_and_scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field)
 
@@ -201,10 +186,29 @@ Returns a Vector{Float64} with value of the `|Electric Laser + Electric Scattere
 
 - problem: `LinearOptics` or `NonLinearOptics`
 - atomic_states: β for `Scalar`/`Vectorial` Model, or [β,z] for `Mean Field` Model
-- sensor_positions: matrix with measurement points
+- sensors: matrix with measurement points
 """
-function laser_and_scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field)
-    total_field = laser_and_scattered_electric_field(problem, atomic_states, sensor_positions; regime=regime)
-    intesities = _get_intensity(problem, total_field)
-    return intesities
+function laser_and_scattered_intensity(problem, atomic_states, sensors; regime=:far_field)
+    E_laser = laser_field(problem, sensors)
+    E_scattered = scattered_electric_field(problem, atomic_states, sensors;regime=regime)
+
+    I_laser = laser_intensity(problem, sensors)
+    I_scattered = scattered_intensity(problem, atomic_states, sensors;regime=regime)
+
+    total_field = I_laser + I_scattered + 2*real.(_mul_fields(problem, E_laser, E_scattered))
+
+    return total_field
+end
+
+function _mul_fields(problem::LinearOptics{Scalar}, E_laser, E_scattered)
+    vec(E_laser.*E_scattered)
+end
+function _mul_fields(problem::LinearOptics{Vectorial}, E_laser, E_scattered)
+    vec(sum(E_laser.*E_scattered, dims=1))
+end
+function _mul_fields(problem::NonLinearOptics{MeanField}, E_laser, E_scattered)
+    vec(E_laser.*E_scattered)
+end
+function _mul_fields(problem::NonLinearOptics{PairCorrelation}, E_laser, E_scattered)
+    vec(E_laser.*E_scattered)
 end
