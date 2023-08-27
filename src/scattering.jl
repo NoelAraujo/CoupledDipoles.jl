@@ -133,7 +133,6 @@ function _get_intensity_far_field(problem::NonLinearOptics{PairCorrelation}, ato
     r_far_field = how_far_is_farField(problem)
 
     I_pairCorrelation = mapreduce(vcat, eachcol(sensors)) do sensor
-    # for sensor in eachcol(sensors)
         sensor_norm = k₀ * norm(sensor)
         n̂ = sensor / sensor_norm
         _I_pairCorrelation = sum(σ⁺σ⁻[j, m] * cis(dot(n̂, r[:, j] - r[:, m])) for m = 1:N, j = 1:N if j ≠ m)
@@ -141,10 +140,15 @@ function _get_intensity_far_field(problem::NonLinearOptics{PairCorrelation}, ato
             inelast_factor = sum((1 .+ σᶻ) ./ 2)
             _I_pairCorrelation = _I_pairCorrelation .+ inelast_factor
         end
-        (Γ^2 / (4 * (k₀^2) * r_far_field^2)) * _I_pairCorrelation
+        _I_pairCorrelation = (Γ^2 / (4 * (k₀^2) * r_far_field^2)) * _I_pairCorrelation
     end
 
-    return real.(I_pairCorrelation)
+    nSensors = size(sensors,2)
+    if nSensors == 1
+        return [real.(I_pairCorrelation)]
+    else
+        return real.(I_pairCorrelation)
+    end
 end
 function _get_intensity_near_field(problem::NonLinearOptics{PairCorrelation}, atomic_states::AbstractVector, sensors, _intensities; inelasticPart=true)
     N = problem.atoms.N
@@ -166,7 +170,13 @@ function _get_intensity_near_field(problem::NonLinearOptics{PairCorrelation}, at
         end
         real(_I_pairCorrelation)
     end
-    return (Γ^2 / (4 * k₀^2)) * I_pairCorrelation
+
+    nSensors = size(sensors,2)
+    if nSensors == 1
+        return [(Γ^2 / (4 * k₀^2)) * I_pairCorrelation]
+    else
+        return (Γ^2 / (4 * k₀^2)) * I_pairCorrelation
+    end
 end
 
 
@@ -193,7 +203,7 @@ function laser_and_scattered_intensity(problem, atomic_states, sensors; regime=:
     E_scattered = scattered_electric_field(problem, atomic_states, sensors;regime=regime)
 
     I_laser = laser_intensity(problem, sensors)
-    I_scattered = scattered_intensity(problem, atomic_states, sensors;regime=regime)
+    I_scattered = scattered_intensity(problem, atomic_states, sensors; regime=regime)
 
     total_field = I_laser + I_scattered + 2*real.(_mul_fields(problem, E_laser, E_scattered))
 

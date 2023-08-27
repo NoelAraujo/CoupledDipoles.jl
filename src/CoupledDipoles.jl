@@ -50,7 +50,7 @@ include("atoms/atom_cylinder.jl")
 include("atoms/atom_sphere.jl")
 
 include("formulas.jl")
-export ρ_of, b₀_of
+export ρ_of, b₀_of, single_sensor
 
 include("IO.jl")
 export Atom

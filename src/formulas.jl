@@ -122,3 +122,5 @@ end
     a9 = (A[1,1]*A[2,2] -A[1,2]*A[2,1])*constDivision
     return [a1 a2 a3; a4 a5 a6; a7 a8 a9]
 end
+
+single_sensor(x) = reshape(x, length(x), 1)

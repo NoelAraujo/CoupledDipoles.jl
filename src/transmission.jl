@@ -18,12 +18,12 @@ function transmission(problem, β; regime=:near_field, rtol=exp10(-10), max_angl
     scaling_factor = 25*size(problem.atoms)
 
     (I_scattered, _e) = hcubature(integral_domain..., rtol=rtol) do x
-        sensor = getSensor_on_Sphere(x, problem)
+        sensor = single_sensor(getSensor_on_Sphere(x, problem))
         scaling_factor*laser_and_scattered_intensity(problem, β, sensor; regime=regime)
     end
 
     (I_laser, _e) = hcubature(integral_domain..., rtol=rtol) do x
-        sensor = getSensor_on_Sphere(x, problem)
+        sensor = single_sensor(getSensor_on_Sphere(x, problem))
         scaling_factor*laser_intensity(problem, sensor)[1]
     end
 
