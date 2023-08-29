@@ -1,5 +1,5 @@
 # --------------------------------- GENERAL FUNCTIONS ---------------------------------
-function time_evolution(problem::NonLinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, kargs...) where {T<:NonLinear}
+function time_evolution(problem::NonLinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, change_solver=false, kargs...) where {T<:NonLinear}
     if ode_solver == false
         @warn "NonLinearOptics does not have formal solution. Using numerical solution instead." maxlog = 1
     end
@@ -7,8 +7,7 @@ function time_evolution(problem::NonLinearOptics{T}, u₀, tspan::Tuple; ode_sol
     G = copy(interaction_matrix(problem))
     Ωₙ = laser_field(problem.laser, problem.atoms)
 
-    change_solver = get(kargs, :change_solver, false)
-    solution = time_evolution_ode_solver(problem, u₀, tspan, Ωₙ, G; change_solver=change_solver)
+    solution = time_evolution_ode_solver(problem, u₀, tspan, Ωₙ, G; change_solver=change_solver, kargs...)
 
     return solution
 end
