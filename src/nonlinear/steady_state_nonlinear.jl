@@ -1,7 +1,7 @@
 """
 	steady_state(problem::NonLinearOptics{MeanField}; tmax = 250.0, reltol = 1e-11, abstol = 1e-10, m = 90, ode_solver = false)
 """
-function steady_state(problem::NonLinearOptics{T}; tmax = 250.0, reltol = 1e-11, abstol = 1e-10, m = 90, ode_solver = false)  where {T<:NonLinear}
+function steady_state(problem::NonLinearOptics{T}; tmax = 250.0, reltol = 1e-11, abstol = 1e-11, m = 90, ode_solver = false)  where {T<:NonLinear}
 
 	if ode_solver
 		tspan = (0.0, tmax)

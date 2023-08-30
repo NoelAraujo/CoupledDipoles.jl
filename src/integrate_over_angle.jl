@@ -65,7 +65,7 @@ function get_intensity_over_an_angle(problem, atoms_states::Vector{Vector{T}}, a
         # i avoid creating these matrices many times creating them here, and making the same program
         # as the 'single angle and single single state', defined above
         xⱼₘ2, yⱼₘ2, zⱼₘ = _rⱼₘ_distances(problem)
-        return map(atoms_states) do β
+        return map(atoms_states) do β  # O(N^2)
             _intensity_angle_exact_solution(problem, β, angle, xⱼₘ2, yⱼₘ2, zⱼₘ)
         end
     end

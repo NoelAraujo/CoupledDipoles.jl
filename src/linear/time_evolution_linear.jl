@@ -35,7 +35,8 @@ function time_evolution_ode_solver(problem::LinearOptics{T}, u₀, tspan::Tuple,
     ### calls for solver
     problemFunction = get_evolution_function(problem)
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
-    solution = OrdinaryDiffEq.solve(prob, VCABM3(); abstol=1e-9, kargs...)
+    _solution = OrdinaryDiffEq.solve(prob, VCABM3(); abstol=1e-9, kargs...)
+    solution = prepare_outputs(problem, _solution)
 
     return solution
 end
@@ -103,7 +104,7 @@ end
 ## Scalar
 get_evolution_function(problem::LinearOptics{Scalar}) = ODE_LinearSystem!
 get_evolution_params(problem::LinearOptics{Scalar}, G, Ωₙ) = view(G, :, :), view(vec(Ωₙ), :)
-
+prepare_outputs(problem::LinearOptics{Scalar}, solution) = (t=solution.t, u=solution.u)
 
 
 
@@ -113,6 +114,9 @@ function get_evolution_params(problem::LinearOptics{Vectorial}, G, Ωₙ)
     Ωₙ_eff = _vecAux_Matrix_into_longArray(Ωₙ)
     return view(G, :, :), view(Ωₙ_eff, :)
 end
+prepare_outputs(problem::LinearOptics{Vectorial}, solution) = (t=solution.t,
+    u=[_vecAux_longArray_into_Matrix(problem.atoms.N, uu) for uu in solution.u]
+)
 
 # this function is executed when i compute the vectorial model
 function formal_solution_laser_off(

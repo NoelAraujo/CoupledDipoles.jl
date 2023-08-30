@@ -25,7 +25,7 @@ function time_evolution_ode_solver(problem::NonLinearOptics{T}, u₀, tspan::Tup
         solution = OrdinaryDiffEq.solve(prob, RDPK3Sp35(); abstol=1e-10, kargs...)
     end
 
-    return solution
+    return (t=solution.t, u=solution.u)
 end
 
 
@@ -73,9 +73,9 @@ end
 
 ## PariCorrelation
 function get_evolution_params(problem::NonLinearOptics{PairCorrelation}, G, Ωₙ)
-    # for the PairCorrelation, the interaction matrix does not contain 'im*(Γ/2)'
-    G_c = (2 / Γ) .* G
-    G_c .= G_c ./ im
+    # for the PairCorrelation, the interaction matrix does not contain '(+Γ/2)'
+    G_c = (-2 / Γ) .* G
+    G_c[diagind(G_c)] .= zero(eltype(G_c)) ## for 'j ≠ m' --> diagonal is zero
 
 
     N = problem.atoms.N
