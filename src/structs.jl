@@ -24,10 +24,10 @@ end
 struct Cylinder <: ThreeD end
 
 struct Atom{T<:Dimension}
-    shape::T
-    r::Matrix{Float64}
-    N::Int64
-    sizes::Any
+    shape::T            # Cube, Sphere, Cylinder
+    r::Matrix{Float64}  # atomic matrix (column-major)
+    N::Int64            # number of atoms
+    sizes::Any          # characteristic of the shape (e.g, 'Sphere' is the 'radius')
 end
 
 get_dimension(atom::Atom{T}) where {T<:TwoD} = 2
@@ -57,12 +57,12 @@ struct Gaussian3D <: Gaussian
     end
 end
 
-mutable struct Laser{T}
-    pump::T
-    s::Float64
-    Δ::Float64
-    direction::AbstractArray
-    polarization::AbstractArray
+mutable struct Laser{T}         # 'mutable' because 'Δ' usually is is altered
+    pump::T                     # PlanweWave3D, Gaussian3D
+    s::Float64                  # saturation at ressonance
+    Δ::Float64                  # atom-laser detunning
+    direction::AbstractArray    # propagation direction
+    polarization::AbstractArray # must be: orthogonal to 'direction'
 end
 
 
@@ -76,18 +76,17 @@ struct MeanField <: NonLinear end
 struct PairCorrelation <: NonLinear end
 
 struct LinearOptics{T<:Linear}
-    physic::T
-    atoms::Atom
-    laser::Laser
-    kernelFunction!::Function
-    spectrum::Dict
-    data::Dict
+    physic::T                   # Scalar, Vectorial
+    atoms::Atom                 # result from Atom struct
+    laser::Laser                # result from Laser struct
+    kernelFunction!::Function   # computes the atomic interaction
+    spectrum::Dict              # stores eigenvalues/eigenvectors
+    data::Dict                  # empty dict for general use
 end
 
 struct NonLinearOptics{T<:NonLinear}
     physic::T
     atoms::Atom
     laser::Laser
-    excitations::Dict
     data::Dict
 end

@@ -29,9 +29,6 @@ elseif Sys.islinux()
     end
 end
 using NLsolve
-using ParallelStencil
-@init_parallel_stencil(Threads, Float64, 2);
-
 using Distributions: MvNormal
 using Bessels
 using Random

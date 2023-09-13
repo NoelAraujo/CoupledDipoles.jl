@@ -46,14 +46,33 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
         # E_y += _E[2]
         # E_z += _E[3]
         for η=1:3
-            E_x += G[1,η]*βⱼ[η]
+            E_x += G[1, η]*βⱼ[η]
         end
         for η=1:3
-            E_y += G[2,η]*βⱼ[η]
+            E_y += G[2, η]*βⱼ[η]
         end
         for η=1:3
-            E_z += G[3,η]*βⱼ[η]
+            E_z += G[3, η]*βⱼ[η]
         end
+
+        # r = norm(r_jm)
+        # r̂ = r_jm./r
+
+        # P = (3/2)*(cis(r)/r)
+        # Q = im/r - 1/r^2
+
+        # x, y, z = r̂[1], r̂[2], r̂[3]
+        # E_x +=  P*(r^2 - x^2 + Q*(r^2 - 3*x^2))*βⱼ[1]
+        # E_x += P*( -x*y - Q*3*x*y )*βⱼ[2]
+        # E_x += P*( -x*z - Q*3*x*z )*βⱼ[3]
+
+        # E_y += P*( -x*y - Q*3*x*y )*βⱼ[1]
+        # E_y += P*(r^2 - y^2 + Q*(r^2 - 3*y^2))*βⱼ[2]
+        # E_y += P*( -x*z - Q*3*x*z )*βⱼ[3]
+
+        # E_z += P*( -z*x - Q*3*z*x )*βⱼ[1]
+        # E_z += P*( -z*y - Q*3*z*y )*βⱼ[2]
+        # E_z += P*(r^2 - z^2 + Q*(r^2 - 3*z^2))*βⱼ[3]
     end
 
     return +im*(Γ/2)*[E_x, E_y, E_z]
@@ -65,25 +84,47 @@ function _vectorial_3D_green_kernel(r_jm::Vector)
 end
 
 @inline function _vectorial_3D_green_kernel!(r_jm::Vector, G::Matrix)
-    r = k₀*norm(r_jm)
+    ## alternative version
+    # r = norm(r_jm)
+    # r̂ = r_jm ./ r
+
+    # P = (3 / 2) * (cis(r) / r)
+    # Q = im / r - 1 / r^2
+
+    # x, y, z = r̂[1], r̂[2], r̂[3]
+
+    # G[1] = P * (1 - x^2 + (1 - 3 * x^2)*Q)
+    # G[4] = P * (-x * y - Q * 3 * x * y)
+    # G[7] = P * (-x * z - Q * 3 * x * z)
+
+    # G[2] = P * (-y * x - Q * 3 * y * x)
+    # G[5] = P * (1 - y^2 + Q * (1 - 3 * y^2))
+    # G[8] = P * (-y * z - Q * 3 * y * z)
+
+    # G[3] = P * (-z * x - Q * 3 * z * x)
+    # G[6] = P * (-z * y - Q * 3 * z * y)
+    # G[9] = P * (1 - z^2 + Q * (1 - 3 * z^2))
+
+    r = k₀ * norm(r_jm)
     r2 = r^2
 
-    P = (3/2)*(cis(r)/r)*(1 + im/r - 1/r2)
-    Q = (3/2)*(cis(r)/r)*(-1 - 3im/r + 3/r2)/r2
+    P = 1 + (im / r) - (1 / r2)
+    Q = (-1 - (3im / r) + (3 / r2)) / r2
 
     x, y, z = r_jm[1], r_jm[2], r_jm[3]
-    G[1] = P+Q*x^2
-    G[4] = Q*x*y
-    G[7] = Q*x*z
+    G[1] = P + x^2 * Q
+    G[4] = x * y * Q
+    G[7] = x * z * Q
 
-    G[2] = Q*y*x
-    G[5] = P + Q*y^2
-    G[8] = Q*y*z
+    G[2] = y * x * Q
+    G[5] = P + y^2 * Q
+    G[8] = y * z * Q
 
-    G[3] = Q*z*x
-    G[6] = Q*z*y
-    G[9] = P + Q*z^2
+    G[3] = z * x * Q
+    G[6] = z * y * Q
+    G[9] = P + z^2 * Q
 
+    G .*= (3 / 2) * (cis(r) / r)
     return nothing
 end
 

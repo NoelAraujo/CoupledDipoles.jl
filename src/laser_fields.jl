@@ -60,11 +60,10 @@ end
 
 function _VECTOR_laser_field(problem::LinearOptics{Vectorial}, sensors, Ω₀)
     polarization = problem.laser.polarization
-    _laser_electric_fields = ThreadsX.map(eachcol(sensors)) do sensor
+    laser_electric_fields = mapreduce(hcat, eachcol(sensors)) do sensor
         LASER_FACTOR * Ω₀ * polarization .* laser_geometry(problem.laser, sensor)
     end
 
-    laser_electric_fields::Matrix{ComplexF64} = hcat(_laser_electric_fields...)
     return laser_electric_fields
 end
 

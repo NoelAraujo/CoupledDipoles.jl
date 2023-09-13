@@ -24,7 +24,7 @@ end
 β₀ = zeros(ComplexF64, atoms.N)
 z₀ = 2β₀.*conj.(β₀) .- 1
 
-u₀ = [ <σ⁻> | <σ⁻>_z ] = [ zeros | -ones ]
+u₀ = [ <σ⁻> | <σᶻ> ] = [ zeros | -ones ]
 """
 function default_initial_condition(problem::NonLinearOptics{MeanField})
     β₀ = zeros(ComplexF64, problem.atoms.N)
@@ -36,7 +36,7 @@ end
 """
     default_evolution_initial_condition(NonLinearOptics{PairCorrelation})
 
-    u₀ = [ <σ⁻> | <σ⁻>_z | <σσ> | <σσ> | <σσ> | <σσ> ] = [ zeros | -ones | zeros | zeros | zeros | zeros ]
+    u₀ = [ <σ⁻> | <σᶻ> | <σᶻσ⁻> | <σ⁺σ⁻> | <σ⁻σ⁻> | <σᶻσᶻ> ] = [ zeros | -ones | zeros | zeros | zeros | ones (zero on diagonal) ]
 """
 function default_initial_condition(problem::NonLinearOptics{PairCorrelation})
     N = problem.atoms.N
@@ -44,6 +44,8 @@ function default_initial_condition(problem::NonLinearOptics{PairCorrelation})
 
     # i can't argument/explain/justify the conditions
     u₀[N+1:2*N] .= -1 # σᶻ
+    # only 'σᶻσᶻ' has different values than zero
+    # it is a matrix with ones, and zeros at diagonal
     u₀[2*N+3*N^2+1:2*N+4*N^2] .= +1
     u₀[2*N+3*N^2+1:N+1:2*N+4*N^2] .= 0.0
 

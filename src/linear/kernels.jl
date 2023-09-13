@@ -41,8 +41,6 @@ function interaction_matrix(problem::NonLinearOptics{PairCorrelation})
 	G = get_empty_matrix(temp_scalar_problem.physic, temp_scalar_problem.atoms)
 	temp_scalar_problem.kernelFunction!(temp_scalar_problem.atoms, problem.laser, G)
 
-	# @. G *= 2 / Γ ## I NEED IT
-	# @. G /= im ## TO VERIFY IF I NEED IT
 
 	temp_scalar_problem = 1
 
@@ -78,61 +76,75 @@ function green_scalar!(atoms, laser, G)
     return nothing
 end
 
-@parallel_indices (x,y) function Rjm_parallel!(Rjm, Xjm, Yjm, Zjm)
-        Rjm[x,y] = sqrt(Xjm[x,y]^ 2 + Zjm[x,y]^ 2 + Yjm[x,y]^ 2)
+function Rjm_parallel!(Rjm, Xjm, Yjm, Zjm)
+    Threads.@threads for j in eachindex(Rjm)
+        Rjm[j] = sqrt(Xjm[j]^ 2 + Zjm[j]^ 2 + Yjm[j]^ 2)
+    end
     return nothing
 end
-@parallel_indices (x,y) function temp1_parallel!(temp1, Rjm)
-        temp1[x,y] = im*(Γ/2)*(3cis(k₀*Rjm[x,y]))/(2*k₀*Rjm[x,y])
+function temp1_parallel!(temp1, Rjm)
+    Threads.@threads for j in eachindex(temp1)
+        temp1[j] = im*(Γ/2)*(3cis(k₀*Rjm[j]))/(2*k₀*Rjm[j])
+    end
     return nothing
 end
-@parallel_indices (x,y) function temp2_parallel!(temp2, Rjm)
-        temp2[x,y] = ( im/(k₀*Rjm[x,y]) - 1.0/(k₀*Rjm[x,y])^2)
-    return nothing
-end
-
-@parallel_indices (x,y) function Gx_parallel!(Gxx, Gyx, Gzx, temp1, Xjm, Yjm, Zjm, temp2)
-    _temp1 = temp1[x,y]
-    _temp2 = temp2[x,y]
-    _Xjm = Xjm[x,y]
-    _Yjm = Yjm[x,y]
-    _Zjm = Zjm[x,y]
-    Gxx[x,y] = _temp1*( (1.0 - _Xjm*_Xjm) + (1.0 - 3.0*_Xjm*_Xjm)*_temp2)
-    Gyx[x,y] = _temp1*( ( - _Yjm*_Xjm) + ( - 3.0*_Yjm*_Xjm)*_temp2)
-    Gzx[x,y] = _temp1*( ( - _Zjm*_Xjm) + ( - 3.0*_Zjm*_Xjm)*_temp2)
+function temp2_parallel!(temp2, Rjm)
+    Threads.@threads for j in eachindex(temp2)
+        temp2[j] = ( im/(k₀*Rjm[j]) - 1.0/(k₀*Rjm[j])^2)
+    end
     return nothing
 end
 
-@parallel_indices (x,y) function Gy_parallel!(Gxy, Gyy, Gzy, temp1, Xjm, Yjm, Zjm, temp2)
-_temp1 = temp1[x,y]
-    _temp2 = temp2[x,y]
-    _Xjm = Xjm[x,y]
-    _Yjm = Yjm[x,y]
-    _Zjm = Zjm[x,y]
-    Gxy[x,y] = _temp1*( ( - _Xjm*_Yjm) + ( - 3.0*_Xjm*_Yjm)*_temp2)
-    Gyy[x,y] = _temp1*( (1.0 - _Yjm*_Yjm) + (1.0 - 3.0*_Yjm*_Yjm)*_temp2)
-    Gzy[x,y] = _temp1*( ( - _Zjm*_Yjm) + ( - 3.0*_Zjm*_Yjm)*_temp2)
+function Gx_parallel!(Gxx, Gyx, Gzx, temp1, Xjm, Yjm, Zjm, temp2)
+    Threads.@threads for j in eachindex(Gxx)
+        _temp1 = temp1[j]
+        _temp2 = temp2[j]
+        _Xjm = Xjm[j]
+        _Yjm = Yjm[j]
+        _Zjm = Zjm[j]
+        Gxx[j] = _temp1*( (1.0 - _Xjm*_Xjm) + (1.0 - 3.0*_Xjm*_Xjm)*_temp2)
+        Gyx[j] = _temp1*( ( - _Yjm*_Xjm) + ( - 3.0*_Yjm*_Xjm)*_temp2)
+        Gzx[j] = _temp1*( ( - _Zjm*_Xjm) + ( - 3.0*_Zjm*_Xjm)*_temp2)
+    end
     return nothing
 end
 
-@parallel_indices (x,y) function Gz_parallel!(Gxz, Gyz, Gzz, temp1, Xjm, Yjm, Zjm, temp2)
-    _temp1 = temp1[x,y]
-    _temp2 = temp2[x,y]
-    _Xjm = Xjm[x,y]
-    _Yjm = Yjm[x,y]
-    _Zjm = Zjm[x,y]
-    Gxz[x,y] = _temp1*( ( - _Xjm*_Zjm) + ( - 3.0*_Xjm*_Zjm)*_temp2)
-    Gyz[x,y] = _temp1*( ( - _Yjm*_Zjm) + ( - 3.0*_Yjm*_Zjm)*_temp2)
-    Gzz[x,y] = _temp1*( (1.0 - _Zjm*_Zjm) + (1.0 - 3.0*_Zjm*_Zjm)*_temp2)
-     return nothing
+function Gy_parallel!(Gxy, Gyy, Gzy, temp1, Xjm, Yjm, Zjm, temp2)
+    Threads.@threads for j in eachindex(Gxy)
+        _temp1 = temp1[j]
+        _temp2 = temp2[j]
+        _Xjm = Xjm[j]
+        _Yjm = Yjm[j]
+        _Zjm = Zjm[j]
+        Gxy[j] = _temp1*( ( - _Xjm*_Yjm) + ( - 3.0*_Xjm*_Yjm)*_temp2)
+        Gyy[j] = _temp1*( (1.0 - _Yjm*_Yjm) + (1.0 - 3.0*_Yjm*_Yjm)*_temp2)
+        Gzy[j] = _temp1*( ( - _Zjm*_Yjm) + ( - 3.0*_Zjm*_Yjm)*_temp2)
+    end
+    return nothing
 end
 
-
-@parallel_indices (x,y) function G_removeNaN!(G, Δ)
-    if isnan(G[x,y])
-        G[x,y] = 0.0im
+function Gz_parallel!(Gxz, Gyz, Gzz, temp1, Xjm, Yjm, Zjm, temp2)
+    Threads.@threads for j in eachindex(Gxz)
+        _temp1 = temp1[j]
+        _temp2 = temp2[j]
+        _Xjm = Xjm[j]
+        _Yjm = Yjm[j]
+        _Zjm = Zjm[j]
+        Gxz[j] = _temp1*( ( - _Xjm*_Zjm) + ( - 3.0*_Xjm*_Zjm)*_temp2)
+        Gyz[j] = _temp1*( ( - _Yjm*_Zjm) + ( - 3.0*_Yjm*_Zjm)*_temp2)
+        Gzz[j] = _temp1*( (1.0 - _Zjm*_Zjm) + (1.0 - 3.0*_Zjm*_Zjm)*_temp2)
     end
      return nothing
+end
+
+
+function G_removeNaN!(G, Δ)
+    Threads.@threads for j in eachindex(G)
+        if isnan(G[j])
+            G[j] = 0.0im
+        end
+    end
+    return nothing
 end
 
 function my_pairwise(a, b=a)
@@ -160,7 +172,7 @@ function green_vectorial!(atoms, laser, G)
     Zjm = my_pairwise(Zt)
 
     Rjm = Array{Float64,2}(undef, N, N)
-    @parallel Rjm_parallel!(Rjm, Xjm, Yjm, Zjm)
+    Rjm_parallel!(Rjm, Xjm, Yjm, Zjm)
 
     Xjm = view(Xjm./Rjm, :, :)
     Yjm = view(Yjm./Rjm, :, :)
@@ -169,14 +181,14 @@ function green_vectorial!(atoms, laser, G)
 
     temp1 = Array{ComplexF64,2}(undef, N, N)
     temp2 = Array{ComplexF64,2}(undef, N, N)
-    @parallel temp1_parallel!(temp1, Rjm)
-    @parallel temp2_parallel!(temp2, Rjm)
+    temp1_parallel!(temp1, Rjm)
+    temp2_parallel!(temp2, Rjm)
 
 
     ## fill matriz by collumns, because Julia matrices are column-major
     ## G[:, 1:N] = [Gxx; Gyx; Gzx]
     Gxx, Gyx, Gzx = Array{ComplexF64,2}(undef, N, N), Array{ComplexF64,2}(undef, N, N), Array{ComplexF64,2}(undef, N, N)
-    @parallel Gx_parallel!(Gxx, Gyx, Gzx, temp1, Xjm, Yjm, Zjm, temp2)
+    Gx_parallel!(Gxx, Gyx, Gzx, temp1, Xjm, Yjm, Zjm, temp2)
 
     @inbounds @. G[1:N,         1:N] = copy(Gxx)
     @inbounds @. G[(N+1):(2N),  1:N] = copy(Gyx)
@@ -186,7 +198,7 @@ function green_vectorial!(atoms, laser, G)
 
     ## G[:, (N+1):(2N)] = [Gxy; Gyy; Gzy]
     Gxy, Gyy, Gzy = Gxx, Gyx, Gzx
-    @parallel Gy_parallel!(Gxx, Gyx, Gzy, temp1, Xjm, Yjm, Zjm, temp2)
+    Gy_parallel!(Gxx, Gyx, Gzy, temp1, Xjm, Yjm, Zjm, temp2)
 
     @inbounds @. G[1:N,         (N+1):(2N)] = copy(Gxy)
     @inbounds @. G[(N+1):(2N),  (N+1):(2N)] = copy(Gyy)
@@ -195,7 +207,7 @@ function green_vectorial!(atoms, laser, G)
 
     ## G[:, (2N+1):(3N)] = [Gxz; Gyz; Gzz]
     Gxz, Gyz, Gzz = Gxx, Gyx, Gzx
-    @parallel Gz_parallel!(Gxz, Gyz, Gzz, temp1, Xjm, Yjm, Zjm, temp2)
+    Gz_parallel!(Gxz, Gyz, Gzz, temp1, Xjm, Yjm, Zjm, temp2)
 
     @inbounds @. G[1:N,        (2N+1):(3N)]  = copy(Gxz)
     @inbounds @. G[(N+1):(2N),  (2N+1):(3N)] = copy(Gyz)
@@ -203,7 +215,7 @@ function green_vectorial!(atoms, laser, G)
 
 
     G[diagind(G)] .= im*Δ - Γ/2 # diagonals have the single atom solution
-    @parallel G_removeNaN!(G, Δ)
+    G_removeNaN!(G, Δ)
 
     # force clean variables
     Xjm = Yjm = Zjm = temp1 = temp2 = 1
