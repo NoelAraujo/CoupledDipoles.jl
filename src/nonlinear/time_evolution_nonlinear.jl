@@ -18,13 +18,7 @@ function time_evolution_ode_solver(problem::NonLinearOptics{T}, u₀, tspan::Tup
     problemFunction = get_evolution_function(problem)
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
 
-    if ρ_of(problem.atoms) < 0.1 || change_solver == true
-        # RDPK3SpFSAL35
-        solution = OrdinaryDiffEq.solve(prob, VCABM3(); abstol=1e-10, kargs...)
-    else
-        solution = OrdinaryDiffEq.solve(prob, RDPK3Sp35(); abstol=1e-10, kargs...)
-    end
-
+    solution = OrdinaryDiffEq.solve(prob, VCABM(); abstol=1e-11, kargs...)
     return (t=solution.t, u=solution.u)
 end
 

@@ -162,9 +162,9 @@ end
     classify_modes(problem)
 returns a tuple `(loc, sub, super)` with indices
 """
-function classify_modes(problem; forceComputation=false, fitting_threshold=0.5)
+function classify_modes(problem; forceComputation=false, fitting_threshold=0.5, showprogress=false)
     ωₙ, Γₙ = get_spectrum(problem; forceComputation=forceComputation)
-    ξₙ, R²ₙ = get_localization_length(problem; forceComputation=forceComputation)
+    ξₙ, R²ₙ = get_localization_length(problem; forceComputation=forceComputation, showprogress=showprogress)
 
     localized_modes = findall((Γₙ .< Γ) .* (R²ₙ .≥ fitting_threshold))
     sub_radiant_modes = findall((Γₙ .< Γ) .* (R²ₙ .< fitting_threshold))
