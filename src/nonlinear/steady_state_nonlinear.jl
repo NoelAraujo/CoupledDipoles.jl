@@ -26,6 +26,8 @@ function steady_state(problem::NonLinearOptics{T}; tmax = 250.0, reltol = 1e-11,
     end
 
     try
+        new_tspan = (0.0, 75.0) # ad hoc
+        u₀_guess = time_evolution(problem, u₀, new_tspan; reltol = reltol, abstol = abstol, save_on = false).u[end]
         solution = nlsolve((du, u) -> problemFunction(du, u, parameters, 0.0), u₀_guess, method = :anderson, m = m, autodiff = :forward)
         return solution.zero
     catch
