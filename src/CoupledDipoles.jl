@@ -168,6 +168,15 @@ SnoopPrecompile.@precompile_all_calls begin
     scattered_intensity(simulation, βₛ, sensors; regime=:near_field)
     scattered_intensity(simulation, βₛ, sensors; regime=:far_field)
     P_total = scattered_power(simulation, βₛ)
+
+    simulation = NonLinearOptics(PairCorrelation(), atoms, laser)
+    u₀ = default_initial_condition(simulation)
+    βₜ = time_evolution(simulation, u₀, tspan)
+    βₛ = steady_state(simulation; ode_solver=true, tmax=10)
+    βₛ = steady_state(simulation; tmax=10)
+    scattered_intensity(simulation, βₛ, sensors; regime=:near_field)
+    scattered_intensity(simulation, βₛ, sensors; regime=:far_field)
+
 end
 
 end

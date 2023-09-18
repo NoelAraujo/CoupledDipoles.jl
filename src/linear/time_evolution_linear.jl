@@ -1,5 +1,5 @@
 # --------------------------------- GENERAL FUNCTIONS ---------------------------------
-function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, kargs...) where {T<:Linear}
+function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, interaction=interaction_matrix(problem), kargs...) where {T<:Linear}
 
     tmin = tspan[1]
     tmax = tspan[2]
@@ -21,14 +21,15 @@ function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; ode_solver
     end
 
     ### use default G and Ωₙ
-    G = copy(interaction_matrix(problem))
+
+    G = interaction
     Ωₙ = laser_field(problem, problem.atoms.r)
     solution = time_evolution_ode_solver(problem, u₀, tspan, Ωₙ, G; kargs...)
 
     return solution
 end
 
-function time_evolution_ode_solver(problem::LinearOptics{T}, u₀, tspan::Tuple, Ωₙ::VecOrMat, G::Matrix; kargs...) where {T<:Linear}
+function time_evolution_ode_solver(problem::LinearOptics{T}, u₀, tspan::Tuple, Ωₙ, G; kargs...) where {T<:Linear}
     ### parameters == constant vector and matrices
     parameters = get_evolution_params(problem, G, Ωₙ)
 
