@@ -85,7 +85,7 @@ function scattered_intensity(problem::NonLinearOptics{T}, atomic_states, sensors
     _atomic_states = view(atomic_states, 1:problem.atoms.N)
     intensities_scalar = scattered_intensity(_dummy, _atomic_states, sensors)
 
-    intensities = get_intensity(problem, atomic_states, sensors, intensities_scalar)
+    intensities = get_intensity(problem, atomic_states, sensors, intensities_scalar; inelasticPart=inelasticPart)
     return intensities
 end
 
