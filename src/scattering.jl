@@ -43,8 +43,8 @@ scattered_intensity(problem_scalar, atomic_states_scalar, sensor)
 scattered_intensity(problem_vectorial, atomic_states_vectorial, sensor)
 ```
 """
-function scattered_intensity(problem::LinearOptics{T}, atomic_states, sensor_positions; regime=:far_field) where {T<:Union{Scalar,Vectorial}}
-    fields = scattered_electric_field(problem, atomic_states, sensor_positions; regime=regime)
+function scattered_intensity(problem::LinearOptics{T}, atomic_states, sensor_positions; regime=:far_field, use_sequencial=false) where {T<:Union{Scalar,Vectorial}}
+    fields = scattered_electric_field(problem, atomic_states, sensor_positions; regime=regime, use_sequencial=use_sequencial)
 
     intesities = mapreduce(vcat, eachcol(fields)) do field
         _get_intensity(problem, field)
@@ -67,7 +67,7 @@ function _get_intensity(problem::NonLinearOptics{PairCorrelation}, field::Abstra
     return abs2.(field)
 end
 
-function scattered_intensity(problem::NonLinearOptics{T}, atomic_states, sensors; regime=:far_field, inelasticPart=true) where {T<:Union{MeanField,PairCorrelation}}
+function scattered_intensity(problem::NonLinearOptics{T}, atomic_states, sensors; regime=:far_field, inelasticPart=true, use_sequencial=false) where {T<:Union{MeanField,PairCorrelation}}
 
     ## define the 'function' to be used
     if regime == :far_field

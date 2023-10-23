@@ -49,7 +49,7 @@ scattered_electric_field(problem_scalar, atomic_states_scalar, sensor)
 scattered_electric_field(problem_vectorial, atomic_states_vectorial, sensor)
 ```
 """
-function scattered_electric_field(problem, atomic_states, sensors; regime=:far_field)
+function scattered_electric_field(problem, atomic_states, sensors; regime=:far_field, use_sequencial=false)
     ## validate inputs
     states = prepare_states(problem, atomic_states)
     measurement_positions = prepare_sensors(problem, sensors)
@@ -64,7 +64,7 @@ function scattered_electric_field(problem, atomic_states, sensors; regime=:far_f
     end
 
     ## compute fields
-    if problem.atoms.N ≤ 25 # SEQUENCIAL map is faster for atoms below ~25
+    if problem.atoms.N ≤ 25 || use_sequencial==true # SEQUENCIAL map is faster for atoms below ~25
         _electric_fields = map(eachcol(measurement_positions)) do sensor
             single_point_field(problem, states, sensor)
         end

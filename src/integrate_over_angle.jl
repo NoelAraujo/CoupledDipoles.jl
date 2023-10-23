@@ -118,7 +118,7 @@ end
     return (2π)*Γ^2/(4*k₀R^2)*2real(total_intensity)
 end
 
-function _intensity_angle_approx_quadradure(problem, atoms_states, θ::Number; tol=exp10(-7.4))
+function _intensity_angle_approx_quadradure(problem, atoms_states, θ::Number; tol=exp10(-7.4), regime=:far_field)
     R = how_far_is_farField(problem)
 
     sensor = Matrix{Float64}(undef,3, 1)
@@ -126,13 +126,22 @@ function _intensity_angle_approx_quadradure(problem, atoms_states, θ::Number; t
         sensor[1] = R*sin(θ)*cos(ϕ[1])
         sensor[2] = R*sin(θ)*sin(ϕ[1])
         sensor[3] = R*cos(θ)
-        scattered_intensity(problem, atoms_states, sensor; regime=:far_field)
+        scattered_intensity(problem, atoms_states, sensor; regime=regime, use_sequencial=true)
     end
     return  intensity[1]
 end
 
 
 # --------------------------------- MODEL SPECIFIC ---------------------------------
+function get_intensity_over_an_angle(problem::LinearOptics{Vectorial}, atoms_states::AbstractMatrix, angle; tol=exp10(-7.4), exact_solution=false)
+    _intensity_angle_approx_quadradure(problem, atoms_states, angle; tol=tol)
+end
+function get_intensity_over_an_angle(problem, atoms_states::Vector{Matrix{T}}, angle::Number; tol=exp10(-7.4), exact_solution=false) where T <: ComplexF64
+    ThreadsX.map(atoms_states) do β
+        _intensity_angle_approx_quadradure(problem, β, angle; tol=tol)
+    end
+end
+
 function _two_body_correlator(problem::LinearOptics{Scalar}, atoms_states, number_configurations)
     N = problem.atoms.N
     βⱼ = view(atoms_states, 1:N)

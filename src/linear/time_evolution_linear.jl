@@ -126,5 +126,7 @@ function formal_solution_laser_off(
     time_interval::AbstractVector,
 )
     initial_state_array = _vecAux_Matrix_into_longArray(initial_state)
-    formal_solution_laser_off(problem, initial_state_array, time_interval)
+    temp = formal_solution_laser_off(problem, initial_state_array, time_interval)
+    u_vectorial = [CoupledDipoles._vecAux_longArray_into_Matrix(problem.atoms.N, u) for u in temp.u]
+    return (t=temp.t, u=u_vectorial)
 end
