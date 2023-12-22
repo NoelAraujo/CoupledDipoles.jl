@@ -31,11 +31,11 @@ end
 
 function time_evolution_ode_solver(problem::LinearOptics{T}, u₀, tspan::Tuple, Ωₙ, G; kargs...) where {T<:Linear}
     ### parameters == constant vector and matrices
-    parameters = get_evolution_params(problem, G, Ωₙ)
+    _u₀, parameters = get_evolution_params(problem, G, Ωₙ, u₀)
 
     ### calls for solver
     problemFunction = get_evolution_function(problem)
-    prob = ODEProblem(problemFunction, u₀, tspan, parameters)
+    prob = ODEProblem(problemFunction, _u₀, tspan, parameters)
     _solution = OrdinaryDiffEq.solve(prob, VCABM3(); abstol=1e-9, kargs...)
     solution = prepare_outputs(problem, _solution)
 
@@ -104,16 +104,17 @@ end
 
 ## Scalar
 get_evolution_function(problem::LinearOptics{Scalar}) = ODE_LinearSystem!
-get_evolution_params(problem::LinearOptics{Scalar}, G, Ωₙ) = view(G, :, :), view(vec(Ωₙ), :)
+get_evolution_params(problem::LinearOptics{Scalar}, G, Ωₙ, u₀) = u₀, (view(G, :, :), view(vec(Ωₙ), :))
 prepare_outputs(problem::LinearOptics{Scalar}, solution) = (t=solution.t, u=solution.u)
 
 
 
 ## Vectorial
 get_evolution_function(problem::LinearOptics{Vectorial}) = ODE_LinearSystem!
-function get_evolution_params(problem::LinearOptics{Vectorial}, G, Ωₙ)
+function get_evolution_params(problem::LinearOptics{Vectorial}, G, Ωₙ, u₀)
+    u₀_eff = _vecAux_Matrix_into_longArray(u₀)
     Ωₙ_eff = _vecAux_Matrix_into_longArray(Ωₙ)
-    return view(G, :, :), view(Ωₙ_eff, :)
+    return u₀_eff, (view(G, :, :), view(Ωₙ_eff, :))
 end
 prepare_outputs(problem::LinearOptics{Vectorial}, solution) = (t=solution.t,
     u=[_vecAux_longArray_into_Matrix(problem.atoms.N, uu) for uu in solution.u]

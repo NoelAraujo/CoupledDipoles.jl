@@ -9,6 +9,7 @@ using OrdinaryDiffEq
 using Logging: global_logger
 using TerminalLoggers: TerminalLogger
 global_logger(TerminalLogger())
+using NonlinearSolve, SteadyStateDiffEq
 
 using ThreadsX
 using Printf
@@ -28,7 +29,7 @@ elseif Sys.islinux()
         using MKL
     end
 end
-using NLsolve
+
 using Distributions: MvNormal
 using Bessels
 using Random
@@ -134,7 +135,7 @@ export CBS_scalar
 import SnoopPrecompile
 SnoopPrecompile.@precompile_all_calls begin
 
-    N = 40
+    N = 15
     kL = 32.4
     w₀, s, Δ = 4π, 1e-5, 0.3
     tspan = (0, 15.0)
