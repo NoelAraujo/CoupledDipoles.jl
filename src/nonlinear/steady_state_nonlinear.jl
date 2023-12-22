@@ -13,7 +13,7 @@ function steady_state(problem::NonLinearOptics{T}; tmax = 250.0, reltol = 1e-11,
 
 	if ode_solver
         my_prob = SteadyStateProblem(problemFunction, u₀, parameters)
-        return solve(my_prob,  DynamicSS(VCABM(); reltol = reltol, abstol = abstol, tspan=tmax)).u
+        return solve(my_prob,  DynamicSS(VCABM())).u
 		# return time_evolution(problem, _u₀, (0, tmax); reltol = reltol, abstol = abstol, save_on = false).u[end]
     end
 
