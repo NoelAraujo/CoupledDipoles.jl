@@ -1,13 +1,14 @@
 
 ## INTENSITY
 """
-    scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field)
+    scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field, use_sequencial=false)
 
 Returns a Vector{Float64} with value of the `|Electric Scattered|^2` from atoms
 
 - problem: `LinearOptics` or `NonLinearOptics`
 - atomic_states: β for `Scalar`/`Vectorial` Model, or [β,z] for `Mean Field` Model
 - sensor_positions: matrix with measurement points
+- `use_sequencial` turn on/off the internal parallelism
 
 # Example
 

@@ -1,7 +1,7 @@
 name = "CoupledDipoles"
 uuid = "1aa92a3a-72ac-4ef3-9973-aaf9b373e3c1"
 authors = ["Noel Araujo"]
-version = "0.4.4"
+version = "0.4.5"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
@@ -32,6 +32,7 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 SteadyStateDiffEq = "9672c7b4-1e72-59bd-8a11-6ac3964bc41f"
 TerminalLoggers = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
@@ -39,7 +40,7 @@ ThreadsX = "ac1d9e8a-700a-412c-b207-f0111f4b6c0d"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 
 [compat]
-julia = "1.8"
+julia = "1.9"
 
 [extras]
 CPUSummary = "2a0fbf3d-bb9c-48f3-b0a9-814d99fd7ab9"

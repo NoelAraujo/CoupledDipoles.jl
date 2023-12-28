@@ -1,12 +1,13 @@
 # --------------------------------- GENERAL FUNCTIONS ---------------------------------
 """
-    scattered_electric_field(problem, atomic_states, sensors; regime=:far_field)
+    scattered_electric_field(problem, atomic_states, sensors; regime=:far_field, use_sequencial=false)
 
 Returns a Matrix{ComplexF64} with value of the `Eletric Laser` + `Electric Scattered` from atoms
 
 - problem: `LinearOptics` or `NonLinearOptics`
 - atomic_states: A vector for `Scalar`, `MeanField` and `PairCorrelation`. A matrix `Vectorial` Model
 - sensors: matrix with measurement points
+- `use_sequencial` turn on/off the internal parallelism
 
 Note:
 - `Scalar` (and other models) problem returns a **Matrix and NOT a Vector**, to maintain consistency

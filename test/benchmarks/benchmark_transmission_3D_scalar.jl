@@ -1,27 +1,30 @@
 using CoupledDipoles
-using Plots, ProgressMeter
-using Revise
+using CairoMakie, ProgressMeter
+# using Revise
 
 # cloud settings
-N = 750
+N = 250 ##influencia
 ρ = 0.05
 
-cloud = Atom(CoupledDipoles.Cylinder(), cylinder_inputs(N, ρ; h=5π)...)
-R = cloud.sizes.R
+# cloud = Atom(CoupledDipoles.Cylinder(), cylinder_inputs(N, ρ; h=2π)...)
+# R = cloud.sizes.R
+
+cloud = Atom(CoupledDipoles.Sphere(), sphere_inputs(N, ρ)...)
+R = size(cloud)
 
 # laser settings
-w₀ = 1.5 * 2π
+w₀ = 0.5R
 s = 1e-5
 
 # create transmission depending on detunning
-Δ_range = range(-100, 100; length=100)
+Δ_range = range(-10, 10; length=16)
 T = zeros(length(Δ_range))
 let
     p = Progress(length(Δ_range); showspeed=true)
     Threads.@threads for idx in 1:length(Δ_range)
         Δ = Δ_range[idx]
 
-        _laser = Laser(Gaussian3D(w₀), s, Δ; polarization=[1,im,0]./√2)
+        _laser = Laser(Gaussian3D(w₀), s, Δ)
         # _problem = LinearOptics(Scalar(), cloud, _laser)
         _problem = LinearOptics(Vectorial(), cloud, _laser)
         _βₙ = steady_state(_problem)
@@ -29,23 +32,34 @@ let
         # _problem = NonLinearOptics(MeanField(), cloud, _laser)
         # _βₙ = steady_state(_problem)
 
-        T[idx] = transmission(_problem, _βₙ; regime=:near_field)[1]
+        T[idx] = transmission(_problem, _βₙ; regime=:near_field, rtol=exp10(-11), max_angle=deg2rad(15))[1]
         ProgressMeter.next!(p)
     end
 
-    plot(
+    # plot(
+    #     Δ_range,
+    #     T;
+    #     label="",
+    #     ylims = (0, 2),
+    #     size=(800, 400),
+    #     lw=3,
+    #     legend=:bottomright,
+    # )
+    # hline!([1]; linestyle=:dash, c=:black, label="")
+    # xlabel!("Δ")
+    # ylabel!("Transmission")
+    # display(title!("Cylinder : N=$(N), ρ=$(round(ρ,digits=3)), R=$(round(R,digits=2)), w₀=$(round(w₀,digits=2)), λ=$(round(2π,digits=2))"))
+
+    fig = Figure()
+    ax = Axis(fig[1,1], xlabel=L"\Delta", ylabel="Transmission", title="N:$N R:$R")
+    scatterlines!(ax,
         Δ_range,
         T;
-        label="",
-        ylims = (0, 2),
-        size=(800, 400),
-        lw=3,
-        legend=:bottomright,
+        linewidth=3
     )
-    hline!([1]; linestyle=:dash, c=:black, label="")
-    xlabel!("Δ")
-    ylabel!("Transmission")
-    display(title!("Cylinder : N=$(N), ρ=$(round(ρ,digits=3)), R=$(round(R,digits=2)), w₀=$(round(w₀,digits=2)), λ=$(round(2π,digits=2))"))
+    hlines!([1]; linestyle=:dash, c=:black, label="")
+    # ylims!(0, 1.4)
+    fig
 end
 
 #=

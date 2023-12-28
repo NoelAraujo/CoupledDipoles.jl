@@ -15,7 +15,7 @@ end
 
 """
 function default_initial_condition(problem::LinearOptics{Vectorial})
-    return zeros(ComplexF64, 3problem.atoms.N) # I must use "zeros" and NOT an undef array - with trash data inside
+    return zeros(ComplexF64, 3, problem.atoms.N) # I must use "zeros" and NOT an undef array - with trash data inside
 end
 
 

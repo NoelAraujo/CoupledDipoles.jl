@@ -27,55 +27,55 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
 end
 function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
     r = atoms.r
-    N = atoms.N
-
-    E_x = zero(eltype(β))
-    E_y, E_z = zero(eltype(β)), zero(eltype(β))
+    
+    E_scatt = zeros(eltype(β), 3)
     r_jm = zeros(eltype(atoms.r), 3)
     G = zeros(ComplexF64, 3, 3)
     for (j, rⱼ) = enumerate(eachcol(r))
-        r_jm[1] = sensor[1] - rⱼ[1]
-        r_jm[2] = sensor[2] - rⱼ[2]
-        r_jm[3] = sensor[3] - rⱼ[3]
-
+        
         βⱼ = view(β, :, j)
 
-        _vectorial_3D_green_kernel!(r_jm, G)
-        # _E = G*βⱼ
-        # E_x += _E[1]
-        # E_y += _E[2]
-        # E_z += _E[3]
-        for η=1:3
-            E_x += G[1, η]*βⱼ[η]
-        end
-        for η=1:3
-            E_y += G[2, η]*βⱼ[η]
-        end
-        for η=1:3
-            E_z += G[3, η]*βⱼ[η]
-        end
+        # r_jm[1] = sensor[1] - rⱼ[1]
+        # r_jm[2] = sensor[2] - rⱼ[2]
+        # r_jm[3] = sensor[3] - rⱼ[3]
 
-        # r = norm(r_jm)
-        # r̂ = r_jm./r
+        # _vectorial_3D_green_kernel!(r_jm, G)
+        # E_scatt += G*βⱼ
 
-        # P = (3/2)*(cis(r)/r)
-        # Q = im/r - 1/r^2
 
-        # x, y, z = r̂[1], r̂[2], r̂[3]
-        # E_x +=  P*(r^2 - x^2 + Q*(r^2 - 3*x^2))*βⱼ[1]
-        # E_x += P*( -x*y - Q*3*x*y )*βⱼ[2]
-        # E_x += P*( -x*z - Q*3*x*z )*βⱼ[3]
+        Xoj = sensor[1] .- rⱼ[1]
+        Yoj = sensor[2] .- rⱼ[2]
+        Zoj = sensor[3] .- rⱼ[3]
+        Roj = sqrt(Xoj^2 + Yoj^2 + Zoj^2)
 
-        # E_y += P*( -x*y - Q*3*x*y )*βⱼ[1]
-        # E_y += P*(r^2 - y^2 + Q*(r^2 - 3*y^2))*βⱼ[2]
-        # E_y += P*( -x*z - Q*3*x*z )*βⱼ[3]
+        # Vectorial field
+        c1 = 3*cis(Roj)./(2*1im*Roj^3)
+        c2 = 1im/Roj - 1/(Roj^2)
+        
+        betax = βⱼ[1]
+        betay = βⱼ[2]
+        betaz = βⱼ[3]
 
-        # E_z += P*( -z*x - Q*3*z*x )*βⱼ[1]
-        # E_z += P*( -z*y - Q*3*z*y )*βⱼ[2]
-        # E_z += P*(r^2 - z^2 + Q*(r^2 - 3*z^2))*βⱼ[3]
+        E_scatt[1] += c1 .* (
+                ((1 .+ c2) .* Roj.^2 .- (1 .+ 3*c2) .* Xoj.^2) .* betax +
+                (-(1 .+ 3*c2) .* Xoj .* Yoj) .* betay +
+                (-(1 .+ 3*c2) .* Xoj .* Zoj) .* betaz
+            )
+
+        E_scatt[2] += c1 .* (
+                ((1 .+ c2) .* Roj.^2 .- (1 .+ 3*c2) .* Yoj.^2) .* betay +
+                (-(1 .+ 3*c2) .* Xoj .* Yoj) .* betax +
+                (-(1 .+ 3*c2) .* Yoj .* Zoj) .* betaz
+            )
+
+        E_scatt[3] += c1 .* (
+                ((1 .+ c2) .* Roj.^2 .- (1 .+ 3*c2) .* Zoj.^2) .* betaz +
+                (-(1 .+ 3*c2) .* Xoj .* Zoj) .* betax +
+                (-(1 .+ 3*c2) .* Yoj .* Zoj) .* betay
+            )
     end
 
-    return +im*(Γ/2)*[E_x, E_y, E_z]
+    return +im*(Γ/2)*E_scatt
 end
 function _vectorial_3D_green_kernel(r_jm::Vector)
     G = Array{Complex{eltype(r_jm)}}(undef, 3,3)
@@ -83,48 +83,68 @@ function _vectorial_3D_green_kernel(r_jm::Vector)
     return G
 end
 
+
 @inline function _vectorial_3D_green_kernel!(r_jm::Vector, G::Matrix)
-    ## alternative version
-    # r = norm(r_jm)
-    # r̂ = r_jm ./ r
-
-    # P = (3 / 2) * (cis(r) / r)
-    # Q = im / r - 1 / r^2
-
-    # x, y, z = r̂[1], r̂[2], r̂[3]
-
-    # G[1] = P * (1 - x^2 + (1 - 3 * x^2)*Q)
-    # G[4] = P * (-x * y - Q * 3 * x * y)
-    # G[7] = P * (-x * z - Q * 3 * x * z)
-
-    # G[2] = P * (-y * x - Q * 3 * y * x)
-    # G[5] = P * (1 - y^2 + Q * (1 - 3 * y^2))
-    # G[8] = P * (-y * z - Q * 3 * y * z)
-
-    # G[3] = P * (-z * x - Q * 3 * z * x)
-    # G[6] = P * (-z * y - Q * 3 * z * y)
-    # G[9] = P * (1 - z^2 + Q * (1 - 3 * z^2))
-
+#   reverse engineered (and adapted) from Ana Cipris
     r = k₀ * norm(r_jm)
     r2 = r^2
+        
+    ### v1
+    # c1 = (3/2)*cis(r)/r
+    # c2 = 1im/r - 1/(r^2)
+    
+    # n_jm = r_jm./r
+    # n_x, n_y, n_z = n_jm[1], n_jm[2], n_jm[3]
 
-    P = 1 + (im / r) - (1 / r2)
-    Q = (-1 - (3im / r) + (3 / r2)) / r2
+    # G[1,1] = c1*( (1 - n_x*n_x)  + (1 - 3*n_x*n_x)*c2  ) # Gxx
+    # G[1,2] = c1*( (0 - n_x*n_y)  + (0 - 3*n_x*n_y)*c2  ) # Gxy
+    # G[1,3] = c1*( (0 - n_x*n_z)  + (0 - 3*n_x*n_z)*c2  ) # Gxz
 
+    # G[2,1] = c1*( (0 - n_y*n_x)  + (0 - 3*n_y*n_x)*c2  ) # Gyx
+    # G[2,2] = c1*( (1 - n_y*n_y)  + (1 - 3*n_y*n_y)*c2  ) # Gyy
+    # G[2,3] = c1*( (0 - n_y*n_z)  + (0 - 3*n_y*n_z)*c2  ) # Gyz
+
+    # G[3,1] = c1*( (0 - n_z*n_x)  + (0 - 3*n_z*n_x)*c2  ) # Gzx
+    # G[3,2] = c1*( (0 - n_z*n_y)  + (0 - 3*n_z*n_y)*c2  ) # Gzy
+    # G[3,3] = c1*( (1 - n_z*n_z)  + (1 - 3*n_z*n_z)*c2  ) # Gzz
+
+    ### v2
+    # x, y, z = r_jm[1], r_jm[2], r_jm[3]
+    # c1 = (3/2)cis(r)
+    # c2 = 1im/r - 1.0/r^2
+
+    # G[1,1] = ( (1 + c2)/r - (1 + 3*c2) * x^2/r^3) # Gxx
+    # G[1,2] = ( - (1 + 3*c2) * x*y/r^3) # Gxy
+    # G[1,3] = ( - (1 + 3*c2) * x*z/r^3) # Gxz
+
+    # G[2,1] = (-(1 + 3*c2) *x*y/r^3) # Gyx
+    # G[2,2] = ((1 + c2)/r - (1 + 3*c2) * y^2/r^3) # Gyy
+    # G[2,3] = (-(1 + 3*c2) * y * z/r^3) # Gyz
+
+    # G[3,1] = ( -(1 + 3*c2) * x * z/r^3) # Gzx
+    # G[3,2] = ( -(1 + 3*c2) * y * z/r^3) # Gzy
+    # G[3,3] = ((1 + c2)/r - (1 + 3*c2) * z^2/r^3) # Gzz
+
+    # G .*= c1
+
+    ### v3
     x, y, z = r_jm[1], r_jm[2], r_jm[3]
-    G[1] = P + x^2 * Q
-    G[4] = x * y * Q
-    G[7] = x * z * Q
+    c1 = (3/2)*cis(r)/(r^3)
+    c2 = 1im/r - 1/r^2
 
-    G[2] = y * x * Q
-    G[5] = P + y^2 * Q
-    G[8] = y * z * Q
+    G[1,1] = c1*( (1 + c2)*r^2 - (1 + 3*c2) * x^2) # Gxx
+    G[1,2] = c1*(-(1 + 3*c2) * x * y) # Gxy
+    G[1,3] = c1*(-(1 + 3*c2) * x * z) # Gxz
 
-    G[3] = z * x * Q
-    G[6] = z * y * Q
-    G[9] = P + z^2 * Q
+    G[2,1] = c1*(-(1 + 3*c2) * x * y) # Gyx
+    G[2,2] = c1*((1 + c2)*r^2 - (1 + 3*c2) * y^2) # Gyy
+    G[2,3] = c1*(-(1 + 3*c2) * y * z) # Gyz
 
-    G .*= (3 / 2) * (cis(r) / r)
+    G[3,1] = c1*(-(1 + 3*c2) * x * z) # Gzx
+    G[3,2] = c1*(-(1 + 3*c2) * y * z) # Gzy
+    G[3,3] = c1*((1 + c2)*r^2 - (1 + 3*c2) * z^2) # Gzz
+    
+    
     return nothing
 end
 
@@ -163,21 +183,66 @@ function _vectorial_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: 
 end
 function _vectorial_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
     r = atoms.r
-    β_matrix = _vecAux_longArray_into_Matrix(atoms.N, β)
-
+    r_far_field = how_far_is_farField(atoms)
+    
     norm_sensor = norm(sensor)
-    n_hat = sensor./norm_sensor
+    n̂ = sensor / norm_sensor
+    
     E_scatt = zeros(Complex{eltype(r)}, 3)
-    terms = zeros(ComplexF64, 3)
-    for μ = 1:3
-        for (j, rⱼ) in enumerate(eachcol(r))
-            for η=1:3
-                terms[1] = (float(μ==η) - n_hat[μ]*n_hat[η]')
-                terms[2] = cis( -dot(n_hat, rⱼ ))
-                terms[3] = β_matrix[η, j]
-                E_scatt[μ] += prod(terms)
-            end
-        end
+
+    r_jm = zeros(eltype(atoms.r), 3)
+    r_jm[1] = sensor[1]
+    r_jm[2] = sensor[2]
+    r_jm[3] = sensor[3]
+
+    G = zeros(ComplexF64, 3, 3)
+    _vectorial_3D_green_kernel_far_field!(r_jm, G) # use 'r_jm' == 'sensor' and NOT its normalized version
+    
+    for (j, rⱼ) = enumerate(eachcol(r))
+        βⱼ = view(β, :, j)
+        E_scatt += (G*βⱼ).*cis(-dot(n̂, rⱼ))
     end
-    return +im*(3Γ/4)*(cis(norm_sensor)/norm_sensor)*E_scatt
+
+    return +im*(3Γ/4)*(cis(r_far_field)/r_far_field).*E_scatt
+end
+
+
+@inline function _vectorial_3D_green_kernel_far_field!(r_jm::Vector, G::Matrix)
+    # this code comes from removing 'c2' from :near_field
+    
+    # x, y, z = r_jm[1], r_jm[2], r_jm[3]
+    # r = norm(r_jm)
+
+    # G[1,1] = r  - x^2 # Gxx
+    # G[1,2] = -x * y # Gxy
+    # G[1,3] = -x * z # Gxz
+
+    # G[2,1] = -y * x # Gyx
+    # G[2,2] = r  - y^2 # Gyy
+    # G[2,3] = -y * z # Gyz
+
+    # G[3,1] = -z * x # Gzx
+    # G[3,2] = -z * y # Gzy
+    # G[3,3] = r  - z^2 # Gzz
+
+    r = k₀ * norm(r_jm)
+    c1 = (3/2)*cis(r)/r
+    c2 = 1im/r - 1/r^2
+    
+    n_jm = r_jm./r
+    n_x, n_y, n_z = n_jm[1], n_jm[2], n_jm[3]
+
+    G[1,1] = c1*( (1 - n_x*n_x)  ) # Gxx
+    G[1,2] = c1*( (0 - n_x*n_y)  ) # Gxy
+    G[1,3] = c1*( (0 - n_x*n_z)  ) # Gxz
+
+    G[2,1] = c1*( (0 - n_y*n_x)  ) # Gyx
+    G[2,2] = c1*( (1 - n_y*n_y)  ) # Gyy
+    G[2,3] = c1*( (0 - n_y*n_z)  ) # Gyz
+
+    G[3,1] = c1*( (0 - n_z*n_x)  ) # Gzx
+    G[3,2] = c1*( (0 - n_z*n_y)  ) # Gzy
+    G[3,3] = c1*( (1 - n_z*n_z)  ) # Gzz
+        
+    return nothing
 end
