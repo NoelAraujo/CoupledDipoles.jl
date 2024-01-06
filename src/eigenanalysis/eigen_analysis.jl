@@ -71,12 +71,13 @@ function get_ψ²(problem::LinearOptics, n::Integer)
 end
 
 """
-get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, runfaster=false)
+get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, speculative=true)
 
-'CoupledDipoles.satman2015' has better precision
-'CoupledDipoles.lta' is faster
+'speculative = true' compute robust fitting on likely localized modes.
+
+Set 'speculative = false' to have a better localization length estimatives for extended modes
 """
-function get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, runfaster=false)
+function get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, speculative=true)
     if is_localization_NOT_available(problem) && forceComputation == false
         return problem.data[:ξ], problem.data[:R2]
     end
@@ -90,11 +91,8 @@ function get_localization_length(problem::LinearOptics; forceComputation=false, 
     pp = Progress(N)
     Threads.@threads for n in 1:N
         DCM, ψ² = get_spatial_profile_single_mode(problem, n)
-        if runfaster
-            ξₙ[n], R²ₙ[n] = get_single_ξ_and_R2(DCM, ψ²; regression_method=lta, probability_threshold=probability_threshold)
-        else
-            ξₙ[n], R²ₙ[n] = get_single_ξ_and_R2(DCM, ψ²; regression_method=regression_method, probability_threshold=probability_threshold)
-        end
+        ξₙ[n], R²ₙ[n] = get_single_ξ_and_R2(DCM, ψ²; regression_method=regression_method, probability_threshold=probability_threshold, speculative=speculative)
+
         if showprogress
             next!(pp)
         end
@@ -119,7 +117,7 @@ function get_spatial_profile_single_mode(problem, mode_index::Integer)
         r_cm = get_coordinates_of_center_of_mass(r, ψ²ₙ)
 
         # Specific for the problem (ones needs to define this function)
-        DCM = [norm(rj - r_cm) for rj in eachcol(r)]# get_Distances_from_r_to_CM
+        DCM = [norm(rj .- r_cm) for rj in eachcol(r)]# get_Distances_from_r_to_CM
 
         sort_spatial_profile!(DCM, ψ²ₙ)
         return DCM, ψ²ₙ
@@ -162,9 +160,9 @@ end
     classify_modes(problem)
 returns a tuple `(loc, sub, super)` with indices
 """
-function classify_modes(problem; forceComputation=false, fitting_threshold=0.5, showprogress=false)
+function classify_modes(problem; forceComputation=false, fitting_threshold=0.5, showprogress=false, speculative=true)
     ωₙ, Γₙ = get_spectrum(problem; forceComputation=forceComputation)
-    ξₙ, R²ₙ = get_localization_length(problem; forceComputation=forceComputation, showprogress=showprogress)
+    ξₙ, R²ₙ = get_localization_length(problem; forceComputation=forceComputation, showprogress=showprogress, speculative=speculative)
 
     localized_modes = findall((Γₙ .< Γ) .* (R²ₙ .≥ fitting_threshold))
     sub_radiant_modes = findall((Γₙ .< Γ) .* (R²ₙ .< fitting_threshold))
