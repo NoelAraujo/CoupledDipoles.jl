@@ -31,17 +31,8 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
     E_scatt = zeros(eltype(β), 3)
     r_jm = zeros(eltype(atoms.r), 3)
     G = zeros(ComplexF64, 3, 3)
-    for (j, rⱼ) = enumerate(eachcol(r))
-        
+    for (j, rⱼ) = enumerate(eachcol(r))       
         βⱼ = view(β, :, j)
-
-        # r_jm[1] = sensor[1] - rⱼ[1]
-        # r_jm[2] = sensor[2] - rⱼ[2]
-        # r_jm[3] = sensor[3] - rⱼ[3]
-
-        # _vectorial_3D_green_kernel!(r_jm, G)
-        # E_scatt += G*βⱼ
-
 
         Xoj = sensor[1] .- rⱼ[1]
         Yoj = sensor[2] .- rⱼ[2]
@@ -49,33 +40,33 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
         Roj = sqrt(Xoj^2 + Yoj^2 + Zoj^2)
 
         # Vectorial field
-        c1 = 3*cis(Roj)./(2*1im*Roj^3)
+        c1 = cis(Roj)./(1im*Roj^3)
         c2 = 1im/Roj - 1/(Roj^2)
         
         betax = βⱼ[1]
         betay = βⱼ[2]
         betaz = βⱼ[3]
 
-        E_scatt[1] += c1 .* (
-                ((1 .+ c2) .* Roj.^2 .- (1 .+ 3*c2) .* Xoj.^2) .* betax +
-                (-(1 .+ 3*c2) .* Xoj .* Yoj) .* betay +
-                (-(1 .+ 3*c2) .* Xoj .* Zoj) .* betaz
+        E_scatt[1] -= c1 .* (
+                ( Roj.^2 - Xoj.^2 + c2.* (Roj.^2 - 3* Xoj.^2) ) .* betax +
+                ( -Xoj.* Yoj.- 3* c2.* Xoj.* Yoj ) .* betay +
+                ( -Xoj.* Zoj.- 3* c2.* Xoj.* Zoj ) .* betaz
             )
 
-        E_scatt[2] += c1 .* (
-                ((1 .+ c2) .* Roj.^2 .- (1 .+ 3*c2) .* Yoj.^2) .* betay +
-                (-(1 .+ 3*c2) .* Xoj .* Yoj) .* betax +
-                (-(1 .+ 3*c2) .* Yoj .* Zoj) .* betaz
+        E_scatt[2] -= c1 .* (
+                ( Roj.^2 .- Yoj.^2 .+ c2.* (Roj.^2 .- 3* Yoj.^2) ) .* betay +
+                ( -Xoj.* Yoj.- 3* c2.* Xoj.* Yoj ) .* betax +
+                ( -Yoj.* Zoj.- 3* c2.* Yoj.* Zoj ) .* betaz
             )
+            
 
-        E_scatt[3] += c1 .* (
-                ((1 .+ c2) .* Roj.^2 .- (1 .+ 3*c2) .* Zoj.^2) .* betaz +
-                (-(1 .+ 3*c2) .* Xoj .* Zoj) .* betax +
-                (-(1 .+ 3*c2) .* Yoj .* Zoj) .* betay
-            )
+        E_scatt[3] -= c1 .* (
+                ( Roj.^2 .- Zoj.^2 .+ c2.* (Roj.^2 .- 3* Zoj.^2) ) .* betaz +
+                ( -Xoj.* Zoj .- 3* c2.* Xoj.* Zoj ) .* betax +
+                ( -Yoj.* Zoj .- 3* c2.* Yoj.* Zoj ) .* betay
+            )            
     end
-
-    return +im*(Γ/2)*E_scatt
+    return -im*3Γ/2*E_scatt
 end
 function _vectorial_3D_green_kernel(r_jm::Vector)
     G = Array{Complex{eltype(r_jm)}}(undef, 3,3)

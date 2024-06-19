@@ -12,9 +12,9 @@ function steady_state(problem::NonLinearOptics{T}; tmax = 250.0, reltol = 1e-11,
     problemFunction = get_evolution_function(problem)
 
 	if ode_solver
-        my_prob = SteadyStateProblem(problemFunction, u₀, parameters)
-        return solve(my_prob,  DynamicSS(VCABM())).u
-		# return time_evolution(problem, _u₀, (0, tmax); reltol = reltol, abstol = abstol, save_on = false).u[end]
+        # my_prob = SteadyStateProblem(problemFunction, u₀, parameters)
+        # return solve(my_prob,  DynamicSS(VCABM())).u
+		return time_evolution(problem, _u₀, (0, tmax); reltol = reltol, abstol = abstol, save_on = false).u[end]
     end
 
     try
@@ -22,9 +22,7 @@ function steady_state(problem::NonLinearOptics{T}; tmax = 250.0, reltol = 1e-11,
         solution = solve(my_prob, NewtonRaphson())
         return solution.u
     catch
-        ## For lower N (N < 100 ?), nlsolve does not converge (i don't know why)
-        ## Instead of returning an error, I return the result from time evolution.
-        @warn "Steady State may not be accurate. Consider increasing number of particles."
+        @warn "Steady State may not be accurate. Consider setting `ode_solver = true`."
         return u₀
     end
 end

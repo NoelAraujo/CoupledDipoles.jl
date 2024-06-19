@@ -6,7 +6,7 @@ Compute -(im/2)*Ω.(sensors), where Ω is the laser from the problem
 """
 function laser_field(problem, sensors::AbstractMatrix)
     Ω₀ = raby_frequency(problem.laser)
-    if should_return_value(problem)
+    if should_return_value(problem) # that is, can return a 'Value' (Scalar) or a 'Vector' (Vectorial)
         return _VALUE_laser_field(problem, sensors, Ω₀)
     else
         return _VECTOR_laser_field(problem, sensors, Ω₀)
@@ -51,17 +51,22 @@ end
 
 function _VALUE_laser_field(problem, sensors, Ω₀)
     _laser_electric_fields = ThreadsX.map(eachcol(sensors)) do sensor
-        LASER_FACTOR * Ω₀ * laser_geometry(problem.laser, sensor)
+        Ω₀ * laser_geometry(problem.laser, sensor)
     end
 
     laser_electric_fields::Matrix{ComplexF64} = hcat(_laser_electric_fields...)
+
+    # _laser_electric_fields = mapreduce(hcat, eachcol(sensors)) do sensor
+    #     Ω₀ * laser_geometry(problem.laser, sensor)
+    # end
+
     return laser_electric_fields
 end
 
 function _VECTOR_laser_field(problem::LinearOptics{Vectorial}, sensors, Ω₀)
     polarization = problem.laser.polarization
     laser_electric_fields = mapreduce(hcat, eachcol(sensors)) do sensor
-        LASER_FACTOR * Ω₀ * polarization .* laser_geometry(problem.laser, sensor)
+        Ω₀ * polarization .* laser_geometry(problem.laser, sensor)
     end
 
     return laser_electric_fields

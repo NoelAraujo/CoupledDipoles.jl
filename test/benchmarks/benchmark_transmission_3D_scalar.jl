@@ -1,66 +1,49 @@
 using CoupledDipoles
 using CairoMakie, ProgressMeter
-# using Revise
 
-# cloud settings
-N = 250 ##influencia
-ρ = 0.05
+using LinearAlgebra, Random, CoupledDipoles, CairoMakie
 
-# cloud = Atom(CoupledDipoles.Cylinder(), cylinder_inputs(N, ρ; h=2π)...)
-# R = cloud.sizes.R
+Δ_range = range(-5,5; length=100)
 
-cloud = Atom(CoupledDipoles.Sphere(), sphere_inputs(N, ρ)...)
-R = size(cloud)
+R = 17.71830997686217301634315
+L = 8.177681527782540982229875
+N = 200
+b0 = 4N/R^2 # for vectorial is different than scalar
 
-# laser settings
-w₀ = 0.5R
-s = 1e-5
+# you need an initial value for Δ, just to create a problem type
+s, Δ = 1e-3, 0.0 
+w₀ =  R/3
+polarization = [1, 0, 0]
+direction = [0, 0, 1]
 
-# create transmission depending on detunning
-Δ_range = range(-10, 10; length=16)
-T = zeros(length(Δ_range))
-let
-    p = Progress(length(Δ_range); showspeed=true)
-    Threads.@threads for idx in 1:length(Δ_range)
-        Δ = Δ_range[idx]
+T = map(1:20) do j
+    Random.seed!(j)
+    println(j)
+    # atoms = Atom(Cylinder(), N, R, L)
+    atoms = Atom(CoupledDipoles.Sphere(gaussian=true), N, R)
+    laser = Laser(Gaussian3D(w₀), s, Δ; polarization=[1,0,0])
+    problem = LinearOptics(Vectorial(), atoms, laser)
 
-        _laser = Laser(Gaussian3D(w₀), s, Δ)
-        # _problem = LinearOptics(Scalar(), cloud, _laser)
-        _problem = LinearOptics(Vectorial(), cloud, _laser)
-        _βₙ = steady_state(_problem)
+    transmission(problem, Δ_range)
+end;
+mean_transmission = sum(T)/length(T)
 
-        # _problem = NonLinearOptics(MeanField(), cloud, _laser)
-        # _βₙ = steady_state(_problem)
+let 
+    # b0 = 9N/R^2 # uniform
+    b0 = 3N/R^2 # gaussina
 
-        T[idx] = transmission(_problem, _βₙ; regime=:near_field, rtol=exp10(-11), max_angle=deg2rad(15))[1]
-        ProgressMeter.next!(p)
+    f = Figure(size = (800, 600))
+    ax = Axis(f[1, 1], xlabel = "Δ", ylabel = "Transmission")
+    foreach(eachindex(T)) do j
+        lines!(ax, Δ_range, T[j])
     end
-
-    # plot(
-    #     Δ_range,
-    #     T;
-    #     label="",
-    #     ylims = (0, 2),
-    #     size=(800, 400),
-    #     lw=3,
-    #     legend=:bottomright,
-    # )
-    # hline!([1]; linestyle=:dash, c=:black, label="")
-    # xlabel!("Δ")
-    # ylabel!("Transmission")
-    # display(title!("Cylinder : N=$(N), ρ=$(round(ρ,digits=3)), R=$(round(R,digits=2)), w₀=$(round(w₀,digits=2)), λ=$(round(2π,digits=2))"))
-
-    fig = Figure()
-    ax = Axis(fig[1,1], xlabel=L"\Delta", ylabel="Transmission", title="N:$N R:$R")
-    scatterlines!(ax,
-        Δ_range,
-        T;
-        linewidth=3
-    )
-    hlines!([1]; linestyle=:dash, c=:black, label="")
-    # ylims!(0, 1.4)
-    fig
+    lines!(ax, Δ_range, exp.(-b0 ./ (1 .+ 4 .* Δ_range.^2)), linewidth=4, color=:black, label="Beer's Law")
+    lines!(ax, Δ_range, mean_transmission, linewidth=4, color=:red, linestyle=:dash, label="Average")
+    axislegend(ax, position = :rb)
+    ylims!(ax, 0, 1.2)
+    f
 end
+
 
 #=
     The code below is to visualize the intensity over the space in the Far Field limit.
@@ -122,3 +105,47 @@ fig, ax, pltobj = mesh(
 cbar = Colorbar(fig, pltobj; label="log10(Intensity)", flipaxis=false)
 fig[1, 2] = cbar
 fig
+
+
+
+let 
+    using LinearAlgebra
+    atoms = Atom(Cube(), Matrix([1.0 1.0 1.0]'), 1.0)
+    sensor = Matrix([-1000 -1000 -500]')
+    β = [3, 4im, 5.0]
+    E_n = CoupledDipoles._vectorial_scattering_near_field(atoms, β, sensor)
+    E_f = CoupledDipoles._vectorial_scattering_far_field(atoms, β, sensor)
+    E_n, E_f
+end
+
+
+@testset "Vectorial Scattering - Single Atom" begin
+    using LinearAlgebra
+    atoms = Atom(Cube(), Matrix([1.0 1.0 1.0]'), 1.0)
+    sensor = Matrix([-1000 -1000 -500]')
+    β = [3, 4im, 5.0]
+    E_μ = CoupledDipoles._vectorial_scattering_far_field(atoms, β, sensor)
+
+    R = norm(sensor)
+    n = sensor./R
+    nx, ny, nz = n[1], n[2], n[3]
+    C = cis(-nx - ny - nz)
+    E_x_expected = +(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2)*3 + -nx*ny*4im - nx*nz*5)
+    E_y_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx*3 + (1 -ny^2)*4im - ny*nz*5)
+    E_z_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx*3 - nz*ny*4im + (1 - nz^2)*5)
+    @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
+
+    sensor = Matrix([100 -1000 0]')
+    β = [1, -2im, 15.0]
+    E_μ = CoupledDipoles._vectorial_scattering_far_field(atoms, β, sensor)
+
+    R = norm(sensor)
+    n = sensor./R
+    nx, ny, nz = n[1], n[2], n[3]
+    C = cis(-nx - ny)
+    E_x_expected = +(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2) + nx*ny*2im - nx*nz*15)
+    E_y_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx - (1 -ny^2)*2im - ny*nz*15)
+    E_z_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx + nz*ny*2im + (1 - nz^2)*15)
+
+    @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
+end

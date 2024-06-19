@@ -203,23 +203,7 @@ function laser_and_scattered_intensity(problem, atomic_states, sensors; regime=:
     E_laser = laser_field(problem, sensors)
     E_scattered = scattered_electric_field(problem, atomic_states, sensors;regime=regime)
 
-    I_laser = laser_intensity(problem, sensors)
-    I_scattered = scattered_intensity(problem, atomic_states, sensors; regime=regime)
-
-    total_field = I_laser + I_scattered + 2*real.(_mul_fields(problem, E_laser, E_scattered))
+    total_field = sum(abs2, E_laser + E_scattered)
 
     return total_field
-end
-
-function _mul_fields(problem::LinearOptics{Scalar}, E_laser, E_scattered)
-    vec(E_laser.*E_scattered)
-end
-function _mul_fields(problem::LinearOptics{Vectorial}, E_laser, E_scattered)
-    vec(sum(E_laser.*E_scattered, dims=1))
-end
-function _mul_fields(problem::NonLinearOptics{MeanField}, E_laser, E_scattered)
-    vec(E_laser.*E_scattered)
-end
-function _mul_fields(problem::NonLinearOptics{PairCorrelation}, E_laser, E_scattered)
-    vec(E_laser.*E_scattered)
 end

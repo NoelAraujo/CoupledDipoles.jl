@@ -1,47 +1,66 @@
-struct SensorType
-    createSensor_func::Function
-    domain::Tuple
-end
-
-function transmission(problem, β; regime=:near_field, rtol=exp10(-10), max_angle=deg2rad(10))
-    # For future, use this link to create integration points in any direction:
-    # https://fasiha.github.io/post/spherical-cap/
-    # https://github.com/fasiha/sphere-cap-random/blob/gh-pages/src/capRandom.js
-    if problem.laser.direction ≉ [0,0,1]
-        @error "`transmission`  only works for lasers pointing into z-direction."
+function transmission(problem, detunning_range; regime=:near_field)
+    new_R = 100*size(problem.atoms)
+    sensor = reshape(new_R*problem.laser.direction, :, 1)
+    
+    # I need a dummy problem just to compute the electric field intensity
+    # necessary for normalization
+    I_laser = let         
+        _N, _R, _L = 3, 3, 3
+        _atoms = Atom(Cylinder(), _N, _R, _L)
+        
+        _Δ = 0.0 # the detunning does not matter for the laser field
+        # BUT, the saturation DOES matter
+        _laser = similar_laser(problem.laser, problem.laser.s, _Δ)
+        
+        ## dummy problem
+        _problem = similar_problem(problem, _atoms, _laser)
+        
+        laser_intensity(_problem, sensor)[1]
     end
 
-    integral_domain = ((0.0, 0.0), (max_angle, 2π))
-    ## The values the intensity are small
-    ## making the integration convergence slow
-    ## One solution is to multiply all values for some factor
-    scaling_factor = 25*size(problem.atoms)
+    Transmissions = map(detunning_range) do Δ       
+        _laser = similar_laser(problem.laser, problem.laser.s, Δ)        
+        _problem = similar_problem(problem, problem.atoms, _laser)
+        beta = steady_state(_problem)
 
-    (I_scattered, _e) = hcubature(integral_domain..., rtol=rtol) do x
-        sensor = single_sensor(getSensor_on_Sphere(x, problem))
-        scaling_factor*laser_and_scattered_intensity(problem, β, sensor; regime=regime)
+        _temp = laser_and_scattered_intensity(_problem, beta, sensor; regime=:near_field)[1]
+        _temp / I_laser
     end
-
-    (I_laser, _e) = hcubature(integral_domain..., rtol=rtol) do x
-        sensor = single_sensor(getSensor_on_Sphere(x, problem))
-        scaling_factor*laser_intensity(problem, sensor)[1]
-    end
-
-    T = I_scattered / I_laser
-    return T[1] # T is a matrix with 1 element
+    Transmissions
 end
 
-@inline function getSensor_on_Sphere(x, problem)
-    θ, ϕ = x[1], x[2]
-    new_R = 25*size(problem.atoms) # near field values are faster to integrate
-    spherical_coordinate = [θ, ϕ, new_R]
-    sensor = sph2cart(spherical_coordinate)
-    return Matrix(sensor')
-end
-@inline function _create_plane_sensor(x, problem)
-    x, y = x[1], x[2]
-    z = 5 * size(problem.atoms)
-    new_z = z + 0.5 * z
-    sensor = [x, y, new_z]
+@inline function getSensor_at_front(problem)
+    new_R = 100*size(problem.atoms) # near field values have less errors
+    sensor = reshape(new_R*problem.laser.direction, :, 1)
     return sensor
+end
+
+
+function similar_laser(laser::Laser{PlaneWave3D}, s, Δ)
+    direction = laser.direction
+
+    Laser(PlaneWave3D(), s, Δ;         
+            direction = direction) 
+end
+function similar_laser(laser::Laser{Gaussian3D}, s, Δ)
+    w₀ = laser.pump.w₀
+    polarization = laser.polarization
+    direction = laser.direction
+
+    Laser(Gaussian3D(w₀), s, Δ; 
+            polarization = polarization,
+            direction = direction) 
+end
+
+function similar_problem(problem::LinearOptics{Scalar}, atoms, laser)
+    LinearOptics(Scalar(), atoms, laser)
+end
+function similar_problem(problem::LinearOptics{Vectorial}, atoms, laser)
+    LinearOptics(Vectorial(), atoms, laser)
+end
+function similar_problem(problem::NonLinearOptics{MeanField}, atoms, laser)
+    NonLinearOptics(MeanField(), atoms, laser)
+end
+function similar_problem(problem::NonLinearOptics{PairCorrelation}, atoms, laser)
+    NonLinearOptics(PairCorrelation(), atoms, laser)
 end

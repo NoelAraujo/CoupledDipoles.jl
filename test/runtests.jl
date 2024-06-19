@@ -31,7 +31,7 @@ using Tullio
         laser = Laser(PlaneWave3D(), s, Δ)
 
         Ω₀ = CoupledDipoles.raby_frequency(laser)
-        β_expected = -(0.5*im*Ω₀*cis(r[3]))/(Γ/2)
+        β_expected = (Ω₀*cis(r[3]))/(Γ/2)
 
         singleAtom = Atom(Cube(), Array(Matrix(r')'), 1)
         problem = LinearOptics(Scalar(), singleAtom, laser)
@@ -123,6 +123,23 @@ using Tullio
         @test all(G .≈ G_expected)
     end
 
+    @testset "Green Matrix 3 Atoms" begin
+        r1 = [1, 4, 7]
+        r2 = [2, 5, 8]
+        r3 = [3, 6, 9]
+        r = hcat(r1, r2, r3)
+        
+        atoms = Atom(Cube(), Array(r), 1)
+        s, Δ = 1e-6, 1.0
+        laser = Laser(PlaneWave3D(), s, Δ; direction=[0,0,1])
+        
+        ## Scalar case
+        problem = LinearOptics(Vectorial(), atoms, laser)
+        G = interaction_matrix(problem);
+        
+        @test (G[1,2]/(-3/4)) ≈ 0.37990673278834264 + 0.06179824051083469im
+        @test (G[5,3]/(-3/4)) ≈ 0.053518846191563524 - 0.3290088816634514im
+    end
 
     @testset "3D scalar: 2 atoms" begin
         r =[1 2 0;
@@ -183,23 +200,23 @@ using Tullio
     @testset "Laser Over Points" begin
         N = 3; r = rand(3, N)
         w₀, s, Δ = 4π, 1e-5, 0.3
-
+    
         atoms = Atom(Cube(), r, 1.5)
         laser = Laser(Gaussian3D(w₀), s, Δ)
         simulation = LinearOptics(    Scalar(),    atoms, laser)
         @test laser_field(laser, atoms) ≈ laser_field(laser, copy(atoms.r))
-
+    
         sensor = [-2, 4, 6]
-
-        laser_expected = -0.5im*CoupledDipoles.Γ * √(0.5s)* CoupledDipoles._scalar_laser_field(laser, sensor)
+    
+        laser_expected = CoupledDipoles.Γ * √(0.5s)* CoupledDipoles._scalar_laser_field(laser, sensor)
         @test laser_field(laser, sensor)[1][1] ≈ laser_expected
         @test laser_field(simulation, Array(Matrix(transpose(sensor))'))[1] ≈ laser_expected
-
+    
         sensors = [ 9  3  2   3  10;
                     7  5  4  10   4;
                     2  8  1   7   4]
         laser_expected = map(eachcol(sensors)) do oneSensor
-            -0.5im * CoupledDipoles.Γ * √(0.5s)* CoupledDipoles._scalar_laser_field(laser, oneSensor)
+            CoupledDipoles.Γ * √(0.5s)* CoupledDipoles._scalar_laser_field(laser, oneSensor)
         end
         @test all(  vec(laser_field(laser, sensors)) .≈ laser_expected)
         @test all( laser_field(laser, sensors)[1] .≈ laser_field(simulation, sensors)[1])
