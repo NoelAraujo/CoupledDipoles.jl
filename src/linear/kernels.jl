@@ -21,16 +21,11 @@ end
 function interaction_matrix(problem::NonLinearOptics{MeanField})
     @debug "start: interaction_matrix"
 
-    # if haskey(problem.data, :G)
-    #     return problem.data[:G]
-    # end
-
     temp_scalar_problem = LinearOptics(Scalar(), problem.atoms, problem.laser)
     G = get_empty_matrix(temp_scalar_problem.physic, temp_scalar_problem.atoms)
     temp_scalar_problem.kernelFunction!(temp_scalar_problem.atoms, problem.laser, G)
 
     temp_scalar_problem = 1
-    # problem.data[:G] = G
     @debug "end  : interaction_matrix"
     return G
 end
@@ -213,7 +208,8 @@ function green_vectorial!(atoms, laser, G)
     @inbounds @. G[(N+1):(2N),  (2N+1):(3N)] = copy(Gyz)
     @inbounds @. G[(2N+1):(3N), (2N+1):(3N)] = copy(Gzz)
 
-
+    # I don't know how to justify that this works
+    # 'Γ' vectorial is different than 'Γ' scalar (Γ_vec = 2/3 Γ_sca)
     G[diagind(G)] .= im*Δ - Γ/2 # diagonals have the single atom solution
     G_removeNaN!(G, Δ)
 

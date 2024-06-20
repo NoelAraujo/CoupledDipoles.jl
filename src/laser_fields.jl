@@ -56,10 +56,6 @@ function _VALUE_laser_field(problem, sensors, Ω₀)
 
     laser_electric_fields::Matrix{ComplexF64} = hcat(_laser_electric_fields...)
 
-    # _laser_electric_fields = mapreduce(hcat, eachcol(sensors)) do sensor
-    #     Ω₀ * laser_geometry(problem.laser, sensor)
-    # end
-
     return laser_electric_fields
 end
 

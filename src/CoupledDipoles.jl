@@ -87,7 +87,6 @@ include("scattered_fields_implementations.jl")
 include("laser_fields.jl")
 include("scattering.jl")
 include("linear/scalar_pump_scattering.jl")
-include("linear/vectorial_pump_scattering.jl")
 include("nonlinear/meanfield_pump_scattering.jl")
 include("nonlinear/paircorrelation_pump_scattering.jl")
 export scattered_electric_field, scattered_intensity, laser_and_scattered_intensity, laser_and_scattered_electric_field

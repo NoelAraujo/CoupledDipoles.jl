@@ -1,7 +1,7 @@
 
 ## INTENSITY
 """
-    scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field, use_sequencial=false)
+    scattered_intensity(problem, atomic_states, sensor_positions; regime=:near_field, use_sequencial=false)
 
 Returns a Vector{Float64} with value of the `|Electric Scattered|^2` from atoms
 
@@ -44,7 +44,7 @@ scattered_intensity(problem_scalar, atomic_states_scalar, sensor)
 scattered_intensity(problem_vectorial, atomic_states_vectorial, sensor)
 ```
 """
-function scattered_intensity(problem::LinearOptics{T}, atomic_states, sensor_positions; regime=:far_field, use_sequencial=false) where {T<:Union{Scalar,Vectorial}}
+function scattered_intensity(problem::LinearOptics{T}, atomic_states, sensor_positions; regime=:near_field, use_sequencial=false) where {T<:Union{Scalar,Vectorial}}
     fields = scattered_electric_field(problem, atomic_states, sensor_positions; regime=regime, use_sequencial=use_sequencial)
 
     intesities = mapreduce(vcat, eachcol(fields)) do field
@@ -68,7 +68,7 @@ function _get_intensity(problem::NonLinearOptics{PairCorrelation}, field::Abstra
     return abs2.(field)
 end
 
-function scattered_intensity(problem::NonLinearOptics{T}, atomic_states, sensors; regime=:far_field, inelasticPart=true, use_sequencial=false) where {T<:Union{MeanField,PairCorrelation}}
+function scattered_intensity(problem::NonLinearOptics{T}, atomic_states, sensors; regime=:near_field, inelasticPart=true, use_sequencial=false) where {T<:Union{MeanField,PairCorrelation}}
 
     ## define the 'function' to be used
     if regime == :far_field
@@ -191,7 +191,7 @@ end
 # ------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------
 """
-    laser_and_scattered_intensity(problem, atomic_states, sensor_positions; regime=:far_field)
+    laser_and_scattered_intensity(problem, atomic_states, sensor_positions; regime=:near_field)
 
 Returns a Vector{Float64} with value of the `|Electric Laser + Electric Scattered|^2` from atoms
 
@@ -199,7 +199,7 @@ Returns a Vector{Float64} with value of the `|Electric Laser + Electric Scattere
 - atomic_states: β for `Scalar`/`Vectorial` Model, or [β,z] for `Mean Field` Model
 - sensors: matrix with measurement points
 """
-function laser_and_scattered_intensity(problem, atomic_states, sensors; regime=:far_field)
+function laser_and_scattered_intensity(problem, atomic_states, sensors; regime=:near_field)
     E_laser = laser_field(problem, sensors)
     E_scattered = scattered_electric_field(problem, atomic_states, sensors;regime=regime)
 

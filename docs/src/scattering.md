@@ -2,6 +2,8 @@
 
 The electric field measured at sensor positioned at $\mathbf{R} = R\hat{n}$ results from the sum of all  dipoles located at $\mathbf{r}_j$ and their respective states $\beta_j$. The exact formula depends on the `model` and `regime`.
 
+By default, all scattering function are configured on `:near_field` regime. However,  **only** the `Vectorial` Model did not have sufficient tests to be considered reliable on the `:far_field`.
+
 ---
 
 ## Electric Field
@@ -18,11 +20,11 @@ $$E_{sc}(\mathbf{R}, t) \approx +i\frac{\Gamma}{2} \frac{e^{ ik_0R }}{k_0R}\sum_
 ### Vectorial
 `regime = :near_field`
 
-$$E_{vec}(\mathbf{R}, t) = -i\frac{\Gamma}{2}\sum_j\sum_{\eta}G_{\mu,\eta}(\mathbf{R}-\mathbf{r}_j)\beta_j^{\eta}(t)$$
+$$E_{vec}(\mathbf{R}, t) = +i\Gamma\sum_j\sum_{\eta}G_{\mu,\eta}(\mathbf{R}-\mathbf{r}_j)\beta_j^{\eta}(t)$$
 
 `regime = :far_field`
 
-$$E^\mu_{vec}(\mathbf{R},t) \approx -i\frac{\Gamma}{2}\cdot\frac{3}{2} \frac{e^{ik_0R}}{k_0R}\sum_j\sum_\eta(\delta_{\mu, \eta} - \hat{n}_\mu\hat{n}_\eta^*)exp(-ik_0\hat{\mathbf{n}}\cdot\mathbf{r}_j)\beta_j^\eta(t)$$
+$$E^\mu_{vec}(\mathbf{R},t) \approx +i\frac{3\Gamma}{4} \frac{e^{ik_0R}}{k_0R}\sum_j\sum_\eta(\delta_{\mu, \eta} - \hat{n}_\mu\hat{n}_\eta^*)exp(-ik_0\hat{\mathbf{n}}\cdot\mathbf{r}_j)\beta_j^\eta(t)$$
 
 
 ### Mean Field

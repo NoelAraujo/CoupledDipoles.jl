@@ -1,14 +1,10 @@
-using CoupledDipoles
-using CairoMakie, ProgressMeter
+using LinearAlgebra, Random, CoupledDipoles, CairoMakie, ProgressMeter
 
-using LinearAlgebra, Random, CoupledDipoles, CairoMakie
-
-Δ_range = range(-5,5; length=100)
+Δ_range = range(-5,5; length=130)
 
 R = 17.71830997686217301634315
 L = 8.177681527782540982229875
-N = 200
-b0 = 4N/R^2 # for vectorial is different than scalar
+N = 150
 
 # you need an initial value for Δ, just to create a problem type
 s, Δ = 1e-3, 0.0 
@@ -16,27 +12,32 @@ w₀ =  R/3
 polarization = [1, 0, 0]
 direction = [0, 0, 1]
 
-T = map(1:20) do j
+@profview T = map(1:50) do j
     Random.seed!(j)
     println(j)
-    # atoms = Atom(Cylinder(), N, R, L)
-    atoms = Atom(CoupledDipoles.Sphere(gaussian=true), N, R)
+    X = randn(N) .* R
+    Y = randn(N) .* R
+    Z = randn(N) .* L
+    r = vcat(X', Y', Z')
+    atoms = Atom(Cylinder(), Array(r), R, L)
+    # atoms = Atom(CoupledDipoles.Sphere(gaussian=false), N, R)
+
     laser = Laser(Gaussian3D(w₀), s, Δ; polarization=[1,0,0])
     problem = LinearOptics(Vectorial(), atoms, laser)
 
     transmission(problem, Δ_range)
 end;
-mean_transmission = sum(T)/length(T)
+mean_transmission = sum(T)/length(T);
 
 let 
-    # b0 = 9N/R^2 # uniform
-    b0 = 3N/R^2 # gaussina
+    # b0 = 2N/R^2 # scalar
+    b0 = 3N/R^2 # vectorial
 
     f = Figure(size = (800, 600))
     ax = Axis(f[1, 1], xlabel = "Δ", ylabel = "Transmission")
-    foreach(eachindex(T)) do j
-        lines!(ax, Δ_range, T[j])
-    end
+    # foreach(eachindex(T)) do j
+    #     lines!(ax, Δ_range, T[j])
+    # end
     lines!(ax, Δ_range, exp.(-b0 ./ (1 .+ 4 .* Δ_range.^2)), linewidth=4, color=:black, label="Beer's Law")
     lines!(ax, Δ_range, mean_transmission, linewidth=4, color=:red, linestyle=:dash, label="Average")
     axislegend(ax, position = :rb)
@@ -44,7 +45,7 @@ let
     f
 end
 
-
+# -----------  WARNING: THIS CODE HAD NOT MAINTANANCE -----------
 #=
     The code below is to visualize the intensity over the space in the Far Field limit.
 
@@ -74,7 +75,7 @@ end
 θ = LinRange(0, π, 20)
 ϕ = LinRange(0, 2π, 20)
 
-farFieldRadius = CoupledDipoles.how_far_is_FarField(cloud)
+farFieldRadius = CoupledDipoles.how_far_is_farField(cloud)
 x = farFieldRadius .* [sin(θ) * sin(ϕ) for θ in θ, ϕ in ϕ]
 y = farFieldRadius .* [sin(θ) * cos(ϕ) for θ in θ, ϕ in ϕ]
 z = farFieldRadius .* [cos(θ) for θ in θ, ϕ in ϕ]
@@ -88,7 +89,7 @@ _problem = LinearOptics(Vectorial(), cloud, _laser)
 # _βₙ = Matrix(transpose([steady_state(_problem)]))
 _βₙ =steady_state(_problem)
 
-intensities = scattered_intensity(_problem, _βₙ, sensors; regime=:far_field)
+intensities = scattered_intensity(_problem, _βₙ, sensors; regime=:near_field)
 intensities[findall(intensities .< 1e-20)] .= 0.0
 
 fig, ax, pltobj = mesh(
@@ -105,47 +106,3 @@ fig, ax, pltobj = mesh(
 cbar = Colorbar(fig, pltobj; label="log10(Intensity)", flipaxis=false)
 fig[1, 2] = cbar
 fig
-
-
-
-let 
-    using LinearAlgebra
-    atoms = Atom(Cube(), Matrix([1.0 1.0 1.0]'), 1.0)
-    sensor = Matrix([-1000 -1000 -500]')
-    β = [3, 4im, 5.0]
-    E_n = CoupledDipoles._vectorial_scattering_near_field(atoms, β, sensor)
-    E_f = CoupledDipoles._vectorial_scattering_far_field(atoms, β, sensor)
-    E_n, E_f
-end
-
-
-@testset "Vectorial Scattering - Single Atom" begin
-    using LinearAlgebra
-    atoms = Atom(Cube(), Matrix([1.0 1.0 1.0]'), 1.0)
-    sensor = Matrix([-1000 -1000 -500]')
-    β = [3, 4im, 5.0]
-    E_μ = CoupledDipoles._vectorial_scattering_far_field(atoms, β, sensor)
-
-    R = norm(sensor)
-    n = sensor./R
-    nx, ny, nz = n[1], n[2], n[3]
-    C = cis(-nx - ny - nz)
-    E_x_expected = +(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2)*3 + -nx*ny*4im - nx*nz*5)
-    E_y_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx*3 + (1 -ny^2)*4im - ny*nz*5)
-    E_z_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx*3 - nz*ny*4im + (1 - nz^2)*5)
-    @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
-
-    sensor = Matrix([100 -1000 0]')
-    β = [1, -2im, 15.0]
-    E_μ = CoupledDipoles._vectorial_scattering_far_field(atoms, β, sensor)
-
-    R = norm(sensor)
-    n = sensor./R
-    nx, ny, nz = n[1], n[2], n[3]
-    C = cis(-nx - ny)
-    E_x_expected = +(im/2)*(3/2)*(cis(R)/R)*C*((1 - nx^2) + nx*ny*2im - nx*nz*15)
-    E_y_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -ny*nx - (1 -ny^2)*2im - ny*nz*15)
-    E_z_expected = +(im/2)*(3/2)*(cis(R)/R)*C*( -nz*nx + nz*ny*2im + (1 - nz^2)*15)
-
-    @test all(E_μ .≈ [E_x_expected, E_y_expected, E_z_expected])
-end

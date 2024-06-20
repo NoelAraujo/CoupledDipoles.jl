@@ -1,6 +1,6 @@
 # --------------------------------- GENERAL FUNCTIONS ---------------------------------
 """
-    scattered_electric_field(problem, atomic_states, sensors; regime=:far_field, use_sequencial=false)
+    scattered_electric_field(problem, atomic_states, sensors; regime=:near_field, use_sequencial=false)
 
 Returns a Matrix{ComplexF64} with value of the `Eletric Laser` + `Electric Scattered` from atoms
 
@@ -50,7 +50,7 @@ scattered_electric_field(problem_scalar, atomic_states_scalar, sensor)
 scattered_electric_field(problem_vectorial, atomic_states_vectorial, sensor)
 ```
 """
-function scattered_electric_field(problem, atomic_states, sensors; regime=:far_field, use_sequencial=false)
+function scattered_electric_field(problem, atomic_states, sensors; regime=:near_field, use_sequencial=false)
     ## validate inputs
     states = prepare_states(problem, atomic_states)
     measurement_positions = prepare_sensors(problem, sensors)
@@ -95,7 +95,7 @@ function prepare_sensors(problem, sensors::AbstractVector)
 end
 
 
-function laser_and_scattered_electric_field(problem, atomic_states, sensors; regime = :far_field)
+function laser_and_scattered_electric_field(problem, atomic_states, sensors; regime = :near_field)
     E_laser = laser_field(problem, sensors)
     E_scattered = scattered_electric_field(problem, atomic_states, sensors; regime=regime)
     E_total = E_laser + E_scattered

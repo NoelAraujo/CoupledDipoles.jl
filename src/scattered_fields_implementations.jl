@@ -27,11 +27,9 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
 end
 function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
     r = atoms.r
-    
     E_scatt = zeros(eltype(β), 3)
-    r_jm = zeros(eltype(atoms.r), 3)
-    G = zeros(ComplexF64, 3, 3)
-    for (j, rⱼ) = enumerate(eachcol(r))       
+
+    for (j, rⱼ) = enumerate(eachcol(r))
         βⱼ = view(β, :, j)
 
         Xoj = sensor[1] .- rⱼ[1]
@@ -40,33 +38,33 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
         Roj = sqrt(Xoj^2 + Yoj^2 + Zoj^2)
 
         # Vectorial field
-        c1 = cis(Roj)./(1im*Roj^3)
+        c1 = (3/2)*cis(Roj)./(1im*Roj^3)
         c2 = 1im/Roj - 1/(Roj^2)
-        
+
         betax = βⱼ[1]
         betay = βⱼ[2]
         betaz = βⱼ[3]
 
-        E_scatt[1] -= c1 .* (
+        E_scatt[1] += c1 .* (
                 ( Roj.^2 - Xoj.^2 + c2.* (Roj.^2 - 3* Xoj.^2) ) .* betax +
                 ( -Xoj.* Yoj.- 3* c2.* Xoj.* Yoj ) .* betay +
                 ( -Xoj.* Zoj.- 3* c2.* Xoj.* Zoj ) .* betaz
             )
 
-        E_scatt[2] -= c1 .* (
+        E_scatt[2] += c1 .* (
                 ( Roj.^2 .- Yoj.^2 .+ c2.* (Roj.^2 .- 3* Yoj.^2) ) .* betay +
                 ( -Xoj.* Yoj.- 3* c2.* Xoj.* Yoj ) .* betax +
                 ( -Yoj.* Zoj.- 3* c2.* Yoj.* Zoj ) .* betaz
             )
-            
 
-        E_scatt[3] -= c1 .* (
+
+        E_scatt[3] += c1 .* (
                 ( Roj.^2 .- Zoj.^2 .+ c2.* (Roj.^2 .- 3* Zoj.^2) ) .* betaz +
                 ( -Xoj.* Zoj .- 3* c2.* Xoj.* Zoj ) .* betax +
                 ( -Yoj.* Zoj .- 3* c2.* Yoj.* Zoj ) .* betay
-            )            
+            )
     end
-    return -im*3Γ/2*E_scatt
+    return +im*Γ*E_scatt # I don't know how to justify that this works
 end
 function _vectorial_3D_green_kernel(r_jm::Vector)
     G = Array{Complex{eltype(r_jm)}}(undef, 3,3)
@@ -79,11 +77,11 @@ end
 #   reverse engineered (and adapted) from Ana Cipris
     r = k₀ * norm(r_jm)
     r2 = r^2
-        
+
     ### v1
     # c1 = (3/2)*cis(r)/r
     # c2 = 1im/r - 1/(r^2)
-    
+
     # n_jm = r_jm./r
     # n_x, n_y, n_z = n_jm[1], n_jm[2], n_jm[3]
 
@@ -134,8 +132,8 @@ end
     G[3,1] = c1*(-(1 + 3*c2) * x * z) # Gzx
     G[3,2] = c1*(-(1 + 3*c2) * y * z) # Gzy
     G[3,3] = c1*((1 + c2)*r^2 - (1 + 3*c2) * z^2) # Gzz
-    
-    
+
+
     return nothing
 end
 
@@ -172,68 +170,20 @@ end
 function _vectorial_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: TwoD
     return nothing
 end
-function _vectorial_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
-    r = atoms.r
+## NEEDS BENCHMARKS 
+@views function _vectorial_scattering_far_field(atoms::Atom{T}, β, sensor) where T <: ThreeD
+    N = atoms.N
+    r = atoms.r[:,:]
     r_far_field = how_far_is_farField(atoms)
-    
-    norm_sensor = norm(sensor)
-    n̂ = sensor / norm_sensor
-    
+
+    norm_sensor = sqrt(sum(abs2, sensor))
+    n̂ = sensor ./ norm_sensor
+    δ = Diagonal([1,1,1])
     E_scatt = zeros(Complex{eltype(r)}, 3)
 
-    r_jm = zeros(eltype(atoms.r), 3)
-    r_jm[1] = sensor[1]
-    r_jm[2] = sensor[2]
-    r_jm[3] = sensor[3]
-
-    G = zeros(ComplexF64, 3, 3)
-    _vectorial_3D_green_kernel_far_field!(r_jm, G) # use 'r_jm' == 'sensor' and NOT its normalized version
-    
-    for (j, rⱼ) = enumerate(eachcol(r))
-        βⱼ = view(β, :, j)
-        E_scatt += (G*βⱼ).*cis(-dot(n̂, rⱼ))
+    for ζ = 1:3
+        E_scatt[ζ] = sum( (δ[ζ,η]  - n̂[ζ]*n̂[η])*cis(-dot(n̂, r[:,j]))*β[η, j] for j=1:N, η=1:3 )
     end
 
-    return +im*(3Γ/4)*(cis(r_far_field)/r_far_field).*E_scatt
-end
-
-
-@inline function _vectorial_3D_green_kernel_far_field!(r_jm::Vector, G::Matrix)
-    # this code comes from removing 'c2' from :near_field
-    
-    # x, y, z = r_jm[1], r_jm[2], r_jm[3]
-    # r = norm(r_jm)
-
-    # G[1,1] = r  - x^2 # Gxx
-    # G[1,2] = -x * y # Gxy
-    # G[1,3] = -x * z # Gxz
-
-    # G[2,1] = -y * x # Gyx
-    # G[2,2] = r  - y^2 # Gyy
-    # G[2,3] = -y * z # Gyz
-
-    # G[3,1] = -z * x # Gzx
-    # G[3,2] = -z * y # Gzy
-    # G[3,3] = r  - z^2 # Gzz
-
-    r = k₀ * norm(r_jm)
-    c1 = (3/2)*cis(r)/r
-    c2 = 1im/r - 1/r^2
-    
-    n_jm = r_jm./r
-    n_x, n_y, n_z = n_jm[1], n_jm[2], n_jm[3]
-
-    G[1,1] = c1*( (1 - n_x*n_x)  ) # Gxx
-    G[1,2] = c1*( (0 - n_x*n_y)  ) # Gxy
-    G[1,3] = c1*( (0 - n_x*n_z)  ) # Gxz
-
-    G[2,1] = c1*( (0 - n_y*n_x)  ) # Gyx
-    G[2,2] = c1*( (1 - n_y*n_y)  ) # Gyy
-    G[2,3] = c1*( (0 - n_y*n_z)  ) # Gyz
-
-    G[3,1] = c1*( (0 - n_z*n_x)  ) # Gzx
-    G[3,2] = c1*( (0 - n_z*n_y)  ) # Gzy
-    G[3,3] = c1*( (1 - n_z*n_z)  ) # Gzz
-        
-    return nothing
+    return +im*(3Γ/4)*(cis(norm_sensor)/(norm_sensor)).*E_scatt    
 end
