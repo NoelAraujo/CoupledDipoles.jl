@@ -41,7 +41,7 @@ using Tullio
     end
     @testset "Vectorial Kernel Matrix 3D" begin
         r_jm = [-3, √3, -2]
-        G = CoupledDipoles._vectorial_3D_green_kernel(r_jm)
+        G = CoupledDipoles._vectorial_3D_green_single_atom(r_jm)
         k₀ = CoupledDipoles.k₀
         G_expected = (3cis(4k₀)/(8k₀))*(
             (1 + im/(4k₀) - 1/(16k₀^2)).*[1 0 0; 0 1 0; 0 0 1] +

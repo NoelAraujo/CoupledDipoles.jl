@@ -66,6 +66,41 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
     end
     return +im*Γ*E_scatt # I don't know how to justify that this works
 end
+function _vectorial_3D_green_single_atom(r_jm::Vector)
+    G = Array{Complex{eltype(r_jm)}}(undef, 3,3)
+    _vectorial_3D_green_single_atom(r_jm, G)
+    return G
+end
+
+
+@inline function _vectorial_3D_green_single_atom(r_jm::Vector, G::Matrix)
+#   reverse engineered (and adapted) from Ana Cipris
+    r = k₀ * norm(r_jm)
+    r2 = r^2
+
+    ### v3
+    x, y, z = r_jm[1], r_jm[2], r_jm[3]
+    c1 = (3/2)*cis(r)/(r^3)
+    c2 = 1im/r - 1/r^2
+
+    G[1,1] = c1*( (1 + c2)*r^2 - (1 + 3*c2) * x^2) # Gxx
+    G[1,2] = c1*(-(1 + 3*c2) * x * y) # Gxy
+    G[1,3] = c1*(-(1 + 3*c2) * x * z) # Gxz
+
+    G[2,1] = c1*(-(1 + 3*c2) * x * y) # Gyx
+    G[2,2] = c1*((1 + c2)*r^2 - (1 + 3*c2) * y^2) # Gyy
+    G[2,3] = c1*(-(1 + 3*c2) * y * z) # Gyz
+
+    G[3,1] = c1*(-(1 + 3*c2) * x * z) # Gzx
+    G[3,2] = c1*(-(1 + 3*c2) * y * z) # Gzy
+    G[3,3] = c1*((1 + c2)*r^2 - (1 + 3*c2) * z^2) # Gzz
+
+
+    return nothing
+end
+
+
+
 
 
 

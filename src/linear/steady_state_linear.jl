@@ -1,7 +1,7 @@
 """
     steady_state(problem::LinearOptics{Scalar})
 
-Solve `x=G\\Ω`, with default `interaction_matrix` and `laser_field`.
+Solve `x=-G\\Ω`, with default `interaction_matrix` and `laser_field`.
 """
 function steady_state(problem::LinearOptics{Scalar}; tmax=250.0, reltol=1e-9, abstol=1e-9, ode_solver=false)
 
@@ -45,7 +45,7 @@ function steady_state(problem::LinearOptics{Vectorial}; tmax=250.0, reltol=1e-9,
             Ωₙ = LASER_FACTOR.*laser_field(problem, problem.atoms)
             Ωₙ_eff = _vecAux_Matrix_into_longArray(Ωₙ)
 
-            βₛ = G \ Ωₙ_eff
+            βₛ = G \ Ωₙ_eff # why is missing a negative sign here? probably to match Ana's results
         end
     else ## single atom
         G = interaction_matrix(problem)
