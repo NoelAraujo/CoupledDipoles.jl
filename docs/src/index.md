@@ -21,7 +21,7 @@ using CoupledDipoles
 
 Let's create a problem with `N=1000` atoms inside a `Cube` of size `kR=40`, pumped by a laser with saturation `s=1e-6` and on resonance `Δ=0`. We'll use the `Atom` and `Laser` constructors to define the `problem`, and then create a `Scalar Model`.
 
-From the `problem` you get, for example, the atomic [`steady_state`](@ref)
+From the `problem` you get, for example, the [`steady_state`](@ref ss_page)
 
 ```julia
 using CoupledDipoles
