@@ -12,7 +12,7 @@ makedocs(
                 "Steady State" => "steady_state.md",
                 "Scattering" => "scattering.md",
                 "Single Atom" => "dipole_example/single_atom_volume.md",
-                "Intensity Statistics" => "variances_angles/rayleigh_variance.md",
+                "Intensity Statistics" => "variances_angles/variaces_different_angles_and_shapes.md",
                 "Fitting" => "linear_regression/linear_regression_methods.md",
                ])
 deploydocs(;
