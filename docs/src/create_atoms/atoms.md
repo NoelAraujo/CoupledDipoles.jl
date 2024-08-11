@@ -1,15 +1,19 @@
 ## Creating Atoms
 
-`CoupledDipoles` currently supports only 3D objects, that is, `Sphere`, `Cube` and `Cylinder`, even though it is possible to extend many functionalities to `1D` and `2D` in future developments. To create atoms, use the `Atom` constructor.
+### Default distributions
 
+You just created cloud of atom into different geometries, the atom will be homogenously distributed inside the specified geometry. Currently, the package **only supports 3D objects**, namely `Sphere`, `Cube`, and `Cylinder`. However, the source code allows to extend functionalities to 1D and 2D in future developments - please, collaborate with a pull request. 
+
+
+To create atoms, use the `Atom` constructor, the base syntax is the following
 
 ```julia
-using CoupledDipoles, CairoMakie, Random
+using CoupledDipoles, Random
 Random.seed!(2354)
 nAtoms = 5000
 
-# CoupledDipoles and CairoMakie expoerts 'Sphere', therefore
-# one needs to be specific
+# `CoupledDipoles` and `CairoMakie` expoerts 'Sphere()', 
+# therefore I had to be specific and write `CoupledDipoles.Sphere()`
 sphere_radius = 1.5
 sphere_cloud = Atom(CoupledDipoles.Sphere(), nAtoms, sphere_radius)
 
@@ -21,10 +25,14 @@ cylinder_height = 2.0
 cylinder_cloud = Atom(Cylinder(), nAtoms, cylinder_radius, cylinder_height)
 ```
 
-The result should like something similar to
+You just created a matrix with the atoms. The atoms positions are in Cartesian Coordinates, and stored in column-major (each column correspond to an atom).
+
+
+To see your atoms you need have to plot them with some external package
 
 ```julia
-fig = Figure(resolution = (800, 300))
+using CairoMakie
+fig = Figure(size = (800, 300))
 ax_sphere = Axis3(fig[1:2, 1:2], aspect = (1, 1, 1))
 ax_cube = Axis3(fig[1:2, 3:4], aspect = (1, 1, 1))
 ax_cylinder = Axis3(fig[1:2, 5:6], aspect = (1, 1, 1))
@@ -61,7 +69,7 @@ end
 
 If a user wants to create their own atomic configuration, there are two constraints to consider:
 
-1. The shape field can be handled easily by choosing one of the available options: Sphere, Cube, or Cylinder.
+1. The shape field can be handled easily by choosing one of the available options: `Sphere`, `Cube`, or `Cylinder`.
 2. The matrix containing the atom positions must have each Cartesian dimension represented by a row.
 
 Here's an example code snippet demonstrating the creation of a custom atomic configuration:
@@ -85,8 +93,46 @@ dummy_dimension = 5
 atoms = Atom(Cube(), r, dummy_dimension)
 ```
 
-Ensure that the atom positions are arranged correctly in the matrix, with each row representing a Cartesian dimension. The usage of transpose, followed by Array, is necessary to adhere to the matrix requirements.
+The usage of `transpose`, followed by `Array`, is necessary to adhere to the package internals expectations.
 
+Another example where you don't need to concatenate vectors.
+
+```julia
+# (...)
+nAtoms = 5000
+x = 0.5randn(nAtoms)
+y = 0.5randn(nAtoms)
+z = 2rand(nAtoms)
+r  = hcat(x,y,z) |> transpose |> Array
+
+
+dummy_radius = 0.5
+dummy_height = 2.0
+atoms = Atom(Cylinder(), r, dummy_radius, dummy_height)
+
+fig = Figure(size = (450, 450))
+ax_sphere = Axis3(fig[1, 1])
+sx, sy, sz = atoms.r[1, :], atoms.r[2, :], atoms.r[3, :]
+scatter!(ax_sphere, sx, sy, sz, color = sz)    
+hidedecorations!(ax_sphere)
+fig
+```
+![Gaussian Cylinder](example_gaussian_cylinder.png)
+
+
+---
+
+```@docs
+Sphere
+```
+
+```@docs
+Cube
+```
+
+```@docs
+Cylinder
+```
 
 ```@docs
 Atom

@@ -8,11 +8,9 @@
 - `kR::Union{Real,Integer}`: The radius for the sphere.
 
 # Keyword Arguments
-- `:r_min`: Optional keyword argument specifying the minimum distance between atoms.
+- `:r_min`: Optional keyword argument specifying the minimum distance between atoms. 
+By default it is computed with the `radius_of_exclusion()` method
 
-
-# Returns
-An `Atom` object with the specified geometry, atom positions, and sphere parameters.
 
 # Example
 ```julia

@@ -8,6 +8,7 @@
 
 # Keyword Arguments
 - `:r_min`: Optional keyword argument specifying the minimum distance between atoms.
+By default it is computed with the `radius_of_exclusion()` method
 
 # Example
 ```julia

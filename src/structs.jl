@@ -8,7 +8,16 @@ abstract type ThreeD <: Dimension end
 
 struct Square <: TwoD end
 struct Circle <: TwoD end
+
+"""
+        Cube()
+"""
 struct Cube <: ThreeD end
+"""
+        Sphere(; gaussian=false)
+
+If `gaussian=true`, produces a Gaussian Sphere with μ = 0 (mean = 0) and variance = kR (σ^2 = kR)
+"""
 struct Sphere <: ThreeD
     isGaussian::Bool
 
@@ -21,6 +30,9 @@ struct Sphere <: ThreeD
         end
     end
 end
+"""
+        Cylinder()
+"""
 struct Cylinder <: ThreeD end
 
 struct Atom{T<:Dimension}
