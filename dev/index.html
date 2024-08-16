@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · CoupledDipoles.jl</title><meta name="title" content="Home · CoupledDipoles.jl"/><meta property="og:title" content="Home · CoupledDipoles.jl"/><meta property="twitter:title" content="Home · CoupledDipoles.jl"/><meta name="description" content="Documentation for CoupledDipoles.jl."/><meta property="og:description" content="Documentation for CoupledDipoles.jl."/><meta property="twitter:description" content="Documentation for CoupledDipoles.jl."/><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="search_index.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>CoupledDipoles.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a><ul class="internal"><li><a class="tocitem" href="#**Installation**"><span><strong>Installation</strong></span></a></li><li><a class="tocitem" href="#First-Example"><span>First Example</span></a></li><li><a class="tocitem" href="#Manual-Outline"><span>Manual Outline</span></a></li></ul></li><li><a class="tocitem" href="create_atoms/atoms/">Atom</a></li><li><a class="tocitem" href="steady_state/">Steady State</a></li><li><a class="tocitem" href="scattering/">Scatttering</a></li><li><a class="tocitem" href="dipole_example/single_atom_volume/">Single Atom</a></li><li><a class="tocitem" href="variances_angles/rayleigh_variance/">Intensity Statistics</a></li><li><a class="tocitem" href="linear_regression/linear_regression_methods/">Fitting</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/NoelAraujo/CoupledDipoles.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/NoelAraujo/CoupledDipoles.jl/blob/main/docs/src/index.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="CoupledDipoles.jl"><a class="docs-heading-anchor" href="#CoupledDipoles.jl">CoupledDipoles.jl</a><a id="CoupledDipoles.jl-1"></a><a class="docs-heading-anchor-permalink" href="#CoupledDipoles.jl" title="Permalink"></a></h1><h2 id="**Installation**"><a class="docs-heading-anchor" href="#**Installation**"><strong>Installation</strong></a><a id="**Installation**-1"></a><a class="docs-heading-anchor-permalink" href="#**Installation**" title="Permalink"></a></h2><p>This is package is not registred in julia, you have to use its github URL</p><p>Due to its many dependencies, the installation process may take around 10 minutes and requires at least 16Gb of RAM on your device</p><pre><code class="language-julia hljs">import Pkg
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · CoupledDipoles.jl</title><meta name="title" content="Home · CoupledDipoles.jl"/><meta property="og:title" content="Home · CoupledDipoles.jl"/><meta property="twitter:title" content="Home · CoupledDipoles.jl"/><meta name="description" content="Documentation for CoupledDipoles.jl."/><meta property="og:description" content="Documentation for CoupledDipoles.jl."/><meta property="twitter:description" content="Documentation for CoupledDipoles.jl."/><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="search_index.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>CoupledDipoles.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a><ul class="internal"><li><a class="tocitem" href="#**Installation**"><span><strong>Installation</strong></span></a></li><li><a class="tocitem" href="#First-Example"><span>First Example</span></a></li><li><a class="tocitem" href="#Cool-image"><span>Cool image</span></a></li><li><a class="tocitem" href="#Manual-Outline"><span>Manual Outline</span></a></li></ul></li><li><a class="tocitem" href="create_atoms/atoms/">Atom</a></li><li><a class="tocitem" href="lasers/lasers/">Laser</a></li><li><a class="tocitem" href="problems/problems/">Problem</a></li><li><a class="tocitem" href="steady_state/">Steady State</a></li><li><a class="tocitem" href="scattering/">Scatttering</a></li><li><a class="tocitem" href="dipole_example/single_atom_volume/">Single Atom</a></li><li><a class="tocitem" href="variances_angles/rayleigh_variance/">Intensity Statistics</a></li><li><a class="tocitem" href="linear_regression/linear_regression_methods/">Fitting</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/NoelAraujo/CoupledDipoles.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/NoelAraujo/CoupledDipoles.jl/blob/main/docs/src/index.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="CoupledDipoles.jl"><a class="docs-heading-anchor" href="#CoupledDipoles.jl">CoupledDipoles.jl</a><a id="CoupledDipoles.jl-1"></a><a class="docs-heading-anchor-permalink" href="#CoupledDipoles.jl" title="Permalink"></a></h1><h2 id="**Installation**"><a class="docs-heading-anchor" href="#**Installation**"><strong>Installation</strong></a><a id="**Installation**-1"></a><a class="docs-heading-anchor-permalink" href="#**Installation**" title="Permalink"></a></h2><p>This is package is not registred in julia, you have to use its github URL</p><p>Due to its many dependencies, the installation process may take around 10 minutes and requires at least 16Gb of RAM on your device</p><pre><code class="language-julia hljs">import Pkg
 # Pkg.add(&quot;MKL&quot;) # (if installation goes wrong, run this line, and try to install again)
 Pkg.add(url=&quot;https://github.com/NoelAraujo/CoupledDipoles.jl&quot;)</code></pre><p>To verify that everything is working correctly, run:</p><pre><code class="language-julia hljs">using CoupledDipoles
 # Pkg.test(&quot;CoupledDipoles&quot;)</code></pre><h2 id="First-Example"><a class="docs-heading-anchor" href="#First-Example">First Example</a><a id="First-Example-1"></a><a class="docs-heading-anchor-permalink" href="#First-Example" title="Permalink"></a></h2><p>Let&#39;s create a problem with <code>N=1000</code> atoms inside a <code>Cube</code> of size <code>kR=40</code>, pumped by a laser with saturation <code>s=1e-6</code> and on resonance <code>Δ=0</code>. We&#39;ll use the <code>Atom</code> and <code>Laser</code> constructors to define the <code>problem</code>, and then create a <code>Scalar Model</code>.</p><p>From the <code>problem</code> you get, for example, the <a href="steady_state/#ss_page"><code>steady_state</code></a></p><pre><code class="language-julia hljs">using CoupledDipoles
@@ -9,4 +9,114 @@ atoms = Atom(Cube(), N, kR)
 s, Δ = 1e-6, 0.0
 laser = Laser(PlaneWave3D(), s, Δ)
 problem = LinearOptics(Scalar(), atoms, laser)
-βₛₛ = steady_state(problem)</code></pre><h2 id="Manual-Outline"><a class="docs-heading-anchor" href="#Manual-Outline">Manual Outline</a><a id="Manual-Outline-1"></a><a class="docs-heading-anchor-permalink" href="#Manual-Outline" title="Permalink"></a></h2><ul><li class="no-marker"><ul><li><a href="create_atoms/atoms/#Creating-Atoms">Creating Atoms</a></li><li><a href="create_atoms/atoms/#User-defined-geometry">User defined geometry</a></li><li><a href="dipole_example/single_atom_volume/#Single-Atom">Single Atom</a></li></ul></li><li><a href="#CoupledDipoles.jl">CoupledDipoles.jl</a></li><li class="no-marker"><ul><li><a href="#**Installation**"><strong>Installation</strong></a></li><li><a href="#First-Example">First Example</a></li><li><a href="#Manual-Outline">Manual Outline</a></li></ul></li><li><a href="linear_regression/linear_regression_methods/#Linear-Regression-with-Noise-Data">Linear Regression with Noise Data</a></li><li class="no-marker"><ul><li><a href="linear_regression/linear_regression_methods/#Exponential-with-Noise">Exponential with Noise</a></li><li><a href="linear_regression/linear_regression_methods/#Methods-Comparison">Methods Comparison</a></li></ul></li><li><a href="scattering/#Scattering">Scattering</a></li><li class="no-marker"><ul><li><a href="scattering/#Electric-Field">Electric Field</a></li><li><a href="scattering/#Intensity">Intensity</a></li><li><a href="scattering/#Functions">Functions</a></li><li><a href="steady_state/#ss_page">Steady State</a></li></ul></li><li><a href="variances_angles/rayleigh_variance/#Deviations-from-Rayleigh&#39;s-law">Deviations from Rayleigh&#39;s law</a></li></ul></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="create_atoms/atoms/">Atom »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Sunday 11 August 2024 01:29">Sunday 11 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+βₛₛ = steady_state(problem)</code></pre><h2 id="Cool-image"><a class="docs-heading-anchor" href="#Cool-image">Cool image</a><a id="Cool-image-1"></a><a class="docs-heading-anchor-permalink" href="#Cool-image" title="Permalink"></a></h2><p>Check an atomic cloud pumped by a laser, and surrounded by a ring of sensors, where some scattered property can be measured.</p><p><img src="fig_1.png" alt="Figure 1 of the thesis"/></p><p>Here is the code</p><pre><code class="language-julia hljs">using GLMakie, CoupledDipoles, LinearAlgebra, Random
+
+## FIGURE COLORS
+myBG = RGBf(6/255, 0, 26/255 )
+myGridColor = RGBf(30/255, 0/255, 30/255 )
+sensor_color = RGBf(247/255, 94/255, 133/255)
+myColor =  cgrad(  [
+    RGBf(0, 81/255, 123/255 ),
+    RGBf(0, 221/255, 236/255),
+    RGBf(201/255,251/255,255/255)
+    ]
+)
+
+## DATA
+Random.seed!(3456)
+atoms = Atom(CoupledDipoles.Sphere(), 6000, 10)
+x_a, y_a, z_a = atoms.r[1, :], atoms.r[2, :], atoms.r[3, :]
+
+fig = let
+    myColor =  cgrad(  [RGBf(4/255, 0, 21/255 ),
+                        RGBf(0, 81/255, 123/255 ),
+                        RGBf(0, 221/255, 236/255),
+                        RGBf(201/255,251/255,255/255) ])
+    fig = Figure(; size=(1200, 1000), backgroundcolor=myBG, fontsize=25)
+    ax = Axis3(
+        fig[1, 1];
+        xlabel=&quot;X&quot;,
+        ylabel=&quot;Y&quot;,
+        zlabel=&quot;Z&quot;,
+
+        zgridcolor=myGridColor,
+        xgridcolor=myGridColor,
+        ygridcolor=myGridColor,
+
+        ztickcolor=:white,
+        xtickcolor=:white,
+        ytickcolor=:white,
+
+        xlabelcolor=:white,
+        ylabelcolor=:white,
+        zlabelcolor=:white,
+        titlecolor=:white,
+
+        xgridwidth = 1,
+        ygridwidth = 1,
+        zgridwidth = 1,
+
+        backgroundcolor=myBG,
+        aspect = (1,1,1),
+
+        xticksvisible = false,
+        yticksvisible = false,
+        zticksvisible = false,
+
+        xticklabelsvisible = false,
+        yticklabelsvisible = false,
+        zticklabelsvisible = false,
+    )
+
+
+    w₀, s, Δ = 3π, 1e-5, 0.5
+    laser = Laser(Gaussian3D(w₀), s, Δ)
+
+    x = LinRange(-15, 15, 100)
+    y = LinRange(-15, 15, 100)
+    z = LinRange(-15, 15, 100)
+
+    vol = [norm(laser_field(laser, [X, Y, Z])) for X ∈ x, Y ∈ y, Z ∈ z]
+    plt = volumeslices!(ax, x, y, z, vol, colormap=myColor)
+    idx_slice = 40
+    plt[:update_yz][](99)
+    plt[:update_xz][](99)
+    plt[:update_xy][](1)
+    ## ATOMOS
+    validIdx = 1:6000
+    scatter!(ax, x_a[validIdx], y_a[validIdx], z_a[validIdx],
+        strokewidth=0.5, strokecolor=myGridColor,
+        color=z_a[validIdx], colormap=myColor, markersize=20)
+
+
+
+    ## LASER SHAPE
+    a = w₀/2  # Scaling factor along x-axis
+    b = w₀/2  # Scaling factor along y-axis
+    c = 12.0  # Scaling factor along z-axis
+
+    # Define the parametric equations for the &#39;hyperboloid&#39;
+    u = LinRange(-1, 1, 50)
+    v = LinRange(0, 2 * pi, 50)
+    X = [a*cosh(u)*cos(v) for u in u, v in v]
+    Y = [b*cosh(u)*sin(v) for u in u, v in v]
+    Z = [c*sinh(u) for u in u, v in v]
+
+    surface!(ax, X, Y, Z; shading = Makie.automatic, 
+        backlight = 1.0f0, color = sqrt.(X .^ 2 .+ Y .^ 2 .+ Z .^ 2),
+        colormap = myColor, transparency = false,
+        )
+    wireframe!(ax, X, Y, Z; linewidth = 0.5, transparency = true)
+
+
+    # SENSORES
+    sensors = get_sensors_ring(; num_pts = 64, kR = 15, θ = 5π / 12)
+    sx, sy, sz = sensors[1,:], sensors[2,:], sensors[3,:]
+    scatter!(ax, sx, sy,sz,color=sensor_color, markersize=20)
+
+
+    xlims!(ax, -15,15)
+    ylims!(ax, -15,15)
+    zlims!(ax, -15,15)
+    fig
+end</code></pre><h2 id="Manual-Outline"><a class="docs-heading-anchor" href="#Manual-Outline">Manual Outline</a><a id="Manual-Outline-1"></a><a class="docs-heading-anchor-permalink" href="#Manual-Outline" title="Permalink"></a></h2><ul><li class="no-marker"><ul><li><a href="create_atoms/atoms/#Creating-Atoms">Creating Atoms</a></li><li><a href="create_atoms/atoms/#User-defined-geometry">User defined geometry</a></li><li><a href="dipole_example/single_atom_volume/#Single-Atom">Single Atom</a></li></ul></li><li><a href="#CoupledDipoles.jl">CoupledDipoles.jl</a></li><li class="no-marker"><ul><li><a href="#**Installation**"><strong>Installation</strong></a></li><li><a href="#First-Example">First Example</a></li><li><a href="#Cool-image">Cool image</a></li><li><a href="#Manual-Outline">Manual Outline</a></li></ul></li><li><a href="lasers/lasers/#Lasers">Lasers</a></li><li class="no-marker"><ul><li><a href="lasers/lasers/#turn_off!"><code>turn_off!</code></a></li><li><a href="lasers/lasers/#Cool-Image">Cool Image</a></li></ul></li><li><a href="linear_regression/linear_regression_methods/#Linear-Regression-with-Noise-Data">Linear Regression with Noise Data</a></li><li class="no-marker"><ul><li><a href="linear_regression/linear_regression_methods/#Exponential-with-Noise">Exponential with Noise</a></li><li><a href="linear_regression/linear_regression_methods/#Methods-Comparison">Methods Comparison</a></li></ul></li><li><a href="problems/problems/#Problems">Problems</a></li><li><a href="scattering/#Scattering">Scattering</a></li><li class="no-marker"><ul><li><a href="scattering/#Electric-Field">Electric Field</a></li><li><a href="scattering/#Intensity">Intensity</a></li><li><a href="steady_state/#ss_page">Steady State</a></li></ul></li><li><a href="variances_angles/rayleigh_variance/#Deviations-from-Rayleigh&#39;s-law">Deviations from Rayleigh&#39;s law</a></li><li class="no-marker"><ul><li><a href="variances_angles/rayleigh_variance/#Step-1-Use-distributed-resources">Step 1 - Use distributed resources</a></li><li><a href="variances_angles/rayleigh_variance/#Step-2-Setup-Parameters">Step 2 - Setup Parameters</a></li><li><a href="variances_angles/rayleigh_variance/#Step-3-Produce-Intensities">Step 3 - Produce Intensities</a></li><li><a href="variances_angles/rayleigh_variance/#Step-4-Histograms">Step 4 -  Histograms</a></li><li><a href="variances_angles/rayleigh_variance/#Step-5-Plot">Step 5 - Plot</a></li></ul></li></ul></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="create_atoms/atoms/">Atom »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Friday 16 August 2024 03:14">Friday 16 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

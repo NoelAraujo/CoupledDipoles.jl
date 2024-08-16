@@ -1,46 +1,30 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Intensity Statistics · CoupledDipoles.jl</title><meta name="title" content="Intensity Statistics · CoupledDipoles.jl"/><meta property="og:title" content="Intensity Statistics · CoupledDipoles.jl"/><meta property="twitter:title" content="Intensity Statistics · CoupledDipoles.jl"/><meta name="description" content="Documentation for CoupledDipoles.jl."/><meta property="og:description" content="Documentation for CoupledDipoles.jl."/><meta property="twitter:description" content="Documentation for CoupledDipoles.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">CoupledDipoles.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../create_atoms/atoms/">Atom</a></li><li><a class="tocitem" href="../../steady_state/">Steady State</a></li><li><a class="tocitem" href="../../scattering/">Scatttering</a></li><li><a class="tocitem" href="../../dipole_example/single_atom_volume/">Single Atom</a></li><li class="is-active"><a class="tocitem" href>Intensity Statistics</a></li><li><a class="tocitem" href="../../linear_regression/linear_regression_methods/">Fitting</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Intensity Statistics</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Intensity Statistics</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/NoelAraujo/CoupledDipoles.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/NoelAraujo/CoupledDipoles.jl/blob/main/docs/src/variances_angles/rayleigh_variance.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Deviations-from-Rayleigh&#39;s-law"><a class="docs-heading-anchor" href="#Deviations-from-Rayleigh&#39;s-law">Deviations from Rayleigh&#39;s law</a><a id="Deviations-from-Rayleigh&#39;s-law-1"></a><a class="docs-heading-anchor-permalink" href="#Deviations-from-Rayleigh&#39;s-law" title="Permalink"></a></h1><p>Our goal is to reproduce <code>Figure 2</code> from the paper <a href="http://www.kaiserlux.de/coldatoms/Articles/Fluctuations.pdf">Cottier et all, 2019</a>, where the authors studied the statistics of the scattered light, and found that the <strong>variance</strong> of the intensity distribution deviates from the expected Rayleigh&#39;s law.</p><p>With exception of the <code>Step 1</code>, the code is expected to run without any adjustments.</p><p><em>Step 1</em></p><p>Load the necessary packages. For me (the author), I prefer to execute all repetitions in parallel in my home made cluster. If you don&#39;t want parallel processing, just remove the process nodes.</p><pre><code class="language-julia hljs">@time begin
-    using CairoMakie, LinearAlgebra
-    using Statistics: mean, var
-    using StatsBase: fit, normalize, Histogram
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Intensity Statistics · CoupledDipoles.jl</title><meta name="title" content="Intensity Statistics · CoupledDipoles.jl"/><meta property="og:title" content="Intensity Statistics · CoupledDipoles.jl"/><meta property="twitter:title" content="Intensity Statistics · CoupledDipoles.jl"/><meta name="description" content="Documentation for CoupledDipoles.jl."/><meta property="og:description" content="Documentation for CoupledDipoles.jl."/><meta property="twitter:description" content="Documentation for CoupledDipoles.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">CoupledDipoles.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../create_atoms/atoms/">Atom</a></li><li><a class="tocitem" href="../../lasers/lasers/">Laser</a></li><li><a class="tocitem" href="../../problems/problems/">Problem</a></li><li><a class="tocitem" href="../../steady_state/">Steady State</a></li><li><a class="tocitem" href="../../scattering/">Scatttering</a></li><li><a class="tocitem" href="../../dipole_example/single_atom_volume/">Single Atom</a></li><li class="is-active"><a class="tocitem" href>Intensity Statistics</a><ul class="internal"><li><a class="tocitem" href="#Step-1-Use-distributed-resources"><span>Step 1 - Use distributed resources</span></a></li><li><a class="tocitem" href="#Step-2-Setup-Parameters"><span>Step 2 - Setup Parameters</span></a></li><li><a class="tocitem" href="#Step-3-Produce-Intensities"><span>Step 3 - Produce Intensities</span></a></li><li><a class="tocitem" href="#Step-4-Histograms"><span>Step 4 -  Histograms</span></a></li><li><a class="tocitem" href="#Step-5-Plot"><span>Step 5 - Plot</span></a></li></ul></li><li><a class="tocitem" href="../../linear_regression/linear_regression_methods/">Fitting</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Intensity Statistics</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Intensity Statistics</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/NoelAraujo/CoupledDipoles.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/NoelAraujo/CoupledDipoles.jl/blob/main/docs/src/variances_angles/rayleigh_variance.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Deviations-from-Rayleigh&#39;s-law"><a class="docs-heading-anchor" href="#Deviations-from-Rayleigh&#39;s-law">Deviations from Rayleigh&#39;s law</a><a id="Deviations-from-Rayleigh&#39;s-law-1"></a><a class="docs-heading-anchor-permalink" href="#Deviations-from-Rayleigh&#39;s-law" title="Permalink"></a></h1><p>Our goal is to reproduce <code>Figure 2</code> from the paper <a href="http://www.kaiserlux.de/coldatoms/Articles/Fluctuations.pdf">Cottier et all, 2019</a>, where the authors studied the statistics of the scattered light, and found that the <strong>variance</strong> of the intensity distribution deviates from the expected Rayleigh&#39;s law.</p><h2 id="Step-1-Use-distributed-resources"><a class="docs-heading-anchor" href="#Step-1-Use-distributed-resources">Step 1 - Use distributed resources</a><a id="Step-1-Use-distributed-resources-1"></a><a class="docs-heading-anchor-permalink" href="#Step-1-Use-distributed-resources" title="Permalink"></a></h2><p>This step is optional, but if you have a lot of memory of cpu cores, is a good ideia to use it. Since this is optional, if you don&#39;t have a cluster to test, just comment the lines related to <code>addprocs</code></p><pre><code class="language-julia hljs">using CairoMakie, LinearAlgebra
+using Statistics: mean, var
+using StatsBase: fit, normalize, Histogram
+
+addprocs(2; 
+    exeflags=`--project=$(Base.active_project()) --threads 4`, 
+    topology=:master_worker, 
+    enable_threaded_blas=true
+)
+
+@everywhere begin
+    using CoupledDipoles, Random, Dagger
+
+    function produce_intensities(rep, N, L, w₀, s, Δ, sensors)
+        Random.seed!(1134 + rep)
+    
+        atoms = Atom(Cube(), N, L)
+        laser = Laser(Gaussian3D(w₀), s, Δ)
+        simulation = LinearOptics(Scalar(), atoms, laser)
+    
+        βₙ = steady_state(simulation)
+        intensities = scattered_intensity(simulation, βₙ, sensors; regime = :far_field)
+        return intensities
+    end
 end
-
-@time begin
-    using Distributed
-
-    ## for local paralellism
-    addprocs(2; exeflags=`--project=$(Base.active_project()) --threads 4`, topology=:master_worker, enable_threaded_blas=true)
-
-    ## for remote machines
-    # ip_m2 = &quot;pc2@192.168.15.8&quot;
-    # nprocess_m2 = 2
-    # machine2 = [(ip_m2, nprocess_m2)]
-    # addprocs(
-    #     machine2;
-    #     topology = :master_worker,
-    #     exeflags = `--threads 6`,
-    #     enable_threaded_blas = true,
-    #     exename = &quot;/home/pc2/julia/julia-1.8.0-rc3/bin/julia&quot;,
-    #     dir = &quot;/home/pc2&quot;,
-    # )
-
-    # ip_m3 = &quot;pc3@192.168.15.7&quot;
-    # nprocess_m3 = 2
-    # machine3 = [(ip_m3, nprocess_m3)]
-    # addprocs(
-    #     machine3;
-    #     topology = :master_worker,
-    #     exeflags = `--threads 4`,
-    #     enable_threaded_blas = true,
-    #     exename = &quot;/home/pc3/julia_program/julia-1.8.0-rc3/bin/julia&quot;,
-    #     dir = &quot;/home/pc3&quot;,
-    # )
-end
-
-@time @everywhere begin
-    using CoupledDipoles
-    using ProgressMeter, Random
-end</code></pre><p><em>Step 2</em> We use the exact configuration parameters from the paper. You will notice may <code>Warning</code> messages. This happen because a small laser waist leads to unreasonable results.</p><p>If you are studying Cottier&#39;s paper, note that the results from the paper are <strong>not accurate</strong> due to its small laser waist, even though they general paper&#39;s message is still correct.</p><pre><code class="language-julia hljs">### ------------ ATOMS SPECS ---------------------
+</code></pre><h2 id="Step-2-Setup-Parameters"><a class="docs-heading-anchor" href="#Step-2-Setup-Parameters">Step 2 - Setup Parameters</a><a id="Step-2-Setup-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Step-2-Setup-Parameters" title="Permalink"></a></h2><p>We use the exact configuration parameters from the paper. You will notice may <code>Warning</code> messages. This happen because a small laser waist leads to unreasonable results.</p><p>If you are studying Cottier&#39;s paper, note that the results from the paper are <strong>not accurate</strong> due to its small laser waist, even though they general paper&#39;s message is still correct.</p><pre><code class="language-julia hljs">### ------------ ATOMS SPECS ---------------------
 L = 32.4
 N = [684, 6066]
 
@@ -52,27 +36,18 @@ w₀ = L / 4
 
 ### ------------ SIMULATION SPECS ---------------------
 sensors = get_sensors_ring(; num_pts = 720, kR = 300, θ = 5π / 12)
-maxRep = 15</code></pre><p><em>Step 3</em></p><p>For each atom number <code>N</code>, create <code>maxRep</code> atomic configurations, compute their state states, and scattered light intensity. The normalization over the mean comes from the paper.</p><pre><code class="language-julia hljs">### -------- PRODUCE INTENSITIES -----------------
-all_intensities = map(N) do N
-    many_intensities = @showprogress pmap(1:maxRep) do rep
-        Random.seed!(1134 + rep)
-
-        atoms = Atom(Cube(), N, L)
-        laser = Laser(Gaussian3D(w₀), s, Δ)
-        simulation = LinearOptics(Scalar(), atoms, laser)
-
-        βₙ = steady_state(simulation)
-        intensities = scattered_intensity(simulation, βₙ, sensors; regime = :far_field)
-
-        intensities
+maxRep = 15</code></pre><h2 id="Step-3-Produce-Intensities"><a class="docs-heading-anchor" href="#Step-3-Produce-Intensities">Step 3 - Produce Intensities</a><a id="Step-3-Produce-Intensities-1"></a><a class="docs-heading-anchor-permalink" href="#Step-3-Produce-Intensities" title="Permalink"></a></h2><p>For each atom number <code>N</code>, create <code>maxRep</code> atomic configurations, compute their state states, and scattered light intensity. The normalization over the mean comes from the paper.</p><pre><code class="language-julia hljs">all_intensities = map(N) do N
+    _intensities = map(1:maxRep) do rep
+        Dagger.@spawn produce_intensities(rep, N, L, w₀, s, Δ, sensors)
     end
 
+    many_intensities = fetch.(_intensities)
     many_intensities = reduce(vcat, many_intensities)
     all_intensities_over_mean = many_intensities ./ mean(many_intensities)
 
     all_intensities_over_mean
-end</code></pre><p><em>Step 4</em></p><p>Instead of ploting <code>histogram</code> for each particle number, we are interested in the <strong>data</strong> from the <code>histogram</code> to display it in a <code>scatter</code> plot. Also, this is the moment to compute the variance of all intensities.</p><pre><code class="language-julia hljs">### ------------ CREATE HISTOGRAM ---------------------
-bins = 10.0 .^ range(log10(1e-6), log10(75); length = 30)
+end;
+</code></pre><h2 id="Step-4-Histograms"><a class="docs-heading-anchor" href="#Step-4-Histograms">Step 4 -  Histograms</a><a id="Step-4-Histograms-1"></a><a class="docs-heading-anchor-permalink" href="#Step-4-Histograms" title="Permalink"></a></h2><p>Instead of ploting <code>histogram</code> for each particle number, we are interested in the <strong>data</strong> from the <code>histogram</code> to display it in a <code>scatter</code> plot. Also, this is the moment to compute the variance of all intensities.</p><pre><code class="language-julia hljs">bins = 10.0 .^ range(log10(1e-6), log10(75); length = 30)
 
 xy_data = map(eachindex(N)) do n
     h = fit(Histogram, all_intensities[n], bins)
@@ -84,9 +59,8 @@ xy_data = map(eachindex(N)) do n
 
     # x_data_histogram, y_data_histogram, variance
     (bins_centers, h_norm.weights, variance)
-end</code></pre><p><em>Step 5</em></p><p>Overlay the Distribution Probability in a single figure.</p><p>The <code>begin-end</code> structure is just to facilitate the Figure development for the user. It is easier to just run the block at once at every little plot tweak, than select and run everything all the time.</p><pre><code class="language-julia hljs">### ------------ FINAL PLOT ---------------------
-begin
-    fig = Figure(resolution = (800, 450))
+end</code></pre><h2 id="Step-5-Plot"><a class="docs-heading-anchor" href="#Step-5-Plot">Step 5 - Plot</a><a id="Step-5-Plot-1"></a><a class="docs-heading-anchor-permalink" href="#Step-5-Plot" title="Permalink"></a></h2><p>Overlay the Distribution Probability in a single figure.</p><p>The <code>begin-end</code> structure is just to facilitate the Figure development for the user. It is easier to just run the block at once at every little plot tweak, than select and run everything all the time.</p><pre><code class="language-julia hljs">begin
+    fig = Figure(size = (800, 450))
     ax = Axis(
         fig[1, 1],
         xlabel = &quot;Intensity&quot;,
@@ -103,7 +77,7 @@ begin
     ## theoretical curve
     x_ray = range(0.01, 50; step = 0.15)
     y_ray = exp.(-x_ray)
-    lines!(ax, x_ray, y_ray, linestyle = :dash, label = &quot;Rayleigh&quot;, color = :black, lw = 4)
+    lines!(ax, x_ray, y_ray, linestyle = :dash, label = &quot;Rayleigh&quot;, color = :black, linewidth = 4)
 
     for n = 1:2
         x = xy_data[n][1]
@@ -115,12 +89,13 @@ begin
             x[notNull],
             y[notNull];
             label = &quot;N=$(N[n]), Variance = $( round(v,digits=3 ))&quot;,
-            markershape = :circle,
+            marker = :circle,
             markersize = 20,
         )
     end
     ylims!(1e-6, 10)
     xlims!(1e-1, 100)
     axislegend(position = :rt, labelsize = 20)
+    CairoMakie.save(&quot;rayleigh_deviation.png&quot;, fig)
     fig
-end</code></pre><p><img src="../rayleigh_deviation.png" alt="Rayleigh Deviation"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../dipole_example/single_atom_volume/">« Single Atom</a><a class="docs-footer-nextpage" href="../../linear_regression/linear_regression_methods/">Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Sunday 11 August 2024 01:29">Sunday 11 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><p><img src="../rayleigh_deviation.png" alt="Rayleigh Deviation"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../dipole_example/single_atom_volume/">« Single Atom</a><a class="docs-footer-nextpage" href="../../linear_regression/linear_regression_methods/">Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Friday 16 August 2024 03:14">Friday 16 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
