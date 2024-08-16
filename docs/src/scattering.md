@@ -22,10 +22,11 @@ $$E_{sc}(\mathbf{R}, t) \approx +i\frac{\Gamma}{2} \frac{e^{ ik_0R }}{k_0R}\sum_
 
 $$E_{vec}(\mathbf{R}, t) = +i\Gamma\sum_j\sum_{\eta}G_{\mu,\eta}(\mathbf{R}-\mathbf{r}_j)\beta_j^{\eta}(t)$$
 
-`regime = :far_field` (**NOT TESTED**)
+`regime = :far_field` (**NOT VALIDATED**)
 
 $$E^\mu_{vec}(\mathbf{R},t) \approx +i\frac{3\Gamma}{4} \frac{e^{ik_0R}}{k_0R}\sum_j\sum_\eta(\delta_{\mu, \eta} - \hat{n}_\mu\hat{n}_\eta^*)exp(-ik_0\hat{\mathbf{n}}\cdot\mathbf{r}_j)\beta_j^\eta(t)$$
 
+If you have experience with this equation, please consider contributing to the package with benchamrks.
 
 ### Mean Field
 `regime = :near_field|:far_field`
@@ -56,8 +57,6 @@ $$I_{mf}(\mathbf{R},t) = I_{sc}(\mathbf{R}, t)
 $$I_{mf}(\mathbf{R},t) = I_{sc}(\mathbf{R}, t) + \frac{\Gamma^2}{(2k_0R)^2}\sum_{j=1}^N \left ( -|\beta_j|^2 + \frac{1 + \langle \sigma_j^z \rangle }{2}\right )$$
 
 ---
-
-## Functions
 
 ```@docs
 scattered_electric_field

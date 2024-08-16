@@ -12,7 +12,7 @@ which has a well-defined formal solution:
 $$\vec{\beta}_{s} = -G^{-1}\vec{\Omega}$$
 
 #### `Scalar`
-In the `Scalar` case, the soltuion is a `Vector` solution. 
+In the `Scalar` case, the soltuion is a `Vector`: 
 
 ```@example ss_scalar
 using CoupledDipoles

@@ -2,7 +2,7 @@
 
 ### Default distributions
 
-You just created cloud of atom into different geometries, the atom will be homogenously distributed inside the specified geometry. Currently, the package **only supports 3D objects**, namely `Sphere`, `Cube`, and `Cylinder`. However, the source code allows to extend functionalities to 1D and 2D in future developments - please, collaborate with a pull request. 
+Currently, the package **only supports 3D objects**, namely `Sphere`, `Cube`, and `Cylinder`. However, the source code allows to extend functionalities to 1D and 2D in future developments - please, collaborate with a pull request. 
 
 
 To create atoms, use the `Atom` constructor, the base syntax is the following
@@ -95,7 +95,7 @@ atoms = Atom(Cube(), r, dummy_dimension)
 
 The usage of `transpose`, followed by `Array`, is necessary to adhere to the package internals expectations.
 
-Another example where you don't need to concatenate vectors.
+Another example on how to concatenate vectors.
 
 ```julia
 # (...)

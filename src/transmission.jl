@@ -23,7 +23,7 @@ function transmission(problem, detunning_range; regime=:near_field)
         _problem = similar_problem(problem, problem.atoms, _laser)
         beta = steady_state(_problem)
 
-        _temp = laser_and_scattered_intensity(_problem, beta, sensor; regime=:near_field)[1]
+        _temp = laser_and_scattered_intensity(_problem, beta, sensor; regime=regime)[1]
         _temp / I_laser
     end
     Transmissions

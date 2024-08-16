@@ -1,3 +1,6 @@
+"""
+	NonLinearOptics(physic::MeanField, atoms, laser)
+"""
 function NonLinearOptics(physic::MeanField, atoms, laser)
 	@debug "start: NonLinearOptics - $( typeof(physic) )"
 	laser_copy = deepcopy(laser) # i don't want change the original laser
@@ -10,7 +13,9 @@ function NonLinearOptics(physic::MeanField, atoms, laser)
 	return NonLinearOptics(physic, atoms, laser_copy, data)
 end
 
-
+"""
+	NonLinearOptics(physic::PairCorrelation, atoms, laser)
+"""
 function NonLinearOptics(physic::PairCorrelation, atoms, laser)
 	@debug "start: NonLinearOptics - $( typeof(physic) )"
 	laser_copy = deepcopy(laser) # i don't want change the original laser

@@ -1,3 +1,6 @@
+"""
+    LinearOptics(physic::Scalar, atoms, laser)
+"""
 function LinearOptics(physic::Scalar, atoms, laser)
     @debug "start: LinearOptics - $( typeof(physic) )"
     laser_copy = deepcopy(laser) # i don't want change the original laser
@@ -11,6 +14,9 @@ function LinearOptics(physic::Scalar, atoms, laser)
     @debug "end  : LinearOptics - $( typeof(physic) )"
     return LinearOptics(physic, atoms, laser_copy, kernelFunction!, spectrum, data)
 end
+"""
+    LinearOptics(physic::Vectorial, atoms, laser)
+"""
 function LinearOptics(physic::Vectorial, atoms, laser)
     @debug "start: LinearOptics - $( typeof(physic) )"
     laser_copy = deepcopy(laser)

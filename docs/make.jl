@@ -7,6 +7,8 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Atom" => "create_atoms/atoms.md",
+        "Laser" => "lasers/lasers.md",
+        "Problem" => "problems/problems.md",
         "Steady State" => "steady_state.md",
         "Scatttering" => "scattering.md",
         "Single Atom" => "dipole_example/single_atom_volume.md",

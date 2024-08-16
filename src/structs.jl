@@ -51,11 +51,22 @@ abstract type Gaussian <: Pump end
 
 struct PlaneWave2D <: PlaneWave
 end
+"""
+    PlaneWave3D()
+"""
 struct PlaneWave3D <: PlaneWave
 end
 struct Gaussian2D <: Gaussian
     w₀::Float64
 end
+
+"""
+    Gaussian3D(w₀)
+
+- w₀ is the Beam Waist.
+
+Please, avoid w₀ < 2λ (λ = 2π / k₀) 
+"""
 struct Gaussian3D <: Gaussian
     w₀::Float64
     function Gaussian3D(w₀)
@@ -68,7 +79,17 @@ struct Gaussian3D <: Gaussian
         return new(w₀)
     end
 end
+"""
+    Laser(pump, s, Δ, direction, polarization)
 
+- pump is e.g PlanweWave3D or Gaussian3D
+- s: saturation on ressonance (used for raby_frequency = Γ √(s / 2))
+- Δ: the detunning (laser - atomic frequency) 
+- direction: Array is the propagation direction (default is [0,0,1])
+- polarization: Array is the polarization direction (default is [0,0,0])
+
+Note that `direction` and `polarization` have to be orthogonal.
+"""
 mutable struct Laser{T}         # 'mutable' because 'Δ' usually is is altered
     pump::T                     # PlanweWave3D, Gaussian3D
     s::Float64                  # saturation at ressonance

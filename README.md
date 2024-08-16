@@ -9,12 +9,12 @@ Check Documentation
 
 ## What the software do?
 
-`CoupledDipoles` provides a set of fundamental tools to simulate the Coupled Dipoles model in cold atoms. While it includes some analysis tools, its primary focus is to provide a flexible package that can be extended to accommodate different equation models and atomic geometries.
+`CoupledDipoles.jl` provides a set of fundamental tools to simulate the Coupled Dipoles model in cold atoms. While it includes some analysis tools, its primary focus is to provide a flexible package that can be extended to accommodate different equation models and atomic geometries.
 
 ### Theory and Background
-For a detailed explanation of the theory and reasoning behind `CoupledDipoles`, please refer to the [Phd Thesis](https://doi.org/10.11606/T.76.2024.tde-26012024-114225). 
+For a detailed explanation of the theory please refer to the [Phd Thesis](https://doi.org/10.11606/T.76.2024.tde-26012024-114225). 
 
-Our [documentation](https://noelaraujo.github.io/CoupledDipoles.jl/dev/) will focus on how to use the package, rather than justifying the physics. Note that the code implementation is the ground truth for the equations, and may fix errors not found at the time of the PhD defense.
+Our [documentation](https://noelaraujo.github.io/CoupledDipoles.jl/dev/) will focus on how to use the package, rather than justifying the physics. Note that the code implementation **is** the ground truth regargind the right set of equations, because it may fix errors not found at the time of the PhD defense.
 
 
 
