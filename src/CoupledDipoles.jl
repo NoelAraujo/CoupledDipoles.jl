@@ -96,10 +96,10 @@ include("integrate_over_angle.jl")
 export get_intensity_over_an_angle
 
 include("eigenanalysis/eigen_analysis.jl")
-export get_spectrum
+export spectrum, eigenvalues, eigenvectors
 export get_IPRs, get_PRs
-export get_localization_length
-export get_spatial_profile_single_mode
+export localization_length
+export spatial_profile_single_mode
 export classify_modes
 
 include("eigenanalysis/exponential_fit.jl")
@@ -148,7 +148,7 @@ SnoopPrecompile.@precompile_all_calls begin
     scattered_intensity(simulation, βₙ, sensors; regime=:near_field)
     scattered_intensity(simulation, βₙ, sensors; regime=:far_field)
     G = interaction_matrix(simulation)
-    ωₙ, Γₙ = get_spectrum(simulation)
+    ωₙ, Γₙ = spectrum(simulation)
     u₀ = default_initial_condition(simulation)
     βₜ = time_evolution(simulation, u₀, tspan) # using ODE solver
     βₜ = time_evolution(simulation, u₀, tspan; ode_solver=false) # using FORMAL solution
@@ -176,7 +176,7 @@ SnoopPrecompile.@precompile_all_calls begin
     βₛ = steady_state(simulation; tmax=10)
     scattered_intensity(simulation, βₛ, sensors; regime=:near_field)
     scattered_intensity(simulation, βₛ, sensors; regime=:far_field)
-
+    scattered_intensity(simulation, βₛ, sensors; regime=:near_field, inelasticPart=false)
 end
 
 end

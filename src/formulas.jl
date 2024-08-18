@@ -100,6 +100,9 @@ end
 function how_far_is_farField(problem)
     return how_far_is_farField(problem.atoms)
 end
+"""
+    how_far_is_farField(atoms) = 50*size(atoms)^2
+"""
 function how_far_is_farField(atoms::Atom{T}) where T<: Dimension
     R = 50*size(atoms)^2
     return R

@@ -12,7 +12,7 @@ s, Δ = 1e-5, 0.0
 laser = Laser(PlaneWave3D(), s, Δ)
 simulation = LinearOptics(Scalar(), atoms, laser)
 
-ωₙ, Γₙ = get_spectrum(simulation)
+ωₙ, Γₙ = spectrum(simulation)
 modes = classify_modes(simulation)
 
 ### ------ Choose beter looking modes--------------

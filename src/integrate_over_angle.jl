@@ -1,6 +1,6 @@
 # --------------------------------- GENERAL FUNCTIONS ---------------------------------
 """
-    get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{ComplexF64}, θ::Number; tol=exp10(-7.4))
+    get_intensity_over_an_angle(problem::LinearOptics{Scalar}, atoms_states::Vector{ComplexF64}, θ::Number; tol=exp10(-7.4), exact_solution=false)
 
 Used for the single angle and single single state (most probably user case).
 

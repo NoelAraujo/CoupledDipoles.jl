@@ -61,13 +61,15 @@ function _get_intensity(problem::LinearOptics{Vectorial}, field::AbstractVector)
     return vec([sum(abs2, field)])
 end
 
-function _get_intensity(problem::NonLinearOptics{MeanField}, field::AbstractVector)
-    return abs2.(field)
-end
-function _get_intensity(problem::NonLinearOptics{PairCorrelation}, field::AbstractVector)
-    return abs2.(field)
-end
 
+"""
+    scattered_intensity(problem::NonLinearOptics{T}, atomic_states, sensors; regime=:near_field, inelasticPart=true, use_sequencial=false)
+
+If you are working in `NonLinearOptics` and your intensity values become negative, probably the issue lies on the values of the inelastic component that become non-physical, 
+and is handy to have a function to swtich on-off this particular variable to investigate the problem.
+
+For special case of `NonLinearOptics`, you have the option to neglect the inelastic component with `inelasticPart=false`. 
+"""
 function scattered_intensity(problem::NonLinearOptics{T}, atomic_states, sensors; regime=:near_field, inelasticPart=true, use_sequencial=false) where {T<:Union{MeanField,PairCorrelation}}
 
     ## define the 'function' to be used

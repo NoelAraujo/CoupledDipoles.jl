@@ -12,7 +12,7 @@ Returns a Matrix{ComplexF64} with value of the `Eletric Laser` + `Electric Scatt
 Note:
 - `Scalar` (and other models) problem returns a **Matrix and NOT a Vector**, to maintain consistency
     with `Vectorial` problem that necessary returns a Matrix,
-    where each column has the [Ex, Ey, Ez] components of the field.
+    where each row has the [Ex, Ey, Ez] components of the field.
 
 - Also, even for single sensor, returns a Matrix of one element.
 
@@ -130,7 +130,7 @@ function prepare_states(problem::NonLinearOptics{MeanField}, atomic_states)
         σ⁻ = view(atomic_states, 1:problem.atoms.N)
         return σ⁻
     else
-        @error "Atomic States are Invalid. Use an Array with the same length as the Number of Atoms."
+        @error "Atomic States are Invalid. It is expected an array of length 2N."
     end
 end
 function prepare_states(problem::NonLinearOptics{PairCorrelation}, atomic_states)
@@ -139,7 +139,7 @@ function prepare_states(problem::NonLinearOptics{PairCorrelation}, atomic_states
         σ⁻ = view(atomic_states, 1:problem.atoms.N)
         return σ⁻
     else
-        @error "Atomic States are Invalid. Use an Array with the same length as the Number of Atoms."
+        @error "Atomic States are Invalid. It is expected an array of length 2N + 4N^2."
     end
 end
 

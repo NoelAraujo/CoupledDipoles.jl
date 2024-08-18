@@ -23,12 +23,12 @@ function get_number_modes(problem::LinearOptics{Vectorial})
     return 3problem.atoms.N
 end
 """
-    get_spectrum(problem; forceComputation=false)
-return ωₙ, Γₙ
-"""
-function get_spectrum(problem; forceComputation=false)
-    @debug "start: get spectrum"
+    spectrum(problem; forceComputation=false)
 
+- returns ωₙ, Γₙ
+- values are cached, unless `forceComputation=true`
+"""
+function spectrum(problem; forceComputation=false)
     if is_spectrum_NOT_available(problem) || forceComputation
         H = interaction_matrix(problem)
         spectrum = eigen(H)
@@ -46,7 +46,6 @@ function get_spectrum(problem; forceComputation=false)
         ωₙ, Γₙ = imag.(problem.spectrum["λ"]), -real.(problem.spectrum["λ"])
     end
 
-    @debug "end  : get spectrum"
     return ωₙ, Γₙ
 end
 
@@ -71,13 +70,13 @@ function get_ψ²(problem::LinearOptics, n::Integer)
 end
 
 """
-get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, speculative=true)
+localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, speculative=true)
 
 'speculative = true' compute robust fitting on likely localized modes.
 
 Set 'speculative = false' to have a better localization length estimatives for extended modes
 """
-function get_localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, speculative=true)
+function localization_length(problem::LinearOptics; forceComputation=false, regression_method=satman2015, probability_threshold=0.999, showprogress=false, speculative=true)
     if is_localization_NOT_available(problem) && forceComputation == false
         return problem.data[:ξ], problem.data[:R2]
     end
@@ -86,11 +85,11 @@ function get_localization_length(problem::LinearOptics; forceComputation=false, 
     R²ₙ = zeros(N)
 
     # create spectrum if neeeded
-    get_spectrum(problem)
+    spectrum(problem)
 
     pp = Progress(N)
     Threads.@threads for n in 1:N
-        DCM, ψ² = get_spatial_profile_single_mode(problem, n)
+        DCM, ψ² = spatial_profile_single_mode(problem, n)
         ξₙ[n], R²ₙ[n] = get_single_ξ_and_R2(DCM, ψ²; regression_method=regression_method, probability_threshold=probability_threshold, speculative=speculative)
 
         if showprogress
@@ -108,13 +107,17 @@ function is_localization_NOT_available(problem)
         return false
     end
 end
+"""
+    spatial_profile_single_mode(problem, mode_index::Integer)
 
-function get_spatial_profile_single_mode(problem, mode_index::Integer)
+- returns DCM, ψ²ₙ
+"""
+function spatial_profile_single_mode(problem, mode_index::Integer)
     r = problem.atoms.r
-    get_spectrum(problem) # compute diagonzalizatio if not available
+    spectrum(problem) # compute diagonzalizatio if not available
     try
         ψ²ₙ = get_ψ²(problem, mode_index)
-        r_cm = get_coordinates_of_center_of_mass(r, ψ²ₙ)
+        r_cm = coordinates_of_center_of_mass(r, ψ²ₙ)
 
         # Specific for the problem (ones needs to define this function)
         DCM = [norm(rj .- r_cm) for rj in eachcol(r)]# get_Distances_from_r_to_CM
@@ -122,13 +125,13 @@ function get_spatial_profile_single_mode(problem, mode_index::Integer)
         sort_spatial_profile!(DCM, ψ²ₙ)
         return DCM, ψ²ₙ
     catch
-        @error("Probably you tried to access a spectrum not created (run `get_spectrum(problem)`). Or `mode_index` is not valid")
+        @error("Probably you tried to access a spectrum not created (run `spectrum(problem)`). Or `mode_index` is not valid")
     end
 end
 """
-    get_coordinates_of_center_of_mass(r, Ψ²_mode)
+    coordinates_of_center_of_mass(r, Ψ²_mode)
 """
-function get_coordinates_of_center_of_mass(r, Ψ²_mode)
+function coordinates_of_center_of_mass(r, Ψ²_mode)
     N = length(Ψ²_mode)
     dimensions = size(r, 1)
     r_cm = zeros(dimensions)
@@ -155,14 +158,27 @@ function sort_spatial_profile!(DCM, ψ²ₙ)
     return nothing
 end
 
+"""
+    eigenvalues(problem::LinearOptics)
+"""
+function eigenvalues(problem::LinearOptics)
+    return problem.spectrum["λ"]
+end
+ 
+"""
+    eigenvectors(problem::LinearOptics)
+"""
+function eigenvectors(problem::LinearOptics)
+    return problem.spectrum["ψ"]
+end
 ### --------------- Classification r---------------
 """
     classify_modes(problem)
 returns a tuple `(loc, sub, super)` with indices
 """
 function classify_modes(problem; forceComputation=false, fitting_threshold=0.5, showprogress=false, speculative=true)
-    ωₙ, Γₙ = get_spectrum(problem; forceComputation=forceComputation)
-    ξₙ, R²ₙ = get_localization_length(problem; forceComputation=forceComputation, showprogress=showprogress, speculative=speculative)
+    ωₙ, Γₙ = spectrum(problem; forceComputation=forceComputation)
+    ξₙ, R²ₙ = localization_length(problem; forceComputation=forceComputation, showprogress=showprogress, speculative=speculative)
 
     localized_modes = findall((Γₙ .< Γ) .* (R²ₙ .≥ fitting_threshold))
     sub_radiant_modes = findall((Γₙ .< Γ) .* (R²ₙ .< fitting_threshold))
