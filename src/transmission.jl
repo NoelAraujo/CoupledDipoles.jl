@@ -1,7 +1,12 @@
-function transmission(problem, detunning_range; regime=:near_field)
-    new_R = 100*size(problem.atoms)
-    sensor = reshape(new_R*problem.laser.direction, :, 1)
-    
+"""
+    transmission(problem, detunning_range::AbstractArray; regime=:near_field)
+
+One point is created at `far_field_distance = 100*size(problem.atoms)` in any direction.
+Then, transmission (Intensity Scattered over Intensity Laser) is evaluated with on steady state (computed automatically) for different detunnings.
+"""
+function transmission(problem, detunning_range::AbstractArray; regime=:near_field)
+    sensor = getSensor_at_front(problem)
+
     # I need a dummy problem just to compute the electric field intensity
     # necessary for normalization
     I_laser = let         

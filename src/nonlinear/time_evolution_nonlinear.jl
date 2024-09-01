@@ -1,17 +1,19 @@
 # --------------------------------- GENERAL FUNCTIONS ---------------------------------
-function time_evolution(problem::NonLinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, change_solver=false, kargs...) where {T<:NonLinear}
-    if ode_solver == false
-        @warn "NonLinearOptics does not have formal solution. Using numerical solution instead." maxlog = 1
-    end
+"""
+    time_evolution(problem::NonLinearOptics{T}, u₀, tspan::Tuple; kargs...)
+
+Similar behavior tot the `LinearOptics` model, but does not have arguments related to the formal solution (obtained via diagonalization)
+"""
+function time_evolution(problem::NonLinearOptics{T}, u₀, tspan::Tuple; kargs...) where {T<:NonLinear}
 
     G = copy(interaction_matrix(problem))
     Ωₙ = laser_field(problem.laser, problem.atoms)
 
-    solution = time_evolution_ode_solver(problem, u₀, tspan, Ωₙ, G; change_solver=change_solver, kargs...)
+    solution = time_evolution_ode_solver(problem, u₀, tspan, Ωₙ, G; kargs...)
 
     return solution
 end
-function time_evolution_ode_solver(problem::NonLinearOptics{T}, u₀, tspan::Tuple, Ωₙ, G::AbstractMatrix; change_solver=false, kargs...) where {T<:NonLinear}
+function time_evolution_ode_solver(problem::NonLinearOptics{T}, u₀, tspan::Tuple, Ωₙ, G::AbstractMatrix; kargs...) where {T<:NonLinear}
     parameters = get_evolution_params(problem, G, Ωₙ)
 
     ### calls for solver

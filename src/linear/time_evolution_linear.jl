@@ -1,5 +1,14 @@
 # --------------------------------- GENERAL FUNCTIONS ---------------------------------
-function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, interaction=interaction_matrix(problem), kargs...) where {T<:Linear}
+"""
+    time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, interaction::Matrix=interaction_matrix(problem), kargs...) where {T<:Linear}
+
+- `u₀` can be obtained via `default_initial_condition` function
+- `tspan` is a tuple with (start, end) times
+- `ode_solver` indicates to use the Ordinary Differential Equation package, if set to `false`, use eigendecompostion to compute the states (which is slow)
+- `interaction` is the interaction matrix used on the time evolution
+- `kargs` are arguments that you use on the `OrdinaryDiffEq.solve` method directly
+"""
+function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, interaction::Matrix=interaction_matrix(problem), kargs...) where {T<:Linear}
 
     tmin = tspan[1]
     tmax = tspan[2]
