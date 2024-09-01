@@ -204,7 +204,7 @@ $$I(\theta) = \int_0^{2\pi}|E(\theta, \phi)|^2 d\phi$$
 
 use the function `get_intensity_over_an_angle` which is optmized to for this problem. 
 
-Because the average integral have an exact solution, we have its implementation available, but is not recommeded to use it, since it has $O(N^2)$ in time and memory complexity - and we already verified that the default precision was reliable. In case you need more precision, decrease the tolerance of the integration with the parameter `tol`. 
+Because the average integral have an exact solution, we have its implementation available, but is not recommeded to use it, since it has $O(N^2)$ in time and memory complexity - and we already verified that our default precision was reliable. In case you need more precision, decrease the tolerance of the integration with the parameter `tol`. 
 
 
 ---

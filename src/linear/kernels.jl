@@ -1,5 +1,9 @@
 """
     interaction_matrix(::LinearOptics)
+
+The interaction matrix dependends on the dimension and model.
+
+For Scalar/Vectorial in 3D check Eq 2.23 and Eq 2.26 of the Thesis: `https://doi.org/10.11606/T.76.2024.tde-26012024-114225`
 """
 function interaction_matrix(problem::LinearOptics)
     @debug "start: interaction_matrix"

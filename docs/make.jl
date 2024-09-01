@@ -13,6 +13,8 @@ makedocs(;
         "Scatttering" => "scattering/scattering.md",
         "Single Atom" => "dipole_example/single_atom_volume.md",
         "Intensity Statistics" => "variances_angles/rayleigh_variance.md",
+        "Spectrum" => "spectrum/spectrum.md",
+        "Spatial Profile" => "localization/spatial_modes.md",
         "Fitting" => "linear_regression/linear_regression_methods.md",
    ])
 

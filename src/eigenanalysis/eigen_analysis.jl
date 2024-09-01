@@ -1,5 +1,7 @@
 """
-    IPR = Inverse Participation Ratio
+    get_IPRs(problem)
+
+Inverse Participation Ratio is computed with `∑Ψ⁴ / ( ∑Ψ² )²` for each mode
 """
 function get_IPRs(problem)
     n_modes = get_number_modes(problem)
@@ -11,6 +13,11 @@ function get_IPRs(problem)
     end
     return IPRs
 end
+"""
+    get_PRs(problem)
+
+Participation Ratio is computed with `( ∑Ψ² )² / ∑Ψ⁴ ` for each mode
+"""
 function get_PRs(problem)
     IPRs = get_IPRs(problem)
     return 1.0 ./ IPRs
@@ -25,25 +32,21 @@ end
 """
     spectrum(problem; forceComputation=false)
 
-- returns ωₙ, Γₙ
-- values are cached, unless `forceComputation=true`
+Returns `ωₙ` and  `Γₙ` which are imag(λ) and -real(λ) - where λ is eigenvalues of interaction matrix
+
+Values are cached, unless `forceComputation=true`
 """
 function spectrum(problem; forceComputation=false)
     if is_spectrum_NOT_available(problem) || forceComputation
-        H = interaction_matrix(problem)
-        spectrum = eigen(H)
-
-        problem.spectrum["λ"] = spectrum.values
-        problem.spectrum["ψ"] = spectrum.vectors
-        make_spectrum_available(problem)
-
-        ωₙ, Γₙ = imag.(spectrum.values), -real.(spectrum.values)
+        λ = eigenvalues(problem; forceComputation=forceComputation)
+        ωₙ, Γₙ = imag.(λ), -real.(λ)
         if any(Γₙ .< 0)
             @warn "some Γₙ were negatives and ignored without further investigation"
             Γₙ = abs.(Γₙ)
-        end
+        end        
     else
-        ωₙ, Γₙ = imag.(problem.spectrum["λ"]), -real.(problem.spectrum["λ"])
+        λ = problem.spectrum["λ"]
+        ωₙ, Γₙ = imag.(λ), -real.(λ)
     end
 
     return ωₙ, Γₙ
@@ -85,7 +88,7 @@ function localization_length(problem::LinearOptics; forceComputation=false, regr
     R²ₙ = zeros(N)
 
     # create spectrum if neeeded
-    spectrum(problem)
+    eigenvectors(problem)
 
     pp = Progress(N)
     Threads.@threads for n in 1:N
@@ -110,11 +113,11 @@ end
 """
     spatial_profile_single_mode(problem, mode_index::Integer)
 
-- returns DCM, ψ²ₙ
+Returns `DCM, ψ²ₙ`, that is, the Distance of atoms to the center of mass, and the absolute value of the mode.
 """
 function spatial_profile_single_mode(problem, mode_index::Integer)
     r = problem.atoms.r
-    spectrum(problem) # compute diagonzalizatio if not available
+    eigenvectors(problem) # compute diagonzalization if not available
     try
         ψ²ₙ = get_ψ²(problem, mode_index)
         r_cm = coordinates_of_center_of_mass(r, ψ²ₙ)
@@ -159,22 +162,80 @@ function sort_spatial_profile!(DCM, ψ²ₙ)
 end
 
 """
-    eigenvalues(problem::LinearOptics)
+    eigenvalues(problem::LinearOptics;forceComputation=false)
+
+Computes eigenvalues of the interaction matrix
+
+# Example:
+
+```julia
+using CoupledDipoles
+N, ρk⁻³ = 1200, 1.0
+atoms = Atom(CoupledDipoles.Sphere(), sphere_inputs(N, ρk⁻³)...)
+
+s, Δ = exp10(-5), 1.0
+laser = Laser(PlaneWave3D(), s, Δ)
+
+prob = LinearOptics(Scalar(), atoms, laser)
+λ = eigenvalues(prob)
+```
 """
-function eigenvalues(problem::LinearOptics)
-    return problem.spectrum["λ"]
+function eigenvalues(problem::LinearOptics; forceComputation=false)
+    if is_eigvals_available(problem) && !forceComputation
+        return problem.spectrum["λ"]
+    end
+
+    H = interaction_matrix(problem)
+    λ = eigvals(H) 
+    problem.spectrum["λ"] = λ # cache results
+    return λ
+end
+
+function is_eigvals_available(problem)
+    if  haskey(problem.spectrum, "λ")
+        return true
+    else
+        return false
+    end
 end
  
 """
-    eigenvectors(problem::LinearOptics)
+    eigenvectors(problem::LinearOptics; forceComputation=false)
+
+Computes eigenvectors of the interaction matrix
+
+# Example:
+
+```julia
+using CoupledDipoles
+N, ρk⁻³ = 1200, 1.0
+atoms = Atom(CoupledDipoles.Sphere(), sphere_inputs(N, ρk⁻³)...)
+
+s, Δ = exp10(-5), 1.0
+laser = Laser(PlaneWave3D(), s, Δ)
+
+prob = LinearOptics(Scalar(), atoms, laser)
+Ψ = eigenvectors(prob)
+```
 """
-function eigenvectors(problem::LinearOptics)
+function eigenvectors(problem::LinearOptics;  forceComputation=false)
+    if is_spectrum_NOT_available(problem) || forceComputation
+        H = interaction_matrix(problem)
+        eigen_values_vectors = eigen(H)
+        
+        problem.spectrum["λ"] = eigen_values_vectors.values
+        problem.spectrum["ψ"] = eigen_values_vectors.vectors
+        make_spectrum_available(problem)
+
+        return eigen_values_vectors.vectors    
+    end        
     return problem.spectrum["ψ"]
 end
 ### --------------- Classification r---------------
 """
     classify_modes(problem)
-returns a tuple `(loc, sub, super)` with indices
+
+Returns a tuple `(loc, sub, super)` with indices.
 """
 function classify_modes(problem; forceComputation=false, fitting_threshold=0.5, showprogress=false, speculative=true)
     ωₙ, Γₙ = spectrum(problem; forceComputation=forceComputation)
