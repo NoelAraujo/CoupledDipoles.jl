@@ -1,6 +1,6 @@
 # Problems
 
-Your simulation will only work if you change use the write problem data type, you are interested on the `LinearOptics` or `NonLinearOptics` constructors.
+Your simulation will only work if you use the right problem data type, provided by the constructors `LinearOptics` or `NonLinearOptics`.
 
 For the `LinearOptics` you have the `Scalar` and `Vectorial` models, whereas the `NonLinearOptics` have `MeanField` and `PairCorrelation`. All of them deal with the 3 dimensions - different dimensions have different equations which are waiting for someone (not the author) to write them in the code engines.
 

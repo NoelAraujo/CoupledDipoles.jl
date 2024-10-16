@@ -1,11 +1,15 @@
 """
-    get_IPRs(problem)
+    get_IPRs(problem; forceComputation=false)
 
 Inverse Participation Ratio is computed with `∑Ψ⁴ / ( ∑Ψ² )²` for each mode
 """
-function get_IPRs(problem)
+function get_IPRs(problem; forceComputation=false)
+    if is_spectrum_NOT_available(problem) || forceComputation
+        eigenvectors(problem; forceComputation=forceComputation)
+    end       
     n_modes = get_number_modes(problem)
     IPRs = zeros(n_modes)
+
     Threads.@threads for n in 1:n_modes
         Ψ² = get_ψ²(problem, n)
         Ψ⁴ = abs2.(Ψ²)
@@ -14,12 +18,12 @@ function get_IPRs(problem)
     return IPRs
 end
 """
-    get_PRs(problem)
+    get_PRs(problem; forceComputation=false)
 
 Participation Ratio is computed with `( ∑Ψ² )² / ∑Ψ⁴ ` for each mode
 """
-function get_PRs(problem)
-    IPRs = get_IPRs(problem)
+function get_PRs(problem; forceComputation=false)
+    IPRs = get_IPRs(problem; forceComputation=forceComputation)
     return 1.0 ./ IPRs
 end
 

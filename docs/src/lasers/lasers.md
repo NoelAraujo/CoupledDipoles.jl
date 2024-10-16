@@ -41,7 +41,7 @@ atoms = Atom(CoupledDipoles.Sphere(), N, kR)
 s, Δ = 1e-5, -2.0
 laser = Laser(Gaussian3D(kR / 2), s, Δ)
 
-# create different models
+# create a Scalar model
 scalar = LinearOptics(Scalar(), atoms, laser)
 ss_scalar = steady_state(scalar) # use the laser to get the state state
 

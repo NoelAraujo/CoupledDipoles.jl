@@ -83,6 +83,32 @@ end
 save("modes_comparison.png", fig)
 ```
 
+## Faster eigenvalues/eigenvectors
+
+Verify on your machine if you have some extra performance boost using MKL version provided by the `numpy`.
+
+I had not investigate the finding, just take note for future reference.
+
+```julia
+using CoupledDipoles
+N, ρk⁻³ = 1500, 1.0
+atoms = Atom(CoupledDipoles.Sphere(), sphere_inputs(N, ρk⁻³)...)
+
+s, Δ = exp10(-5), 1.0
+laser = Laser(PlaneWave3D(), s, Δ)
+
+prob = LinearOptics(Scalar(), atoms, laser)
+@time eigenvectors(prob;forceComputation=true);
+
+using PyCall
+np = pyimport("numpy")
+@time begin 
+    H = interaction_matrix(prob)
+    H_np = np.array(H)
+    eigen_values, eigen_vectors = np.linalg.eig(H_np)
+end;
+```
+
 ---
 
 
