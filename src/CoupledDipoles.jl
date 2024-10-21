@@ -153,13 +153,17 @@ SnoopPrecompile.@precompile_all_calls begin
     βₜ = time_evolution(simulation, u₀, tspan) # using ODE solver
     βₜ = time_evolution(simulation, u₀, tspan; ode_solver=false) # using FORMAL solution
     P_total = scattered_power(simulation, βₜ.u[end])
-
+    classify_modes(simulation)
+    spectrum(simulation)
+    
     laser = Laser(Gaussian3D(w₀), s, Δ; polarization=[1,0,0])
     simulation = LinearOptics(Vectorial(), atoms, laser)
     G = interaction_matrix(simulation)
     βₙ = steady_state(simulation)
     scattered_intensity(simulation, βₙ, sensors; regime=:near_field)
     scattered_intensity(simulation, βₙ, sensors; regime=:far_field)
+    classify_modes(simulation)
+    spectrum(simulation)
 
     simulation = NonLinearOptics(MeanField(), atoms, laser)
     u₀ = default_initial_condition(simulation)

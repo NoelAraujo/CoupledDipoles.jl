@@ -67,13 +67,24 @@ function make_spectrum_available(problem)
     return problem.spectrum["isSpectrumAvailable"] = true
 end
 
-function get_ψ(problem::LinearOptics, n::Integer)
+function get_ψ(problem::LinearOptics{Scalar}, n::Integer)
     ψ = view(problem.spectrum["ψ"], :, n)
     return ψ
 end
-function get_ψ²(problem::LinearOptics, n::Integer)
+function get_ψ(problem::LinearOptics{Vectorial}, n::Integer)
+    ψ = view(problem.spectrum["ψ"], :, n)
+    ψ = CoupledDipoles._vecAux_longArray_into_Matrix(problem.atoms.N, ψ)    
+    return ψ
+end
+
+function get_ψ²(problem::LinearOptics{Scalar}, n::Integer)
     ψ = problem.spectrum["ψ"][:, n]
-    return abs2.(ψ)
+    return abs2.(ψ)    
+end
+function get_ψ²(problem::LinearOptics{Vectorial}, n::Integer)
+    ψ = problem.spectrum["ψ"][:, n]
+    ψ = CoupledDipoles._vecAux_longArray_into_Matrix(problem.atoms.N, ψ)    
+    return vec(sum(abs2, ψ; dims=1))
 end
 
 """
@@ -87,16 +98,16 @@ function localization_length(problem::LinearOptics; forceComputation=false, regr
     if is_localization_NOT_available(problem) && forceComputation == false
         return problem.data[:ξ], problem.data[:R2]
     end
-    N = problem.atoms.N
-    ξₙ = zeros(N)
-    R²ₙ = zeros(N)
-
     # create spectrum if neeeded
     eigenvectors(problem)
 
+    N = get_number_modes(problem)
+    ξₙ = zeros(N)
+    R²ₙ = zeros(N)
+
     pp = Progress(N)
     Threads.@threads for n in 1:N
-        DCM, ψ² = spatial_profile_single_mode(problem, n)
+        DCM, ψ² = spatial_profile_single_mode(problem, n)        
         ξₙ[n], R²ₙ[n] = get_single_ξ_and_R2(DCM, ψ²; regression_method=regression_method, probability_threshold=probability_threshold, speculative=speculative)
 
         if showprogress
@@ -122,18 +133,15 @@ Returns `DCM, ψ²ₙ`, that is, the Distance of atoms to the center of mass, an
 function spatial_profile_single_mode(problem, mode_index::Integer)
     r = problem.atoms.r
     eigenvectors(problem) # compute diagonzalization if not available
-    try
-        ψ²ₙ = get_ψ²(problem, mode_index)
-        r_cm = coordinates_of_center_of_mass(r, ψ²ₙ)
+    
+    ψ²ₙ = get_ψ²(problem, mode_index) # for each atom, sum its component squared, resulting into an array
+    r_cm = coordinates_of_center_of_mass(r, ψ²ₙ)
 
-        # Specific for the problem (ones needs to define this function)
-        DCM = [norm(rj .- r_cm) for rj in eachcol(r)]# get_Distances_from_r_to_CM
+    # Specific for the problem (ones needs to define this function)
+    DCM = [norm(rj .- r_cm) for rj in eachcol(r)]# get_Distances_from_r_to_CM
 
-        sort_spatial_profile!(DCM, ψ²ₙ)
-        return DCM, ψ²ₙ
-    catch
-        @error("Probably you tried to access a spectrum not created (run `spectrum(problem)`). Or `mode_index` is not valid")
-    end
+    sort_spatial_profile!(DCM, ψ²ₙ)
+    return DCM, ψ²ₙ
 end
 """
     coordinates_of_center_of_mass(r, Ψ²_mode)
@@ -160,7 +168,7 @@ get_Distances_from_r_to_CM(r, r_CM) = get_Distance_A_to_b(r, r_CM)
 
 function sort_spatial_profile!(DCM, ψ²ₙ)
     idx = sortperm(DCM)
-    DCM[:] = DCM[idx]
+    DCM[:] = DCM[idx]    
     ψ²ₙ[:] = ψ²ₙ[idx]
     return nothing
 end
