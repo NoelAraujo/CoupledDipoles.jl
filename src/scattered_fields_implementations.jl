@@ -64,7 +64,7 @@ function _vectorial_scattering_near_field(atoms::Atom{T}, β, sensor) where T <:
                 ( -Yoj.* Zoj .- 3* c2.* Yoj.* Zoj ) .* betay
             )
     end
-    return +im*Γ*E_scatt # I don't know how to justify that this works
+    return -Γ*E_scatt # I don't know how to justify that this works    
 end
 function _vectorial_3D_green_single_atom(r_jm::Vector)
     G = Array{Complex{eltype(r_jm)}}(undef, 3,3)
