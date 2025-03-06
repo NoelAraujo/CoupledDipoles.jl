@@ -29,7 +29,7 @@ $$E_{sc}(\mathbf{R}, t) \approx +i\frac{\Gamma}{2} \frac{e^{ ik_0R }}{k_0R}\sum_
 ### Vectorial
 `regime = :near_field`
 
-$$E_{vec}(\mathbf{R}, t) = +i\Gamma\sum_j\sum_{\eta}G_{\mu,\eta}(\mathbf{R}-\mathbf{r}_j)\beta_j^{\eta}(t)$$
+$$E_{vec}(\mathbf{R}, t) = -\Gamma\sum_j\sum_{\eta}G_{\mu,\eta}(\mathbf{R}-\mathbf{r}_j)\beta_j^{\eta}(t)$$
 
 `regime = :far_field`
 
