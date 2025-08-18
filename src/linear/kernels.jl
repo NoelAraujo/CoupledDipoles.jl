@@ -138,9 +138,10 @@ end
 
 
 function G_removeNaN!(G, Δ)
+    myZero = zero(eltype(G))
     Threads.@threads for j in eachindex(G)
         if isnan(G[j])
-            G[j] = 0.0im
+            G[j] = myZero
         end
     end
     return nothing
@@ -160,11 +161,14 @@ function green_vectorial!(atoms, laser, G)
 
     N = atoms.N
     Δ = laser.Δ
+    T = eltype(G)
+
     if N==1
-        fill!(G, im*Δ - Γ/2)
+        fill!(G, zero(T))
+        G[diagind(G)] .= im*Δ - Γ/2 # diagonals have the single atom solution
         return nothing
     end
-
+    
     Xt, Yt, Zt = atoms.r[1, :], atoms.r[2, :], atoms.r[3, :]
     Xjm = my_pairwise(Xt)
     Yjm = my_pairwise(Yt)
@@ -178,15 +182,15 @@ function green_vectorial!(atoms, laser, G)
     Zjm = view(Zjm./Rjm, :, :)
 
 
-    temp1 = Array{ComplexF64,2}(undef, N, N)
-    temp2 = Array{ComplexF64,2}(undef, N, N)
+    temp1 = Array{T,2}(undef, N, N)
+    temp2 = Array{T,2}(undef, N, N)
     temp1_parallel!(temp1, Rjm)
     temp2_parallel!(temp2, Rjm)
 
 
     ## fill matriz by collumns, because Julia matrices are column-major
     ## G[:, 1:N] = [Gxx; Gyx; Gzx]
-    Gxx, Gyx, Gzx = Array{ComplexF64,2}(undef, N, N), Array{ComplexF64,2}(undef, N, N), Array{ComplexF64,2}(undef, N, N)
+    Gxx, Gyx, Gzx = Array{T,2}(undef, N, N), Array{T,2}(undef, N, N), Array{T,2}(undef, N, N)
     Gx_parallel!(Gxx, Gyx, Gzx, temp1, Xjm, Yjm, Zjm, temp2)
 
     @inbounds @. G[1:N,         1:N] = copy(Gxx)
