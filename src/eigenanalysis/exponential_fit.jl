@@ -27,7 +27,7 @@ function get_single_ξ_and_R2(x, y; regression_method = satman2015, probability_
     return ξ, R2
 end
 function linear_fit_robust(x, y; regression_method = satman2015)
-	reg = createRegressionSetting(@formula(y ~ x), DataFrame([:x => x, :y => y]))
+	reg = createRegressionSetting(@formula(y ~ x), DataFrames.DataFrame([:x => x, :y => y]))
 	result = regression_method(reg)
 
 	A, B = result["betas"]

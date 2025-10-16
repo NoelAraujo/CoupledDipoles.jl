@@ -3,18 +3,18 @@ module CoupledDipoles
 using LinearAlgebra
 using Distances
 
-using LinRegOutliers
-using DataFrames
-using OrdinaryDiffEq
-using Logging: global_logger
-using TerminalLoggers: TerminalLogger
-global_logger(TerminalLogger())
-using NonlinearSolve, SteadyStateDiffEq
+using LinRegOutliers: @formula, createRegressionSetting, satman2015
+import DataFrames
+
+import DiffEqBase: ODEProblem
+import OrdinaryDiffEq: VCABM3, VCABM, solve
+import SteadyStateDiffEq: SteadyStateProblem
+import NonlinearSolve: NewtonRaphson
 
 using ThreadsX
 using Printf
 using LsqFit: curve_fit, coef
-using Optim: minimizer, optimize, Options
+# using Optim: minimizer, optimize, Options
 using HCubature
 ## MKL improves performance for Intel, but degrades performance for AMD
 ## --> only for reference: Intel vendor is called 'GenuineIntel', and AMD is 'AuthenticAMD' on Linux
@@ -30,7 +30,7 @@ elseif Sys.islinux()
     end
 end
 
-using Distributions: MvNormal
+using Distributions: MvNormal, mean
 using Bessels
 using Random
 

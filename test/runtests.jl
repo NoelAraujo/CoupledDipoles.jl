@@ -19,7 +19,9 @@ using Tullio
         ## Vectorial case
         problem = LinearOptics(Vectorial(), atoms, laser)
         G = interaction_matrix(problem)
-        G_expected = fill(im*1.5 - 1/2, 3, 3)
+        # expected matrix has values only on diagonal e zeros elsewhere
+        G_expected = zeros(ComplexF64, 3,3)
+        G_expected[diagind(G_expected)] .= im*1.5 - 1/2
         @test all(G .≈ G_expected)
 
 

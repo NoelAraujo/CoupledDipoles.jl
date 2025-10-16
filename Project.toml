@@ -1,14 +1,14 @@
 name = "CoupledDipoles"
 uuid = "1aa92a3a-72ac-4ef3-9973-aaf9b373e3c1"
-authors = ["Noel Araujo"]
 version = "0.5.1"
+authors = ["Noel Araujo"]
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Bessels = "0e736298-9ec6-45e8-9647-e4fc86a2fe38"
-CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Crayons = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -19,11 +19,9 @@ HCubature = "19dc6840-f33b-545b-b366-655c7e3ffd49"
 LinRegOutliers = "6d4de0fb-32d9-4c65-aac1-cc9ed8b94b1a"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LinearSolve = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
-Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 LsqFit = "2fda8390-95c7-5789-9bda-21331edee243"
 MKL = "33e6dc65-8f57-5167-99aa-e5a354878fb2"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
-Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 PackageCompiler = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
@@ -34,12 +32,12 @@ SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 SteadyStateDiffEq = "9672c7b4-1e72-59bd-8a11-6ac3964bc41f"
-TerminalLoggers = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
 ThreadsX = "ac1d9e8a-700a-412c-b207-f0111f4b6c0d"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 
 [compat]
-CairoMakie = "0.13.2"
+DiffEqBase = "6.190.2"
+OrdinaryDiffEq = "6.102.1"
 julia = "1.10"
 
 [extras]

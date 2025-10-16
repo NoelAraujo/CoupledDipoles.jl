@@ -17,7 +17,7 @@ function steady_state(problem::NonLinearOptics{T}; tmax = 250.0, reltol = 1e-11,
 
     try
         my_prob = SteadyStateProblem(problemFunction, u₀, parameters)
-        solution = solve(my_prob, NewtonRaphson())
+        solution = SteadyStateDiffEq.solve(my_prob, NewtonRaphson())
         return solution.u
     catch
         @warn "Steady State may not be accurate. Consider setting `ode_solver = true`."

@@ -20,7 +20,7 @@ function time_evolution_ode_solver(problem::NonLinearOptics{T}, u₀, tspan::Tup
     problemFunction = get_evolution_function(problem)
     prob = ODEProblem(problemFunction, u₀, tspan, parameters)
 
-    solution = OrdinaryDiffEq.solve(prob, VCABM(); abstol=1e-11, kargs...)
+    solution = solve(prob, VCABM(); abstol=1e-11, kargs...)
     return (t=solution.t, u=solution.u)
 end
 

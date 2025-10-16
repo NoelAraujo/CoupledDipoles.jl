@@ -45,7 +45,7 @@ function time_evolution_ode_solver(problem::LinearOptics{T}, u₀, tspan::Tuple,
     ### calls for solver
     problemFunction = get_evolution_function(problem)
     prob = ODEProblem(problemFunction, _u₀, tspan, parameters)
-    _solution = OrdinaryDiffEq.solve(prob, VCABM3(); abstol=1e-9, kargs...)
+    _solution = solve(prob, VCABM3(); abstol=1e-9, kargs...)
     solution = prepare_outputs(problem, _solution)
 
     return solution
