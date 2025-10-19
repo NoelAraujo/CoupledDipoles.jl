@@ -14,7 +14,9 @@ function steady_state(problem::LinearOptics{Scalar}; tmax=250.0, reltol=1e-9, ab
         else
             G = interaction_matrix(problem)
             Ωₙ = vec(laser_field(problem, problem.atoms.r))
-            βₛ = -(G \ Ωₙ)
+            
+            F = lu!(G)
+            βₛ = - Array(F \ Ωₙ)
         end
     else ## single atom
         G = interaction_matrix(problem)
@@ -44,8 +46,9 @@ function steady_state(problem::LinearOptics{Vectorial}; tmax=250.0, reltol=1e-9,
             G = interaction_matrix(problem)
             Ωₙ = laser_field(problem, problem.atoms)
             Ωₙ_eff = _vecAux_Matrix_into_longArray(Ωₙ)
-
-            βₛ = - (G \ Ωₙ_eff)
+            
+            F = lu!(G)
+            βₛ = - (F \ Ωₙ_eff)
         end
     else ## single atom
         G = interaction_matrix(problem)

@@ -61,7 +61,7 @@ end
 
 computes how many points since the center of mass are important based upon the `probability_threshold` (constant defined as 0.9999)
 """
-function select_points(DCM::Vector, ψ²::Vector; probability_threshold=0.999)
+function select_points(DCM::AbstractVector, ψ²::AbstractVector; probability_threshold=0.999)
     if length(ψ²) < 10
         error("Very few data. Need at least 10 points")
     end

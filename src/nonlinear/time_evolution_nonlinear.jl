@@ -84,7 +84,14 @@ function get_evolution_params(problem::NonLinearOptics{PairCorrelation}, G, Ω�
 
     Δ = problem.laser.Δ
 
-    parameters = (N, view(G_c, :, :), view(Gconj, :, :), view(Γⱼₘ, :, :), view(Ω⁻, :), view(Ω⁺, :), Δ)
+
+    B = FixedSizeArray{ComplexF64}(undef, N)# zeros(ComplexF64, N)
+    A = conj.(B)
+    C = FixedSizeArray{ComplexF64}(undef, N, N) # zeros(ComplexF64, N, N)
+    D = FixedSizeArray{ComplexF64}(undef, N, N) # zeros(ComplexF64, N, N)
+    ABC =  truncation_init_matrix(A, B, B, C, C, D)
+
+    parameters = (N, view(G_c, :, :), view(Gconj, :, :), view(Γⱼₘ, :, :), view(Ω⁻, :), view(Ω⁺, :), Δ, FixedSizeArray(ABC), FixedSizeArray{ComplexF64}(undef, size(ABC)...), FixedSizeArray{ComplexF64}(undef, size(ABC)...), FixedSizeArray{ComplexF64}(undef, size(ABC)...), FixedSizeArray{ComplexF64}(undef, size(ABC)...), FixedSizeArray{ComplexF64}(undef, size(ABC)...))
 
     return parameters
 end
@@ -100,6 +107,13 @@ function PairCorrelation!(du, u, params, t)
     Ω⁺ = params[6]
     Δ = params[7]
 
+    σ⁺σ⁻σ⁻ = params[8]
+    σᶻσᶻσ⁻ = params[9]
+    σ⁺σ⁻σᶻ = params[10]
+    σᶻσ⁻σ⁻ = params[11]
+    σ⁺σᶻσ⁻ = params[12]
+    σᶻσ⁺σ⁻ = params[13]
+
     σ⁻ = u[1:N]
     σᶻ = u[N+1:2*N]
     σ⁺ = conj.(σ⁻)
@@ -113,12 +127,12 @@ function PairCorrelation!(du, u, params, t)
     σ⁺σᶻ = transpose(conj.(σᶻσ⁻))
     σᶻσ⁺ = transpose(σ⁺σᶻ)
 
-    σ⁺σ⁻σ⁻ = truncation(σ⁺, σ⁻, σ⁻, σ⁺σ⁻, σ⁺σ⁻, σ⁻σ⁻)
-    σᶻσᶻσ⁻ = truncation(σᶻ, σᶻ, σ⁻, σᶻσᶻ, σᶻσ⁻, σᶻσ⁻)
-    σ⁺σ⁻σᶻ = truncation(σ⁺, σ⁻, σᶻ, σ⁺σ⁻, σ⁺σᶻ, σ⁻σᶻ)
-    σᶻσ⁻σ⁻ = truncation(σᶻ, σ⁻, σ⁻, σᶻσ⁻, σᶻσ⁻, σ⁻σ⁻)
-    σ⁺σᶻσ⁻ = truncation(σ⁺, σᶻ, σ⁻, σ⁺σᶻ, σ⁺σ⁻, σᶻσ⁻)
-    σᶻσ⁺σ⁻ = truncation(σᶻ, σ⁺, σ⁻, σᶻσ⁺, σᶻσ⁻, σ⁺σ⁻)
+    truncation!(σ⁺, σ⁻, σ⁻, σ⁺σ⁻, σ⁺σ⁻, σ⁻σ⁻, σ⁺σ⁻σ⁻)
+    truncation!(σᶻ, σᶻ, σ⁻, σᶻσᶻ, σᶻσ⁻, σᶻσ⁻, σᶻσᶻσ⁻)
+    truncation!(σ⁺, σ⁻, σᶻ, σ⁺σ⁻, σ⁺σᶻ, σ⁻σᶻ, σ⁺σ⁻σᶻ)
+    truncation!(σᶻ, σ⁻, σ⁻, σᶻσ⁻, σᶻσ⁻, σ⁻σ⁻, σᶻσ⁻σ⁻)
+    truncation!(σ⁺, σᶻ, σ⁻, σ⁺σᶻ, σ⁺σ⁻, σᶻσ⁻, σ⁺σᶻσ⁻)
+    truncation!(σᶻ, σ⁺, σ⁻, σᶻσ⁺, σᶻσ⁻, σ⁺σ⁻, σᶻσ⁺σ⁻)
 
     dₜ_σ⁻_p1 = @tullio p1[j] := begin
         (im * Δ - Γ / 2) * σ⁻[j] + im * (Ω⁻[j] / 2) * σᶻ[j]
@@ -222,9 +236,15 @@ function PairCorrelation!(du, u, params, t)
     σ⁺σ⁻σ⁻ = σᶻσᶻσ⁻ = σ⁺σ⁻σᶻ = σᶻσ⁻σ⁻ = σ⁺σᶻσ⁻ = 1
     nothing
 end
-function truncation(A, B, C, AB, AC, BC)
+# used to create a matrix with the right dimensions
+function truncation_init_matrix(A, B, C, AB, AC, BC)
     @tullio ABC[j, m, k] := begin
         AB[j, m] * C[k] + AC[j, k] * B[m] + BC[m, k] * A[j] - 2A[j] * B[m] * C[k]
     end
 end
 
+function truncation!(A, B, C, AB, AC, BC, ABC)
+    @tullio ABC[j, m, k] = begin
+        AB[j, m] * C[k] + AC[j, k] * B[m] + BC[m, k] * A[j] - 2A[j] * B[m] * C[k]
+    end
+end

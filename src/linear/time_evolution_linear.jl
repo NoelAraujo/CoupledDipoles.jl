@@ -8,7 +8,7 @@
 - `interaction` is the interaction matrix used on the time evolution
 - `kargs` are arguments that you use on the `OrdinaryDiffEq.solve` method directly
 """
-function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, interaction::Matrix=interaction_matrix(problem), kargs...) where {T<:Linear}
+function time_evolution(problem::LinearOptics{T}, u₀, tspan::Tuple; ode_solver=true, interaction::AbstractMatrix=interaction_matrix(problem), kargs...) where {T<:Linear}
 
     tmin = tspan[1]
     tmax = tspan[2]
@@ -67,8 +67,8 @@ end
 
 function formal_solution_laser_on(
     problem,
-    initial_state::AbstractVector,
-    time_interval::AbstractVector;
+    initial_state,
+    time_interval;
     useBigFloat=false
 )
     N = problem.atoms.N
@@ -76,7 +76,7 @@ function formal_solution_laser_on(
     Ωₙ = laser_field(problem, problem.atoms.r)
 
     Λ, P = eigen(G)
-    Pinv = inv(P)
+    Pinv = inv(Array(P))
     Λinv = inv(Diagonal(Λ))
     PinvΩₙ = Pinv * vec(Ωₙ)
 

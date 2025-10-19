@@ -36,6 +36,7 @@ using Random
 
 using ProgressMeter
 using Tullio
+using FixedSizeArrays
 
 const k₀ = 1
 const Γ = 1

@@ -16,10 +16,10 @@ function interaction_matrix(problem::LinearOptics)
 end
 
 function get_empty_matrix(physic::Scalar, atoms::Atom{<:ThreeD})
-    return Array{ComplexF64}(undef, atoms.N, atoms.N)
+    return FixedSizeMatrix{ComplexF64}(undef, atoms.N, atoms.N)
 end
 function get_empty_matrix(physic::Vectorial, atoms::Atom{<:ThreeD})
-    return Array{ComplexF64}(undef, 3atoms.N, 3atoms.N)
+    return FixedSizeMatrix{ComplexF64}(undef, 3atoms.N, 3atoms.N)
 end
 
 function interaction_matrix(problem::NonLinearOptics{MeanField})
@@ -174,12 +174,12 @@ function green_vectorial!(atoms, laser, G)
     Yjm = my_pairwise(Yt)
     Zjm = my_pairwise(Zt)
 
-    Rjm = Array{Float64,2}(undef, N, N)
+    Rjm = FixedSizeArray{Float64,2}(undef, N, N)
     Rjm_parallel!(Rjm, Xjm, Yjm, Zjm)
 
-    Xjm = view(Xjm./Rjm, :, :)
-    Yjm = view(Yjm./Rjm, :, :)
-    Zjm = view(Zjm./Rjm, :, :)
+    @. Xjm = Xjm/Rjm
+    @. Yjm = Yjm/Rjm
+    @. Zjm = Zjm/Rjm
 
 
     temp1 = Array{T,2}(undef, N, N)
@@ -188,33 +188,15 @@ function green_vectorial!(atoms, laser, G)
     temp2_parallel!(temp2, Rjm)
 
 
-    ## fill matriz by collumns, because Julia matrices are column-major
-    ## G[:, 1:N] = [Gxx; Gyx; Gzx]
-    Gxx, Gyx, Gzx = Array{T,2}(undef, N, N), Array{T,2}(undef, N, N), Array{T,2}(undef, N, N)
-    Gx_parallel!(Gxx, Gyx, Gzx, temp1, Xjm, Yjm, Zjm, temp2)
+    ## fill matrix by columns directly into G using views (no temporaries)
+    # G[:, 1:N] = [Gxx; Gyx; Gzx]
+    Gx_parallel!(view(G, 1:N, 1:N), view(G, N+1:2N, 1:N), view(G, 2N+1:3N, 1:N), temp1, Xjm, Yjm, Zjm, temp2)
 
-    @inbounds @. G[1:N,         1:N] = copy(Gxx)
-    @inbounds @. G[(N+1):(2N),  1:N] = copy(Gyx)
-    @inbounds @. G[(2N+1):(3N), 1:N] = copy(Gzx)
+    # G[:, (N+1):(2N)] = [Gxy; Gyy; Gzy]
+    Gy_parallel!(view(G, 1:N, N+1:2N), view(G, N+1:2N, N+1:2N), view(G, 2N+1:3N, N+1:2N), temp1, Xjm, Yjm, Zjm, temp2)
 
-
-
-    ## G[:, (N+1):(2N)] = [Gxy; Gyy; Gzy]
-    Gxy, Gyy, Gzy = Gxx, Gyx, Gzx
-    Gy_parallel!(Gxx, Gyx, Gzy, temp1, Xjm, Yjm, Zjm, temp2)
-
-    @inbounds @. G[1:N,         (N+1):(2N)] = copy(Gxy)
-    @inbounds @. G[(N+1):(2N),  (N+1):(2N)] = copy(Gyy)
-    @inbounds @. G[(2N+1):(3N), (N+1):(2N)] = copy(Gzy)
-
-
-    ## G[:, (2N+1):(3N)] = [Gxz; Gyz; Gzz]
-    Gxz, Gyz, Gzz = Gxx, Gyx, Gzx
-    Gz_parallel!(Gxz, Gyz, Gzz, temp1, Xjm, Yjm, Zjm, temp2)
-
-    @inbounds @. G[1:N,        (2N+1):(3N)]  = copy(Gxz)
-    @inbounds @. G[(N+1):(2N),  (2N+1):(3N)] = copy(Gyz)
-    @inbounds @. G[(2N+1):(3N), (2N+1):(3N)] = copy(Gzz)
+    # G[:, (2N+1):(3N)] = [Gxz; Gyz; Gzz]
+    Gz_parallel!(view(G, 1:N, 2N+1:3N), view(G, N+1:2N, 2N+1:3N), view(G, 2N+1:3N, 2N+1:3N), temp1, Xjm, Yjm, Zjm, temp2)
 
     # I don't know how to justify that this works
     # 'Γ' vectorial is different than 'Γ' scalar (Γ_vec = 2/3 Γ_sca)
